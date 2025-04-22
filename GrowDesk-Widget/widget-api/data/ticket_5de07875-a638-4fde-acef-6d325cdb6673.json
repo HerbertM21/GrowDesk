@@ -1,0 +1,52 @@
+{
+  "id": "5de07875-a638-4fde-acef-6d325cdb6673",
+  "title": "Support request from monitor11",
+  "description": "ysfsdfs",
+  "status": "new",
+  "createdBy": "mon11@mon.com",
+  "createdAt": "2025-04-05T18:42:16.727652573-03:00",
+  "updatedAt": "2025-04-05T19:09:20.831021628-03:00",
+  "messages": [
+    {
+      "id": "270f8e32-2ac0-4df1-972b-9ff7b60f7629",
+      "content": "ysfsdfs",
+      "isClient": true,
+      "createdAt": "2025-04-05T18:42:16.727651753-03:00",
+      "userName": "monitor11",
+      "userEmail": "mon11@mon.com"
+    },
+    {
+      "id": "MSG-1743889350450962532",
+      "content": "test",
+      "isClient": true,
+      "createdAt": "2025-04-05T18:42:30.450965287-03:00",
+      "userName": "monitor11",
+      "userEmail": "mon11@mon.com"
+    },
+    {
+      "id": "MSG-1743889359155132509",
+      "content": "test2",
+      "isClient": true,
+      "createdAt": "2025-04-05T18:42:39.155139469-03:00",
+      "userName": "monitor11",
+      "userEmail": "mon11@mon.com"
+    },
+    {
+      "id": "MSG-1743890960831017727",
+      "content": "test3",
+      "isClient": true,
+      "createdAt": "2025-04-05T19:09:20.83102142-03:00",
+      "userName": "monitor11",
+      "userEmail": "mon11@mon.com"
+    }
+  ],
+  "userEmail": "mon11@mon.com",
+  "userName": "monitor11",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+    "screenSize": "1920x914",
+    "externalId": "TICKET-20250405214216"
+  }
+}

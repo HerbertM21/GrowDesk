@@ -1,0 +1,68 @@
+{
+  "id": "aca5790a-2fbd-4ef3-a507-422bf61f2a03",
+  "title": "Support request from monitor13",
+  "description": "test654",
+  "status": "new",
+  "createdBy": "mon13@gmail.com",
+  "createdAt": "2025-04-05T19:33:40.85742724-03:00",
+  "updatedAt": "2025-04-05T19:54:51.657344107-03:00",
+  "messages": [
+    {
+      "id": "5843039d-5903-471b-8e97-b249d3e8ec15",
+      "content": "test654",
+      "isClient": true,
+      "createdAt": "2025-04-05T19:33:40.857425267-03:00",
+      "userName": "monitor13",
+      "userEmail": "mon13@gmail.com"
+    },
+    {
+      "id": "MSG-1743892434755517647",
+      "content": "test",
+      "isClient": true,
+      "createdAt": "2025-04-05T19:33:54.755524527-03:00",
+      "userName": "monitor13",
+      "userEmail": "mon13@gmail.com"
+    },
+    {
+      "id": "MSG-1743892436841076266",
+      "content": "test2",
+      "isClient": true,
+      "createdAt": "2025-04-05T19:33:56.841082896-03:00",
+      "userName": "monitor13",
+      "userEmail": "mon13@gmail.com"
+    },
+    {
+      "id": "MSG-1743892892275816888",
+      "content": "test232",
+      "isClient": true,
+      "createdAt": "2025-04-05T19:41:32.275826615-03:00",
+      "userName": "monitor13",
+      "userEmail": "mon13@gmail.com"
+    },
+    {
+      "id": "MSG-1743893219429323223",
+      "content": "tasdasd",
+      "isClient": true,
+      "createdAt": "2025-04-05T19:46:59.429331031-03:00",
+      "userName": "monitor13",
+      "userEmail": "mon13@gmail.com"
+    },
+    {
+      "id": "MSG-1743893691657307927",
+      "content": "tasdas",
+      "isClient": true,
+      "createdAt": "2025-04-05T19:54:51.657343387-03:00",
+      "userName": "monitor13",
+      "userEmail": "mon13@gmail.com"
+    }
+  ],
+  "userEmail": "mon13@gmail.com",
+  "userName": "monitor13",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+    "screenSize": "1920x914",
+    "externalId": "TICKET-20250405223340"
+  }
+}

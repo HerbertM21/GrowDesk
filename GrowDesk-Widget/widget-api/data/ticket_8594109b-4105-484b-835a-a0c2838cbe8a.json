@@ -1,0 +1,43 @@
+{
+  "id": "8594109b-4105-484b-835a-a0c2838cbe8a",
+  "title": "Support request from Usuario Test",
+  "description": "Mensaje de prueba para crear un nuevo ticket",
+  "status": "new",
+  "createdBy": "usuario@test.com",
+  "createdAt": "2025-04-05T14:17:16.03761715-03:00",
+  "updatedAt": "2025-04-05T14:18:45.894864853-03:00",
+  "messages": [
+    {
+      "id": "a451b724-fdf5-4e71-a08c-af947e114b7d",
+      "content": "Mensaje de prueba para crear un nuevo ticket",
+      "isClient": true,
+      "createdAt": "2025-04-05T14:17:16.037616357-03:00",
+      "userName": "Usuario Test",
+      "userEmail": "usuario@test.com"
+    },
+    {
+      "id": "d4def47c-ecb9-4476-9daa-5bc04049581c",
+      "content": "Mensaje de prueba desde el cliente",
+      "isClient": true,
+      "createdAt": "2025-04-05T14:18:25.94670199-03:00",
+      "userName": "",
+      "userEmail": ""
+    },
+    {
+      "id": "4ac689c5-a9c2-4261-b280-00b74bea6d51",
+      "content": "Respuesta del agente de soporte",
+      "isClient": false,
+      "createdAt": "2025-04-05T14:18:45.894863667-03:00",
+      "userName": "Agente de Soporte",
+      "userEmail": ""
+    }
+  ],
+  "userEmail": "usuario@test.com",
+  "userName": "Usuario Test",
+  "metadata": {
+    "url": "http://localhost:8090",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": ""
+  }
+}

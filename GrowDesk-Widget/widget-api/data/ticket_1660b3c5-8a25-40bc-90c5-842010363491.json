@@ -1,0 +1,44 @@
+{
+  "id": "1660b3c5-8a25-40bc-90c5-842010363491",
+  "title": "Support request from monitor10",
+  "description": "test",
+  "status": "new",
+  "createdBy": "final@final.com",
+  "createdAt": "2025-04-05T18:36:35.744147751-03:00",
+  "updatedAt": "2025-04-05T18:37:29.20364463-03:00",
+  "messages": [
+    {
+      "id": "a261ae5c-ed4f-44bc-ab6f-bde76136d73a",
+      "content": "test",
+      "isClient": true,
+      "createdAt": "2025-04-05T18:36:35.744145689-03:00",
+      "userName": "monitor10",
+      "userEmail": "final@final.com"
+    },
+    {
+      "id": "MSG-1743888998953765913",
+      "content": "test2",
+      "isClient": true,
+      "createdAt": "2025-04-05T18:36:38.953772068-03:00",
+      "userName": "monitor10",
+      "userEmail": "final@final.com"
+    },
+    {
+      "id": "MSG-1743889049203640808",
+      "content": "test34",
+      "isClient": true,
+      "createdAt": "2025-04-05T18:37:29.203643347-03:00",
+      "userName": "monitor10",
+      "userEmail": "final@final.com"
+    }
+  ],
+  "userEmail": "final@final.com",
+  "userName": "monitor10",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+    "screenSize": "1920x914",
+    "externalId": "TICKET-20250405213635"
+  }
+}

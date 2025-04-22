@@ -1,0 +1,36 @@
+{
+  "id": "a31d9040-6a9f-431b-b5a1-e4e95c7c0eb3",
+  "title": "Support request from Herbert",
+  "description": "Tengo un problema con mi factura",
+  "status": "new",
+  "createdBy": "herbertmm12@gmail.com",
+  "createdAt": "2025-04-12T17:31:57.223181804-04:00",
+  "updatedAt": "2025-04-12T17:32:10.286593429-04:00",
+  "messages": [
+    {
+      "id": "4fb98e01-e146-4873-b982-178f14c4eeeb",
+      "content": "Tengo un problema con mi factura",
+      "isClient": true,
+      "createdAt": "2025-04-12T17:31:57.223181257-04:00",
+      "userName": "Herbert",
+      "userEmail": "herbertmm12@gmail.com"
+    },
+    {
+      "id": "MSG-1744493530286584693",
+      "content": "ayudenme porfa",
+      "isClient": true,
+      "createdAt": "2025-04-12T17:32:10.286591731-04:00",
+      "userName": "Herbert",
+      "userEmail": "herbertmm12@gmail.com"
+    }
+  ],
+  "userEmail": "herbertmm12@gmail.com",
+  "userName": "Herbert",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+    "screenSize": "1920x914",
+    "externalId": "TICKET-20250412213157"
+  }
+}

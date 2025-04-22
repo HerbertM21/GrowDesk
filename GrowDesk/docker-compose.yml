@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: growdesk-frontend-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8080/api
+    networks:
+      - grow-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: growdesk-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - grow-network
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=growdesk
+      - DB_SSL_MODE=disable
+      - PORT=8080
+      - JWT_SECRET=your-super-secret-key-change-in-production
+    volumes:
+      - backend_uploads:/root/uploads
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15
+    container_name: growdesk-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: growdesk
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - grow-network
+
+  redis:
+    image: redis:7
+    container_name: growdesk-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - grow-network
+
+networks:
+  grow-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  backend_uploads:
+

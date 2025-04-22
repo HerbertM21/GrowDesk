@@ -1,0 +1,52 @@
+{
+  "id": "TICKET-20250405212115",
+  "title": "Soporte Web - monitor8",
+  "description": "testnmon",
+  "status": "open",
+  "createdBy": "herbertmm12@gmail.com",
+  "createdAt": "2025-04-05T21:21:15.878Z",
+  "updatedAt": "2025-04-05T21:21:15.878Z",
+  "messages": [
+    {
+      "id": "MSG-1743888075878",
+      "content": "testnmon",
+      "isClient": true,
+      "createdAt": "2025-04-05T21:21:15.878Z",
+      "userName": "monitor8",
+      "userEmail": "herbertmm12@gmail.com"
+    },
+    {
+      "id": "MSG-1743888084627",
+      "content": "ya",
+      "isClient": false,
+      "createdAt": "2025-04-05T21:21:24.627Z",
+      "userName": "monitor8",
+      "userEmail": "herbertmm12@gmail.com"
+    },
+    {
+      "id": "MSG-1743888094305",
+      "content": "yaa",
+      "isClient": true,
+      "createdAt": "0001-01-01T00:00:00Z",
+      "userName": "monitor8",
+      "userEmail": "herbertmm12@gmail.com"
+    },
+    {
+      "id": "MSG-1743888115040",
+      "content": "test",
+      "isClient": true,
+      "createdAt": "0001-01-01T00:00:00Z",
+      "userName": "monitor8",
+      "userEmail": "herbertmm12@gmail.com"
+    }
+  ],
+  "userEmail": "herbertmm12@gmail.com",
+  "userName": "monitor8",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": "TICKET-20250405212115"
+  }
+}

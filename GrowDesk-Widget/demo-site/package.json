@@ -1,0 +1,12 @@
+{
+  "name": "growdesk-widget-demo",
+  "version": "1.0.0",
+  "description": "Página de demostración para el widget GrowDesk",
+  "scripts": {
+    "start": "http-server . -p 8090 -c-1"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "private": true
+}

@@ -1,0 +1,36 @@
+{
+  "id": "d7d90773-b586-454f-bedf-c9c0f1be6a9e",
+  "title": "Support request from monitor8",
+  "description": "testnmon",
+  "status": "new",
+  "createdBy": "herbertmm12@gmail.com",
+  "createdAt": "2025-04-05T18:21:15.870876766-03:00",
+  "updatedAt": "2025-04-05T18:21:24.600764552-03:00",
+  "messages": [
+    {
+      "id": "e1e576c9-29f6-4a14-aa23-efb2fd8a6ad0",
+      "content": "testnmon",
+      "isClient": true,
+      "createdAt": "2025-04-05T18:21:15.870875456-03:00",
+      "userName": "monitor8",
+      "userEmail": "herbertmm12@gmail.com"
+    },
+    {
+      "id": "49aee6fb-91ea-4fd9-8db6-d8326fca43bb",
+      "content": "ya",
+      "isClient": true,
+      "createdAt": "2025-04-05T18:21:24.600764075-03:00",
+      "userName": "monitor8",
+      "userEmail": "herbertmm12@gmail.com"
+    }
+  ],
+  "userEmail": "herbertmm12@gmail.com",
+  "userName": "monitor8",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+    "screenSize": "1920x914",
+    "externalId": "TICKET-20250405212115"
+  }
+}

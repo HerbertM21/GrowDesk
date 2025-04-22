@@ -1,0 +1,27 @@
+{
+  "id": "a94467d9-36a3-4b2c-a5e5-6eda0fc58ef4",
+  "title": "Support request from Usuario Sync Test",
+  "description": "Probando si este ticket se sincroniza correctamente con GrowDesk",
+  "status": "new",
+  "createdBy": "synctest@example.com",
+  "createdAt": "2025-04-05T11:27:54.182324204-03:00",
+  "updatedAt": "2025-04-05T11:27:54.182324258-03:00",
+  "messages": [
+    {
+      "id": "afc3802d-c380-4c47-b788-f34d10fabe5a",
+      "content": "Probando si este ticket se sincroniza correctamente con GrowDesk",
+      "isClient": true,
+      "createdAt": "2025-04-05T11:27:54.18232349-03:00",
+      "userName": "Usuario Sync Test",
+      "userEmail": "synctest@example.com"
+    }
+  ],
+  "userEmail": "synctest@example.com",
+  "userName": "Usuario Sync Test",
+  "metadata": {
+    "url": "http://localhost:8090",
+    "referrer": "",
+    "userAgent": "CURL Sync Test",
+    "screenSize": "1920x1080"
+  }
+}

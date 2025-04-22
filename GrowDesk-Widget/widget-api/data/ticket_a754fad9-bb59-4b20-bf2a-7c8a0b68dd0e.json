@@ -1,0 +1,35 @@
+{
+  "id": "a754fad9-bb59-4b20-bf2a-7c8a0b68dd0e",
+  "title": "Support request from Monitor2",
+  "description": "test4",
+  "status": "new",
+  "createdBy": "herbert.mayorga@alu.ucm.cl",
+  "createdAt": "2025-04-05T11:03:57.240284324-03:00",
+  "updatedAt": "2025-04-05T11:04:25.584831288-03:00",
+  "messages": [
+    {
+      "id": "6a0c073d-9d6f-4931-9e9f-b4cf0034162f",
+      "content": "test4",
+      "isClient": true,
+      "createdAt": "2025-04-05T11:03:57.240282952-03:00",
+      "userName": "Monitor2",
+      "userEmail": "herbert.mayorga@alu.ucm.cl"
+    },
+    {
+      "id": "fc76b524-f06f-45f8-aefe-4f67192125f6",
+      "content": "hola?",
+      "isClient": true,
+      "createdAt": "2025-04-05T11:04:25.584823313-03:00",
+      "userName": "Monitor2",
+      "userEmail": "herbert.mayorga@alu.ucm.cl"
+    }
+  ],
+  "userEmail": "herbert.mayorga@alu.ucm.cl",
+  "userName": "Monitor2",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+    "screenSize": "1920x914"
+  }
+}

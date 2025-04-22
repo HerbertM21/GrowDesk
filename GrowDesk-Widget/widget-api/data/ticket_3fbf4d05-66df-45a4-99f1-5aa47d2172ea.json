@@ -1,0 +1,76 @@
+{
+  "id": "3fbf4d05-66df-45a4-99f1-5aa47d2172ea",
+  "title": "Support request from monitor12",
+  "description": "test444",
+  "status": "new",
+  "createdBy": "herbertmm12@gmail.com",
+  "createdAt": "2025-04-05T19:09:40.871934219-03:00",
+  "updatedAt": "2025-04-05T19:31:10.319437811-03:00",
+  "messages": [
+    {
+      "id": "4f937b8a-4598-4582-88b9-45534a4703ca",
+      "content": "test444",
+      "isClient": true,
+      "createdAt": "2025-04-05T19:09:40.871933596-03:00",
+      "userName": "monitor12",
+      "userEmail": "herbertmm12@gmail.com"
+    },
+    {
+      "id": "MSG-1743890994031458634",
+      "content": "test",
+      "isClient": true,
+      "createdAt": "2025-04-05T19:09:54.031461457-03:00",
+      "userName": "monitor12",
+      "userEmail": "herbertmm12@gmail.com"
+    },
+    {
+      "id": "MSG-1743890999120124339",
+      "content": "testtest",
+      "isClient": true,
+      "createdAt": "2025-04-05T19:09:59.120126838-03:00",
+      "userName": "monitor12",
+      "userEmail": "herbertmm12@gmail.com"
+    },
+    {
+      "id": "MSG-1743891041543272726",
+      "content": "test5",
+      "isClient": true,
+      "createdAt": "2025-04-05T19:10:41.543281286-03:00",
+      "userName": "monitor12",
+      "userEmail": "herbertmm12@gmail.com"
+    },
+    {
+      "id": "MSG-1743891255586900065",
+      "content": "test6",
+      "isClient": true,
+      "createdAt": "2025-04-05T19:14:15.586904505-03:00",
+      "userName": "monitor12",
+      "userEmail": "herbertmm12@gmail.com"
+    },
+    {
+      "id": "MSG-1743891320579597876",
+      "content": "tesatsad",
+      "isClient": true,
+      "createdAt": "2025-04-05T19:15:20.579606256-03:00",
+      "userName": "monitor12",
+      "userEmail": "herbertmm12@gmail.com"
+    },
+    {
+      "id": "MSG-1743892270319435091",
+      "content": "teasdasd",
+      "isClient": true,
+      "createdAt": "2025-04-05T19:31:10.319437611-03:00",
+      "userName": "monitor12",
+      "userEmail": "herbertmm12@gmail.com"
+    }
+  ],
+  "userEmail": "herbertmm12@gmail.com",
+  "userName": "monitor12",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+    "screenSize": "1920x914",
+    "externalId": "TICKET-20250405220940"
+  }
+}

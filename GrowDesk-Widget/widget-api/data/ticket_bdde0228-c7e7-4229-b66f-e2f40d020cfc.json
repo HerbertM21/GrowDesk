@@ -1,0 +1,35 @@
+{
+  "id": "bdde0228-c7e7-4229-b66f-e2f40d020cfc",
+  "title": "Support request from Monitor",
+  "description": "test3",
+  "status": "new",
+  "createdBy": "fiwaref882@aiworldx.com",
+  "createdAt": "2025-04-05T10:55:34.806913871-03:00",
+  "updatedAt": "2025-04-05T10:56:02.538921864-03:00",
+  "messages": [
+    {
+      "id": "791f26b8-9cdc-4531-9e79-47eb7abd5454",
+      "content": "test3",
+      "isClient": true,
+      "createdAt": "2025-04-05T10:55:34.80691308-03:00",
+      "userName": "Monitor",
+      "userEmail": "fiwaref882@aiworldx.com"
+    },
+    {
+      "id": "a538ba62-f213-4346-ab27-eacb0cf49cfa",
+      "content": "test",
+      "isClient": true,
+      "createdAt": "2025-04-05T10:56:02.538917764-03:00",
+      "userName": "Monitor",
+      "userEmail": "fiwaref882@aiworldx.com"
+    }
+  ],
+  "userEmail": "fiwaref882@aiworldx.com",
+  "userName": "Monitor",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+    "screenSize": "1920x914"
+  }
+}

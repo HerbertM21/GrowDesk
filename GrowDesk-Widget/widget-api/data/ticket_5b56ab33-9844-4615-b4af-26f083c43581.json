@@ -1,0 +1,36 @@
+{
+  "id": "5b56ab33-9844-4615-b4af-26f083c43581",
+  "title": "Support request from Monitor6",
+  "description": "ahora.",
+  "status": "new",
+  "createdBy": "monitor6@mon.com",
+  "createdAt": "2025-04-05T18:07:11.358461323-03:00",
+  "updatedAt": "2025-04-05T18:07:24.265746771-03:00",
+  "messages": [
+    {
+      "id": "e98052db-19fd-4ed0-8099-ce3feea9978f",
+      "content": "ahora.",
+      "isClient": true,
+      "createdAt": "2025-04-05T18:07:11.358460063-03:00",
+      "userName": "Monitor6",
+      "userEmail": "monitor6@mon.com"
+    },
+    {
+      "id": "aaa10cf3-253d-459e-9f9e-7417659d55e1",
+      "content": "veamos",
+      "isClient": true,
+      "createdAt": "2025-04-05T18:07:24.265743301-03:00",
+      "userName": "Monitor6",
+      "userEmail": "monitor6@mon.com"
+    }
+  ],
+  "userEmail": "monitor6@mon.com",
+  "userName": "Monitor6",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+    "screenSize": "1920x914",
+    "externalId": "TICKET-20250405210711"
+  }
+}

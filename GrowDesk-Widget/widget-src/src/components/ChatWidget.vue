@@ -1,0 +1,498 @@
+<template>
+  <div>
+    <!-- Chat bubble -->
+    <div 
+      class="fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-all z-50"
+      :style="{ backgroundColor: primaryColor }"
+      @click="toggleChat"
+    >
+      <i class="pi pi-comments text-white" v-if="!isOpen"></i>
+      <i class="pi pi-times text-white" v-else></i>
+    </div>
+
+    <!-- Chat interface -->
+    <div 
+      v-if="isOpen" 
+      class="fixed bottom-24 right-6 w-80 h-96 bg-white rounded-lg shadow-xl flex flex-col overflow-hidden border border-gray-200 z-40"
+    >
+      <!-- Chat header -->
+      <div :style="{ backgroundColor: primaryColor }" class="text-white p-4 flex justify-between items-center">
+        <h3 class="font-medium">{{ brandName }}</h3>
+        <div class="flex items-center">
+          <i v-if="isRegistered" class="pi pi-sign-out cursor-pointer mr-3" @click.stop="logout" title="Cerrar sesión"></i>
+          <i class="pi pi-times cursor-pointer" @click="toggleChat"></i>
+        </div>
+      </div>
+      
+      <!-- Registration form (displayed before chat) -->
+      <div v-if="!isRegistered" class="flex-1 p-4 overflow-y-auto bg-gray-50 flex flex-col">
+        <div class="text-center text-gray-700 mb-4">
+          {{ welcomeMessage }}
+        </div>
+        <form @submit.prevent="submitRegistration" class="flex flex-col gap-4">
+          <div class="flex flex-col">
+            <label for="name" class="text-sm text-gray-600 mb-1">Nombre</label>
+            <input 
+              v-model="userData.name" 
+              type="text" 
+              id="name" 
+              class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2"
+              :style="{ '--tw-ring-color': primaryColor }"
+              required
+            />
+          </div>
+          <div class="flex flex-col">
+            <label for="email" class="text-sm text-gray-600 mb-1">Email</label>
+            <input 
+              v-model="userData.email" 
+              type="email" 
+              id="email" 
+              class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2"
+              :style="{ '--tw-ring-color': primaryColor }"
+              required
+            />
+          </div>
+          <div class="flex flex-col">
+            <label for="firstMessage" class="text-sm text-gray-600 mb-1">¿En qué podemos ayudarte?</label>
+            <textarea 
+              v-model="userData.initialMessage" 
+              id="firstMessage" 
+              rows="3"
+              class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2"
+              :style="{ '--tw-ring-color': primaryColor }"
+              required
+              placeholder="Describe brevemente tu consulta..."
+            ></textarea>
+          </div>
+          <button 
+            type="submit" 
+            class="mt-2 text-white rounded-md py-2 font-medium focus:outline-none"
+            :style="{ backgroundColor: primaryColor }"
+            :disabled="loading"
+          >
+            <span v-if="!loading">Iniciar chat</span>
+            <span v-else>
+              <i class="pi pi-spin pi-spinner"></i> Procesando...
+            </span>
+          </button>
+        </form>
+      </div>
+      
+      <!-- Chat messages (displayed after registration) -->
+      <div v-else class="flex-1 p-4 overflow-y-auto bg-gray-50 chat-messages">
+        <div v-if="messages.length === 0" class="text-center text-gray-500 mt-20">
+          Inicia una conversación escribiendo un mensaje.
+        </div>
+        <div v-for="(message, index) in messages" :key="index" class="mb-3">
+          <div 
+            :class="[
+              'max-w-[80%] p-3 rounded-lg', 
+              message.isUser ? 'text-white ml-auto rounded-br-none' : 'bg-gray-200 text-gray-800 rounded-bl-none'
+            ]"
+            :style="message.isUser ? { backgroundColor: primaryColor } : {}"
+          >
+            {{ message.text }}
+          </div>
+        </div>
+      </div>
+      
+      <!-- Chat input (displayed after registration) -->
+      <div v-if="isRegistered" class="p-3 border-t border-gray-200 bg-white">
+        <div class="flex items-center">
+          <input 
+            v-model="newMessage" 
+            type="text" 
+            placeholder="Escribe un mensaje..." 
+            class="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2"
+            :style="{ '--tw-ring-color': primaryColor }"
+            @keyup.enter="sendMessage"
+          />
+          <button 
+            @click="sendMessage" 
+            class="ml-2 text-white rounded-full p-2 focus:outline-none"
+            :style="{ backgroundColor: primaryColor }"
+          >
+            <i class="pi pi-send"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, computed, onBeforeUnmount } from 'vue';
+import { useWidgetApi, getSession, apiConfig } from '../api/widgetApi';
+
+// Props del componente
+const props = defineProps({
+  primaryColor: {
+    type: String,
+    default: '#6200ea'
+  },
+  brandName: {
+    type: String,
+    default: 'Chat Support'
+  },
+  position: {
+    type: String,
+    default: 'bottom-right'
+  },
+  welcomeMessage: {
+    type: String,
+    default: 'Para iniciar tu consulta, por favor completa el siguiente formulario:'
+  }
+});
+
+const isOpen = ref(false);
+const isRegistered = ref(false);
+const loading = ref(false);
+const currentTicketId = ref('');
+const messages = ref<Array<{text: string, isUser: boolean}>>([]);
+const newMessage = ref('');
+const webSocket = ref<WebSocket | null>(null);
+
+// Datos del usuario para el registro
+const userData = ref({
+  name: '',
+  email: '',
+  initialMessage: ''
+});
+
+// API del widget
+const api = useWidgetApi();
+
+// Estado de sesión
+const hasSession = computed(() => {
+  return api.hasActiveSession();
+});
+
+// Conexión WebSocket
+const connectWebSocket = (ticketId: string) => {
+  if (!ticketId) {
+    console.error('No se puede conectar al WebSocket sin un ID de ticket');
+    return;
+  }
+  
+  // Cerrar WebSocket existente si hay uno
+  if (webSocket.value) {
+    webSocket.value.close();
+    webSocket.value = null;
+  }
+  
+  // Guardar el ID de ticket que estamos usando
+  const effectiveTicketId = ticketId;
+  
+  // Utilizar la URL de la API para construir la URL del WebSocket
+  const apiUrl = new URL(apiConfig.apiUrl);
+  
+  // Determinar protocolo (ws o wss dependiendo si la API usa http o https)
+  const wsProtocol = apiUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+  
+  // Obtener host y puerto
+  const hostPart = apiUrl.hostname;
+  const portPart = apiUrl.port || (apiUrl.protocol === 'https:' ? '443' : '80');
+  
+  // URL final del WebSocket
+  const wsUrl = `${wsProtocol}//${hostPart}:${portPart}/api/ws/chat/${effectiveTicketId}`;
+  
+  console.log('Información de conexión WebSocket:', {
+    apiUrl: apiConfig.apiUrl,
+    parsedHost: hostPart,
+    parsedPort: portPart,
+    wsProtocol,
+    finalWsUrl: wsUrl,
+    ticketId: effectiveTicketId
+  });
+  
+  try {
+    webSocket.value = new WebSocket(wsUrl);
+    
+    webSocket.value.onopen = () => {
+      console.log('Conexión WebSocket establecida correctamente');
+    };
+    
+    webSocket.value.onmessage = (event) => {
+      console.log('Mensaje WebSocket recibido:', event.data);
+      try {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'new_message' && data.message) {
+          // Agregar mensaje recibido por WebSocket
+          // Verificar que no sea un mensaje duplicado
+          const isDuplicate = messages.value.some(
+            msg => msg.text === data.message.content && 
+                  msg.isUser === data.message.isClient
+          );
+          
+          if (!isDuplicate) {
+            messages.value.push({
+              text: data.message.content,
+              isUser: data.message.isClient
+            });
+            
+            // Hacer scroll al final
+            scrollToBottom();
+          } else {
+            console.log('Mensaje duplicado detectado y omitido');
+          }
+        }
+      } catch (error) {
+        console.error('Error al procesar mensaje WebSocket:', error);
+      }
+    };
+    
+    webSocket.value.onerror = (error) => {
+      console.error('Error en conexión WebSocket:', error);
+    };
+    
+    webSocket.value.onclose = (event) => {
+      console.log('Conexión WebSocket cerrada. Código:', event.code, 'Razón:', event.reason);
+      
+      // Reconectar después de un tiempo si el chat sigue abierto
+      if (isOpen.value && isRegistered.value) {
+        setTimeout(() => {
+          connectWebSocket(currentTicketId.value);
+        }, 5000);
+      }
+    };
+  } catch (error) {
+    console.error('Error al crear conexión WebSocket:', error);
+  }
+};
+
+// Actualizar onMounted para añadir WebSocket
+onMounted(() => {
+  const container = document.getElementById('growdesk-widget-container');
+  if (container) {
+    container.addEventListener('open-widget', () => {
+      isOpen.value = true;
+    });
+    container.addEventListener('close-widget', () => {
+      isOpen.value = false;
+    });
+  }
+  
+  // Verificar si hay una sesión activa
+  if (hasSession.value) {
+    const session = api.getSession();
+    if (session) {
+      // Restaurar datos de sesión
+      userData.value.name = session.name;
+      userData.value.email = session.email;
+      currentTicketId.value = session.ticketId;
+      isRegistered.value = true;
+      
+      // Cargar mensajes anteriores
+      loadPreviousMessages(session.ticketId);
+      
+      // Conectar WebSocket
+      connectWebSocket(session.ticketId);
+    }
+  }
+});
+
+// Limpieza de conexiones al desmontar
+onBeforeUnmount(() => {
+  if (webSocket.value) {
+    webSocket.value.close();
+    webSocket.value = null;
+  }
+});
+
+const toggleChat = () => {
+  isOpen.value = !isOpen.value;
+};
+
+// Enviar el formulario de registro y crear el ticket
+const submitRegistration = async () => {
+  if (!userData.value.name || !userData.value.email || !userData.value.initialMessage) return;
+  
+  loading.value = true;
+  
+  try {
+    // Crear el ticket con los datos del usuario
+    const ticketData = {
+      name: userData.value.name,
+      email: userData.value.email,
+      message: userData.value.initialMessage, // Usamos el mensaje inicial proporcionado por el usuario
+      metadata: {
+        url: window.location.href,
+        referrer: document.referrer,
+        userAgent: navigator.userAgent,
+        screenSize: `${window.innerWidth}x${window.innerHeight}`
+      }
+    };
+    
+    const response = await api.createTicket(ticketData);
+    
+    // Guardar el ID del ticket
+    currentTicketId.value = response.ticketId;
+    
+    // Marcar al usuario como registrado
+    isRegistered.value = true;
+    
+    // Agregar el mensaje del usuario al chat
+    messages.value.push({
+      text: userData.value.initialMessage,
+      isUser: true
+    });
+    
+    // Agregar mensaje de bienvenida
+    messages.value.push({
+      text: `Hola ${userData.value.name}, gracias por contactarnos. Hemos recibido tu mensaje y un representante te responderá pronto.`,
+      isUser: false
+    });
+    
+    // Establecer conexión WebSocket con el nuevo ticket
+    connectWebSocket(response.ticketId);
+    
+    // Hacer scroll al final del chat
+    scrollToBottom();
+  } catch (error) {
+    console.error('Error al registrar al usuario:', error);
+    alert('Lo sentimos, hubo un problema al iniciar el chat. Por favor, inténtalo de nuevo más tarde.');
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Función para hacer scroll al final del chat
+const scrollToBottom = () => {
+  setTimeout(() => {
+    const messagesContainer = document.querySelector('.chat-messages');
+    if (messagesContainer) {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+  }, 100);
+};
+
+// Cargar mensajes anteriores
+const loadPreviousMessages = async (ticketId: string) => {
+  try {
+    loading.value = true;
+    const response = await api.getMessageHistory(ticketId);
+    
+    if (response && response.messages && response.messages.length > 0) {
+      // Convertir y agregar mensajes al chat
+      const formattedMessages = response.messages.map((msg: any) => ({
+        text: msg.text || msg.content,
+        isUser: msg.isUser === true || msg.isClient === true
+      }));
+      
+      messages.value = formattedMessages;
+      scrollToBottom();
+    } else {
+      // Si no hay mensajes, agregar un mensaje de bienvenida
+      messages.value.push({
+        text: `Hola ${userData.value.name}, bienvenido de nuevo. ¿En qué podemos ayudarte hoy?`,
+        isUser: false
+      });
+    }
+  } catch (error) {
+    console.error('Error al cargar mensajes anteriores:', error);
+    messages.value.push({
+      text: `Hola ${userData.value.name}, parece que hubo un problema al cargar tus mensajes anteriores. ¿En qué podemos ayudarte hoy?`,
+      isUser: false
+    });
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Cerrar sesión
+const logout = () => {
+  api.logout();
+  isRegistered.value = false;
+  currentTicketId.value = '';
+  messages.value = [];
+  userData.value = {
+    name: '',
+    email: '',
+    initialMessage: ''
+  };
+};
+
+const sendMessage = async () => {
+  if (newMessage.value.trim() === '' || !currentTicketId.value) return;
+  
+  // Guardar el mensaje actual y limpiarlo para evitar envíos duplicados
+  const userMessage = newMessage.value;
+  newMessage.value = '';
+  
+  // Mostrar el mensaje del usuario inmediatamente
+  const messageId = `temp-${Date.now()}`;
+  messages.value.push({
+    id: messageId,
+    text: userMessage,
+    isUser: true,
+    pending: true
+  });
+  
+  // Hacer scroll al final del chat inmediatamente
+  scrollToBottom();
+  
+  // Mostrar estado de carga
+  loading.value = true;
+  
+  try {
+    // Enviar el mensaje al servidor con los datos del usuario
+    const response = await api.sendMessage({
+      ticketId: currentTicketId.value,
+      message: userMessage,
+      userName: userData.value.name,
+      userEmail: userData.value.email
+    });
+    
+    // Actualizar el estado del mensaje una vez enviado
+    const index = messages.value.findIndex(msg => msg.id === messageId);
+    if (index >= 0) {
+      messages.value[index].pending = false;
+      
+      // Si el mensaje fue detectado como duplicado por el servidor
+      if (response.messageId === 'duplicate-ignored') {
+        console.log('Mensaje detectado como duplicado por el servidor');
+      }
+    }
+    
+    // No mostrar respuesta automática si el mensaje fue un duplicado
+    if (response.messageId !== 'duplicate-ignored') {
+      // Auto-respuesta deshabilitada para evitar confusiones con mensajes reales
+      // Las respuestas deben venir del agente o del servidor por WebSocket
+    }
+    
+    // Desactivar estado de carga
+    loading.value = false;
+  } catch (error) {
+    console.error('Error al enviar el mensaje:', error);
+    
+    // Marcar el mensaje como fallido
+    const index = messages.value.findIndex(msg => msg.id === messageId);
+    if (index >= 0) {
+      messages.value[index].error = true;
+      messages.value[index].pending = false;
+    }
+    
+    // Mostrar mensaje de error en el chat
+    messages.value.push({
+      text: "Lo sentimos, hubo un problema al enviar tu mensaje. Por favor, inténtalo de nuevo.",
+      isUser: false
+    });
+    
+    // Hacer scroll al final después del error
+    scrollToBottom();
+    loading.value = false;
+  }
+};
+</script>
+
+<style>
+/* Los estilos se manejan con Tailwind CSS */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+.pi {
+  font-size: 1.25rem;
+}
+</style> 

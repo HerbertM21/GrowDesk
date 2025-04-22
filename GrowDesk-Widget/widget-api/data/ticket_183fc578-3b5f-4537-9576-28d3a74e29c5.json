@@ -1,0 +1,28 @@
+{
+  "id": "183fc578-3b5f-4537-9576-28d3a74e29c5",
+  "title": "Support request from Test User",
+  "description": "This is a test ticket to verify message sync",
+  "status": "new",
+  "createdBy": "test@example.com",
+  "createdAt": "2025-04-05T19:22:45.574958069-03:00",
+  "updatedAt": "2025-04-05T19:22:45.574958123-03:00",
+  "messages": [
+    {
+      "id": "b91e72a7-81bd-463c-ba1a-cda892f84251",
+      "content": "This is a test ticket to verify message sync",
+      "isClient": true,
+      "createdAt": "2025-04-05T19:22:45.57495755-03:00",
+      "userName": "Test User",
+      "userEmail": "test@example.com"
+    }
+  ],
+  "userEmail": "test@example.com",
+  "userName": "Test User",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": "TICKET-20250405222245"
+  }
+}

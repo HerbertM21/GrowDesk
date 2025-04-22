@@ -1,0 +1,35 @@
+{
+  "id": "b0440e92-5b5b-4a43-8cb0-7008197957ae",
+  "title": "Support request from Monitor3",
+  "description": "test56",
+  "status": "new",
+  "createdBy": "herbert.mayorga.jbs@gmail.com",
+  "createdAt": "2025-04-05T14:20:50.958277414-03:00",
+  "updatedAt": "2025-04-05T14:20:54.955645691-03:00",
+  "messages": [
+    {
+      "id": "bee89dd0-ef5d-402a-ad4d-78fc7bffa717",
+      "content": "test56",
+      "isClient": true,
+      "createdAt": "2025-04-05T14:20:50.958276653-03:00",
+      "userName": "Monitor3",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    },
+    {
+      "id": "5974ab28-dc6a-4eef-9ea8-49d83611cb4f",
+      "content": "test54",
+      "isClient": true,
+      "createdAt": "2025-04-05T14:20:54.955644351-03:00",
+      "userName": "Monitor3",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    }
+  ],
+  "userEmail": "herbert.mayorga.jbs@gmail.com",
+  "userName": "Monitor3",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+    "screenSize": "1920x914"
+  }
+}

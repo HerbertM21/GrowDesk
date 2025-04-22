@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "@types/vue": "^1.0.31"
+  },
+  "dependencies": {
+    "ws": "^8.18.1"
+  }
+}

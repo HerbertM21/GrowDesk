@@ -1,0 +1,44 @@
+{
+  "id": "25a9faaf-5bca-4454-b957-850072a8002e",
+  "title": "Support request from monitor9",
+  "description": "MOnitor 9 hablando",
+  "status": "new",
+  "createdBy": "mon9@mon.com",
+  "createdAt": "2025-04-05T18:25:57.84646899-03:00",
+  "updatedAt": "2025-04-05T18:26:36.355872749-03:00",
+  "messages": [
+    {
+      "id": "d8ab842a-c016-4bf7-b550-01b8d348b716",
+      "content": "MOnitor 9 hablando",
+      "isClient": true,
+      "createdAt": "2025-04-05T18:25:57.846468124-03:00",
+      "userName": "monitor9",
+      "userEmail": "mon9@mon.com"
+    },
+    {
+      "id": "MSG-1743888376681539310",
+      "content": "espera",
+      "isClient": true,
+      "createdAt": "2025-04-05T18:26:16.681544889-03:00",
+      "userName": "monitor9",
+      "userEmail": "mon9@mon.com"
+    },
+    {
+      "id": "MSG-1743888396355840309",
+      "content": "esperaa",
+      "isClient": true,
+      "createdAt": "2025-04-05T18:26:36.355847369-03:00",
+      "userName": "monitor9",
+      "userEmail": "mon9@mon.com"
+    }
+  ],
+  "userEmail": "mon9@mon.com",
+  "userName": "monitor9",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+    "screenSize": "1920x914",
+    "externalId": "TICKET-20250405212557"
+  }
+}

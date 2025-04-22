@@ -1,0 +1,108 @@
+{
+  "id": "TICKET-20250405173249",
+  "title": "Soporte Web - Monitor5",
+  "description": "Monitor test",
+  "status": "open",
+  "createdBy": "monitor@mon.com",
+  "createdAt": "2025-04-05T17:32:49.801Z",
+  "updatedAt": "2025-04-05T17:32:49.801Z",
+  "messages": [
+    {
+      "id": "MSG-1743874369801",
+      "content": "Monitor test",
+      "isClient": true,
+      "createdAt": "2025-04-05T17:32:49.801Z",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    },
+    {
+      "id": "MSG-1743874739008",
+      "content": "Mensaje de prueba desde el widget (curl)",
+      "isClient": false,
+      "createdAt": "2025-04-05T17:38:59.008Z",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    },
+    {
+      "id": "MSG-1743874840085",
+      "content": "test5",
+      "isClient": false,
+      "createdAt": "2025-04-05T17:40:40.085Z",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    },
+    {
+      "id": "MSG-1743874857790",
+      "content": "este no es un mensaje del agente, es el usuario",
+      "isClient": false,
+      "createdAt": "2025-04-05T17:40:57.79Z",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    },
+    {
+      "id": "MSG-1743875249823",
+      "content": "Mensaje de prueba con isClient=true",
+      "isClient": false,
+      "createdAt": "2025-04-05T17:47:29.823Z",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    },
+    {
+      "id": "MSG-1743875498189",
+      "content": "Este mensaje debería aparecer como de cliente (isClient=true) en GrowDesk",
+      "isClient": false,
+      "createdAt": "2025-04-05T17:51:38.189Z",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    },
+    {
+      "id": "MSG-1743875514213",
+      "content": "test",
+      "isClient": false,
+      "createdAt": "2025-04-05T17:51:54.213Z",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    },
+    {
+      "id": "MSG-1743875565505",
+      "content": "Prueba con encabezados explícitos",
+      "isClient": false,
+      "createdAt": "2025-04-05T17:52:45.505Z",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    },
+    {
+      "id": "MSG-1743876317405",
+      "content": "test3",
+      "isClient": false,
+      "createdAt": "2025-04-05T18:05:17.405Z",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    },
+    {
+      "id": "MSG-1743876327660",
+      "content": "gasdsad",
+      "isClient": false,
+      "createdAt": "0001-01-01T00:00:00Z",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    },
+    {
+      "id": "MSG-1743886697681",
+      "content": "test566",
+      "isClient": false,
+      "createdAt": "2025-04-05T20:58:17.681Z",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    }
+  ],
+  "userEmail": "monitor@mon.com",
+  "userName": "Monitor5",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": "TICKET-20250405173249"
+  }
+}

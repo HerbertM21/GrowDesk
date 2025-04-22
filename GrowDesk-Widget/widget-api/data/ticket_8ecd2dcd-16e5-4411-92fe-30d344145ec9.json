@@ -1,0 +1,28 @@
+{
+  "id": "8ecd2dcd-16e5-4411-92fe-30d344145ec9",
+  "title": "Support request from Monitor4",
+  "description": "Mensaje de prueba para sincronización",
+  "status": "new",
+  "createdBy": "herbert.mayorga.jbs@gmail.com",
+  "createdAt": "2025-04-05T14:29:19.275800808-03:00",
+  "updatedAt": "2025-04-05T14:29:19.275800862-03:00",
+  "messages": [
+    {
+      "id": "4648590b-2bcf-4e38-ad54-f81dbee804d7",
+      "content": "Mensaje de prueba para sincronización",
+      "isClient": true,
+      "createdAt": "2025-04-05T14:29:19.275800203-03:00",
+      "userName": "Monitor4",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    }
+  ],
+  "userEmail": "herbert.mayorga.jbs@gmail.com",
+  "userName": "Monitor4",
+  "metadata": {
+    "url": "http://localhost:8090",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": "TICKET-20250405172919"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "id": "e89af12a-042d-42af-94c2-a9e714c7fe10",
+  "title": "Support request from PyGrow",
+  "description": "grow",
+  "status": "new",
+  "createdBy": "pygrow@grow.com",
+  "createdAt": "2025-04-05T11:21:18.825689784-03:00",
+  "updatedAt": "2025-04-05T11:21:21.983344839-03:00",
+  "messages": [
+    {
+      "id": "cefc5399-1441-4f19-80f7-2139a81ecc75",
+      "content": "grow",
+      "isClient": true,
+      "createdAt": "2025-04-05T11:21:18.825687589-03:00",
+      "userName": "PyGrow",
+      "userEmail": "pygrow@grow.com"
+    },
+    {
+      "id": "085c401f-8761-4434-bb5e-daebe4790dc6",
+      "content": "hola?",
+      "isClient": true,
+      "createdAt": "2025-04-05T11:21:21.983341519-03:00",
+      "userName": "PyGrow",
+      "userEmail": "pygrow@grow.com"
+    }
+  ],
+  "userEmail": "pygrow@grow.com",
+  "userName": "PyGrow",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+    "screenSize": "1920x914"
+  }
+}

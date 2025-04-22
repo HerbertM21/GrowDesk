@@ -1,0 +1,27 @@
+{
+  "id": "ea9606aa-7012-4cb2-b2b2-01cd1dc35ff9",
+  "title": "Support request from Usuario Final",
+  "description": "Este es un mensaje final de prueba, veamos si llega al sistema principal",
+  "status": "new",
+  "createdBy": "final@example.com",
+  "createdAt": "2025-04-05T11:23:40.220308162-03:00",
+  "updatedAt": "2025-04-05T11:23:40.220308216-03:00",
+  "messages": [
+    {
+      "id": "4037003c-643a-4dd5-af78-a407081a07d6",
+      "content": "Este es un mensaje final de prueba, veamos si llega al sistema principal",
+      "isClient": true,
+      "createdAt": "2025-04-05T11:23:40.220307421-03:00",
+      "userName": "Usuario Final",
+      "userEmail": "final@example.com"
+    }
+  ],
+  "userEmail": "final@example.com",
+  "userName": "Usuario Final",
+  "metadata": {
+    "url": "http://localhost:8090",
+    "referrer": "",
+    "userAgent": "CURL Final Test",
+    "screenSize": "1920x1080"
+  }
+}

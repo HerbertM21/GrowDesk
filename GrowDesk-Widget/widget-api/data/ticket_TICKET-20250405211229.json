@@ -1,0 +1,52 @@
+{
+  "id": "TICKET-20250405211229",
+  "title": "Soporte Web - monitor7",
+  "description": "ahora test.",
+  "status": "open",
+  "createdBy": "monitor7@mon.com",
+  "createdAt": "2025-04-05T21:12:29.328Z",
+  "updatedAt": "2025-04-05T19:08:01.11946691-03:00",
+  "messages": [
+    {
+      "id": "MSG-1743887549328",
+      "content": "ahora test.",
+      "isClient": true,
+      "createdAt": "2025-04-05T21:12:29.328Z",
+      "userName": "monitor7",
+      "userEmail": "monitor7@mon.com"
+    },
+    {
+      "id": "MSG-1743887560959",
+      "content": "veamosh",
+      "isClient": false,
+      "createdAt": "2025-04-05T21:12:40.959Z",
+      "userName": "monitor7",
+      "userEmail": "monitor7@mon.com"
+    },
+    {
+      "id": "MSG-1743887566491",
+      "content": "a ver",
+      "isClient": true,
+      "createdAt": "0001-01-01T00:00:00Z",
+      "userName": "monitor7",
+      "userEmail": "monitor7@mon.com"
+    },
+    {
+      "id": "MSG-1743890881119464483",
+      "content": "Este mensaje es una prueba desde el widget",
+      "isClient": true,
+      "createdAt": "2025-04-05T19:08:01.119466747-03:00",
+      "userName": "",
+      "userEmail": ""
+    }
+  ],
+  "userEmail": "monitor7@mon.com",
+  "userName": "monitor7",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": "TICKET-20250405211229"
+  }
+}

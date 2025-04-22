@@ -1,0 +1,43 @@
+{
+  "id": "2fbba6c7-e8c4-46e5-96be-7c4d1b11f45b",
+  "title": "Support request from Usuario Demo",
+  "description": "Este es un mensaje de prueba",
+  "status": "new",
+  "createdBy": "demo@example.com",
+  "createdAt": "2025-04-05T01:12:22.10882807-03:00",
+  "updatedAt": "2025-04-05T01:14:23.656261888-03:00",
+  "messages": [
+    {
+      "id": "d2a7b35f-068f-46fb-ad87-91fc01f01d77",
+      "content": "Este es un mensaje de prueba",
+      "isClient": true,
+      "createdAt": "2025-04-05T01:12:22.108826869-03:00",
+      "userName": "Usuario Demo",
+      "userEmail": "demo@example.com"
+    },
+    {
+      "id": "cccfa740-bd91-4348-a7d6-4b155723faf8",
+      "content": "Este es un mensaje de seguimiento",
+      "isClient": true,
+      "createdAt": "2025-04-05T01:12:34.143632137-03:00",
+      "userName": "Usuario Demo",
+      "userEmail": "demo@example.com"
+    },
+    {
+      "id": "038d8e9e-2e44-4e4d-a4e3-8b4c82af6745",
+      "content": "Hola, soy un agente de soporte. ¿En qué puedo ayudarte?",
+      "isClient": false,
+      "createdAt": "2025-04-05T01:14:23.656260301-03:00",
+      "userName": "Soporte Técnico",
+      "userEmail": ""
+    }
+  ],
+  "userEmail": "demo@example.com",
+  "userName": "Usuario Demo",
+  "metadata": {
+    "url": "http://localhost:8090",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": ""
+  }
+}

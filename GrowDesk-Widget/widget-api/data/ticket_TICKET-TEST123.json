@@ -1,0 +1,35 @@
+{
+  "id": "TICKET-TEST123",
+  "title": "Support request from Agent",
+  "description": "Este ticket fue creado automáticamente al recibir un mensaje de un agente.",
+  "status": "new",
+  "createdBy": "agent",
+  "createdAt": "2025-04-05T01:07:39.8116285-03:00",
+  "updatedAt": "2025-04-05T01:08:18.968306536-03:00",
+  "messages": [
+    {
+      "id": "e7ef8c2e-f61a-45a7-a363-3408266ba67c",
+      "content": "Hola, soy un agente respondiendo a tu consulta",
+      "isClient": false,
+      "createdAt": "2025-04-05T01:07:39.811631749-03:00",
+      "userName": "Soporte Técnico",
+      "userEmail": ""
+    },
+    {
+      "id": "509dfd61-9bf1-428e-8fc5-6fa891186ca2",
+      "content": "Hola, ¿en qué puedo ayudarte?",
+      "isClient": false,
+      "createdAt": "2025-04-05T01:08:18.96830621-03:00",
+      "userName": "Soporte Técnico",
+      "userEmail": ""
+    }
+  ],
+  "userEmail": "client@example.com",
+  "userName": "Cliente",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": ""
+  }
+}

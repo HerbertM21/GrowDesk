@@ -1,0 +1,43 @@
+{
+  "id": "TICKET-20250405142703",
+  "title": "Support request from Agent",
+  "description": "Este ticket fue creado automáticamente al recibir un mensaje de un agente.",
+  "status": "new",
+  "createdBy": "agent",
+  "createdAt": "2025-04-05T11:46:31.85991861-03:00",
+  "updatedAt": "2025-04-05T11:56:57.197624053-03:00",
+  "messages": [
+    {
+      "id": "8b044831-6879-40d1-88c0-fd5f52f49a5a",
+      "content": "Este mensaje desde el agente al widget debería sincronizarse en ambas direcciones",
+      "isClient": false,
+      "createdAt": "2025-04-05T11:46:31.859922784-03:00",
+      "userName": "Agente de Prueba",
+      "userEmail": ""
+    },
+    {
+      "id": "f3b5d599-72b5-4be2-87ee-242c456ae39e",
+      "content": "",
+      "isClient": true,
+      "createdAt": "2025-04-05T11:55:38.586639166-03:00",
+      "userName": "",
+      "userEmail": ""
+    },
+    {
+      "id": "abb0a196-a198-4c07-832c-791fc69331df",
+      "content": "",
+      "isClient": true,
+      "createdAt": "2025-04-05T11:56:57.19762294-03:00",
+      "userName": "",
+      "userEmail": ""
+    }
+  ],
+  "userEmail": "client@example.com",
+  "userName": "Cliente",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": ""
+  }
+}

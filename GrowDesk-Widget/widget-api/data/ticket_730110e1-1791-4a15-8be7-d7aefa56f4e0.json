@@ -1,0 +1,108 @@
+{
+  "id": "730110e1-1791-4a15-8be7-d7aefa56f4e0",
+  "title": "Support request from Monitor5",
+  "description": "Monitor test",
+  "status": "new",
+  "createdBy": "monitor@mon.com",
+  "createdAt": "2025-04-05T14:32:49.797218566-03:00",
+  "updatedAt": "2025-04-05T17:58:17.67943256-03:00",
+  "messages": [
+    {
+      "id": "6aa4ac6b-aff5-4184-b972-c12128066923",
+      "content": "Monitor test",
+      "isClient": true,
+      "createdAt": "2025-04-05T14:32:49.797215786-03:00",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    },
+    {
+      "id": "1b608bd5-cca6-45c8-8235-032591a09d22",
+      "content": "ha",
+      "isClient": true,
+      "createdAt": "2025-04-05T14:33:00.734729955-03:00",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    },
+    {
+      "id": "bf3f4bf2-9cda-46e2-951d-72f3ca2b9fd4",
+      "content": "Mensaje de prueba desde el widget (curl)",
+      "isClient": true,
+      "createdAt": "2025-04-05T14:38:58.996082425-03:00",
+      "userName": "",
+      "userEmail": ""
+    },
+    {
+      "id": "b32ea9ff-478a-4781-b2d8-9879ac8325de",
+      "content": "test5",
+      "isClient": true,
+      "createdAt": "2025-04-05T14:40:40.081595346-03:00",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    },
+    {
+      "id": "0573967e-8bd4-4494-9565-39a7583cd07e",
+      "content": "este no es un mensaje del agente, es el usuario",
+      "isClient": true,
+      "createdAt": "2025-04-05T14:40:57.780280767-03:00",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    },
+    {
+      "id": "e9c561be-78f1-49cb-acbd-d3052361ddf4",
+      "content": "Mensaje de prueba con isClient=true",
+      "isClient": true,
+      "createdAt": "2025-04-05T14:47:29.816186382-03:00",
+      "userName": "",
+      "userEmail": ""
+    },
+    {
+      "id": "adb09268-1fc2-4295-8c89-4f1ba2bb2137",
+      "content": "Este mensaje debería aparecer como de cliente (isClient=true) en GrowDesk",
+      "isClient": true,
+      "createdAt": "2025-04-05T14:51:38.184879432-03:00",
+      "userName": "",
+      "userEmail": ""
+    },
+    {
+      "id": "ced579e9-a889-42f9-930c-c555dcce69ec",
+      "content": "test",
+      "isClient": true,
+      "createdAt": "2025-04-05T14:51:54.210519178-03:00",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    },
+    {
+      "id": "aadf4100-854a-428b-ad82-0bf476c81e39",
+      "content": "Prueba con encabezados explícitos",
+      "isClient": true,
+      "createdAt": "2025-04-05T14:52:45.492081331-03:00",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    },
+    {
+      "id": "2fbae9bc-5980-4505-aa9c-ecb769c5b441",
+      "content": "test3",
+      "isClient": true,
+      "createdAt": "2025-04-05T15:05:17.397674948-03:00",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    },
+    {
+      "id": "9ef02ea4-d1e4-483a-8148-49b51ef669ff",
+      "content": "test566",
+      "isClient": true,
+      "createdAt": "2025-04-05T17:58:17.67943239-03:00",
+      "userName": "Monitor5",
+      "userEmail": "monitor@mon.com"
+    }
+  ],
+  "userEmail": "monitor@mon.com",
+  "userName": "Monitor5",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+    "screenSize": "1920x914",
+    "externalId": "TICKET-20250405173249"
+  }
+}

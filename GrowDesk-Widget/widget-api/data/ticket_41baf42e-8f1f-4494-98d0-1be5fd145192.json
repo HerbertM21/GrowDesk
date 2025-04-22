@@ -1,0 +1,43 @@
+{
+  "id": "41baf42e-8f1f-4494-98d0-1be5fd145192",
+  "title": "Support request from Usuario Test",
+  "description": "Este es un mensaje de prueba para verificar integracion con GrowDesk",
+  "status": "new",
+  "createdBy": "test@example.com",
+  "createdAt": "2025-04-05T11:17:17.8582287-03:00",
+  "updatedAt": "2025-04-05T11:19:52.751738434-03:00",
+  "messages": [
+    {
+      "id": "4f5d7fbc-a701-4db6-a2ab-0aaa40fbba06",
+      "content": "Este es un mensaje de prueba para verificar integracion con GrowDesk",
+      "isClient": true,
+      "createdAt": "2025-04-05T11:17:17.858228012-03:00",
+      "userName": "Usuario Test",
+      "userEmail": "test@example.com"
+    },
+    {
+      "id": "6868b0ac-44a2-4152-b52e-16866c69fb6f",
+      "content": "Este es un mensaje de seguimiento",
+      "isClient": true,
+      "createdAt": "2025-04-05T11:19:19.33551696-03:00",
+      "userName": "Usuario Test",
+      "userEmail": "test@example.com"
+    },
+    {
+      "id": "da00037a-49b7-4296-b66e-fabe5738ce5b",
+      "content": "Hola, soy un agente del sistema. ¿En qué puedo ayudarte?",
+      "isClient": false,
+      "createdAt": "2025-04-05T11:19:52.751736355-03:00",
+      "userName": "Soporte GrowDesk",
+      "userEmail": ""
+    }
+  ],
+  "userEmail": "test@example.com",
+  "userName": "Usuario Test",
+  "metadata": {
+    "url": "http://localhost:8090",
+    "referrer": "",
+    "userAgent": "CURL Test",
+    "screenSize": "1920x1080"
+  }
+}

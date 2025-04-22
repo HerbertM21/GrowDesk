@@ -1,0 +1,36 @@
+{
+  "id": "TICKET-20250405212557",
+  "title": "Soporte Web - monitor9",
+  "description": "MOnitor 9 hablando",
+  "status": "open",
+  "createdBy": "mon9@mon.com",
+  "createdAt": "2025-04-05T21:25:57.848Z",
+  "updatedAt": "2025-04-05T21:25:57.848Z",
+  "messages": [
+    {
+      "id": "MSG-1743888357848",
+      "content": "MOnitor 9 hablando",
+      "isClient": true,
+      "createdAt": "2025-04-05T21:25:57.848Z",
+      "userName": "monitor9",
+      "userEmail": "mon9@mon.com"
+    },
+    {
+      "id": "MSG-1743888366004",
+      "content": "ya?",
+      "isClient": true,
+      "createdAt": "0001-01-01T00:00:00Z",
+      "userName": "monitor9",
+      "userEmail": "mon9@mon.com"
+    }
+  ],
+  "userEmail": "mon9@mon.com",
+  "userName": "monitor9",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": "TICKET-20250405212557"
+  }
+}

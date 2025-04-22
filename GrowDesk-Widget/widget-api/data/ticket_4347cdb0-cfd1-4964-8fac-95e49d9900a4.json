@@ -1,0 +1,36 @@
+{
+  "id": "4347cdb0-cfd1-4964-8fac-95e49d9900a4",
+  "title": "Support request from monitor7",
+  "description": "ahora test.",
+  "status": "new",
+  "createdBy": "monitor7@mon.com",
+  "createdAt": "2025-04-05T18:12:29.322699826-03:00",
+  "updatedAt": "2025-04-05T18:12:40.950299997-03:00",
+  "messages": [
+    {
+      "id": "c009fdb7-cedc-4e50-bd4d-1831ed538eef",
+      "content": "ahora test.",
+      "isClient": true,
+      "createdAt": "2025-04-05T18:12:29.322697981-03:00",
+      "userName": "monitor7",
+      "userEmail": "monitor7@mon.com"
+    },
+    {
+      "id": "de9b4c10-c303-4d77-aa9a-69eaecff1a97",
+      "content": "veamosh",
+      "isClient": true,
+      "createdAt": "2025-04-05T18:12:40.950296942-03:00",
+      "userName": "monitor7",
+      "userEmail": "monitor7@mon.com"
+    }
+  ],
+  "userEmail": "monitor7@mon.com",
+  "userName": "monitor7",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+    "screenSize": "1920x914",
+    "externalId": "TICKET-20250405211229"
+  }
+}

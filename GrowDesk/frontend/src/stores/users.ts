@@ -1,0 +1,471 @@
+import { defineStore } from 'pinia';
+import apiClient from '@/api/client';
+import { ref } from 'vue';
+
+// Interfaces
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: 'admin' | 'assistant' | 'employee';
+  department: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  // Campos adicionales de perfil
+  position?: string | null;
+  phone?: string | null;
+  language?: string;
+}
+
+interface UsersState {
+  users: User[];
+  currentProfile: User | null;
+  loading: boolean;
+  error: string | null;
+}
+
+// Datos mock para desarrollo
+const mockUsers: User[] = [
+  {
+    id: '1',
+    email: 'admin@example.com',
+    firstName: 'Herbert',
+    lastName: 'Usuario',
+    role: 'admin',
+    department: 'Tecnología',
+    active: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    position: 'Gerente de TI',
+    phone: '+569 1234 5678',
+    language: 'es'
+  },
+  {
+    id: '2',
+    email: 'asistente@example.com',
+    firstName: 'Asistente',
+    lastName: 'Soporte',
+    role: 'assistant',
+    department: 'Soporte',
+    active: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    position: 'Coordinador de Soporte',
+    phone: '+34 600 234 567',
+    language: 'es'
+  },
+  {
+    id: '3',
+    email: 'empleado@example.com',
+    firstName: 'Empleado',
+    lastName: 'Regular',
+    role: 'employee',
+    department: 'Ventas',
+    active: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    position: 'Representante de Ventas',
+    phone: '+34 600 345 678',
+    language: 'en'
+  }
+];
+
+export const useUsersStore = defineStore('users', () => {
+  // Estado
+  const users = ref<User[]>([]);
+  const currentProfile = ref<User | null>(null);
+  const loading = ref<boolean>(false);
+  const error = ref<string | null>(null);
+
+  // Getters
+  const getUsersByRole = (roleFilter: string) => {
+    return users.value.filter((user: User) => user.role === roleFilter);
+  };
+
+  const getActiveUsers = () => {
+    return users.value.filter((user: User) => user.active);
+  };
+
+  const getInactiveUsers = () => {
+    return users.value.filter((user: User) => !user.active);
+  };
+
+  // Acciones
+  const fetchUsers = async () => {
+    if (loading.value) return;
+    
+    loading.value = true;
+    error.value = null;
+    
+    try {
+      console.log('Obteniendo usuarios...');
+      const response = await apiClient.get('/users');
+      users.value = response.data;
+      console.log('Usuarios cargados:', users.value);
+    } catch (err: unknown) {
+      error.value = 'Error al cargar usuarios';
+      console.error('Error al cargar usuarios:', err);
+      
+      if (import.meta.env.DEV) {
+        console.log('Cargando datos mock de usuarios');
+        initMockUsers();
+      }
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchUserProfile = async (userId: string) => {
+    if (loading.value) return null;
+    
+    loading.value = true;
+    error.value = null;
+    
+    try {
+      console.log(`Obteniendo perfil de usuario para ID: ${userId}`);
+      const response = await apiClient.get(`/users/${userId}`);
+      currentProfile.value = response.data;
+      return currentProfile.value;
+    } catch (err: unknown) {
+      error.value = 'Error al cargar perfil de usuario';
+      console.error('Error al cargar perfil de usuario:', err);
+      return null;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const createUser = async (userData: Partial<User>) => {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const response = await apiClient.post('/users', userData);
+      // Añadir a la lista local
+      users.value.push(response.data);
+      return response.data;
+    } catch (err: unknown) {
+      console.error('Error al crear usuario:', err);
+      error.value = 'Error al crear el usuario';
+      
+      // Para desarrollo, simular creación
+      const newUser: User = {
+        id: `${users.value.length + 1}`,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        email: userData.email || '',
+        role: userData.role || 'employee',
+        department: userData.department || null,
+        active: userData.active !== undefined ? userData.active : true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Añadir a la lista local
+      users.value.push(newUser);
+      return newUser;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const updateUser = async (userId: string, userData: Partial<User>) => {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      console.log('Actualizando usuario con ID:', userId);
+      console.log('Datos enviados:', userData);
+      
+      const response = await apiClient.put(`/users/${userId}`, userData);
+      
+      // Actualizar en el array local
+      const index = users.value.findIndex((u: User) => u.id === userId);
+      if (index !== -1) {
+        users.value[index] = { ...users.value[index], ...response.data };
+      }
+      
+      // Si es el perfil actual, actualizar también
+      if (currentProfile.value?.id === userId) {
+        currentProfile.value = { ...currentProfile.value, ...response.data };
+      }
+      
+      return response.data;
+    } catch (err: unknown) {
+      console.error('Error al actualizar usuario:', err);
+      error.value = 'Error al actualizar el usuario';
+      
+      // Para desarrollo, simular actualización
+      const index = users.value.findIndex((u: User) => u.id === userId);
+      if (index !== -1) {
+        // Permitir actualización de rol si viene en los datos
+        if ('role' in userData) {
+          users.value[index].role = userData.role as 'admin' | 'assistant' | 'employee';
+        }
+        
+        // Añadir nuevos campos personalizados si no existen
+        if ('position' in userData) {
+          (users.value[index] as any).position = userData.position;
+        }
+        
+        if ('phone' in userData) {
+          (users.value[index] as any).phone = userData.phone;
+        }
+        
+        if ('language' in userData) {
+          (users.value[index] as any).language = userData.language;
+        }
+        
+        users.value[index] = { 
+          ...users.value[index], 
+          ...userData,
+          updatedAt: new Date().toISOString()
+        };
+        
+        // Si es el perfil actual, actualizar también
+        if (currentProfile.value?.id === userId) {
+          currentProfile.value = { ...currentProfile.value, ...userData };
+        }
+        
+        return users.value[index];
+      }
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const changeUserRole = async (userId: string, newRole: 'admin' | 'assistant' | 'employee') => {
+    return updateUser(userId, { role: newRole });
+  };
+
+  const toggleUserActive = async (userId: string) => {
+    // Encontrar usuario
+    const user = users.value.find((u: User) => u.id === userId);
+    
+    if (!user) {
+      throw new Error('Usuario no encontrado');
+    }
+
+    // Cambiar estado activo
+    return updateUser(userId, { active: !user.active });
+  };
+
+  const deleteUser = async (userId: string) => {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      await apiClient.delete(`/users/${userId}`);
+      // Eliminar del array local
+      users.value = users.value.filter((u: User) => u.id !== userId);
+      // Si el perfil actual es el que se elimina, limpiarlo
+      if (currentProfile.value && currentProfile.value.id === userId) {
+        currentProfile.value = null;
+      }
+      return true;
+    } catch (err: unknown) {
+      console.error('Error al eliminar usuario:', err);
+      error.value = 'Error al eliminar el usuario';
+      
+      // Para desarrollo, simular eliminación
+      users.value = users.value.filter((u: User) => u.id !== userId);
+      
+      // Si el perfil actual es el que se elimina, limpiarlo
+      if (currentProfile.value && currentProfile.value.id === userId) {
+        currentProfile.value = null;
+      }
+      
+      return true;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // Para desarrollo rápido - inicializar con usuarios de ejemplo
+  const initMockUsers = () => {
+    if (users.value.length > 0) return;
+    
+    users.value = [
+      {
+        id: '1',
+        firstName: 'Admin',
+        lastName: 'Usuario',
+        email: 'admin@example.com',
+        role: 'admin',
+        department: 'Tecnología',
+        active: true
+      },
+      {
+        id: '2',
+        firstName: 'Asistente',
+        lastName: 'Soporte',
+        email: 'asistente@example.com',
+        role: 'assistant',
+        department: 'Soporte',
+        active: true
+      },
+      {
+        id: '3',
+        firstName: 'Empleado',
+        lastName: 'Regular',
+        email: 'empleado@example.com',
+        role: 'employee',
+        department: 'Ventas',
+        active: true
+      }
+    ];
+    
+    console.log('Usuarios mock inicializados:', users.value);
+  };
+
+  // Obtener perfil del usuario actual (desde auth)
+  const fetchCurrentUserProfile = async () => {
+    if (loading.value) return null;
+    
+    loading.value = true;
+    error.value = null;
+    
+    try {
+      console.log('Obteniendo perfil del usuario actual');
+      const response = await apiClient.get('/auth/me');
+      currentProfile.value = response.data;
+      return currentProfile.value;
+    } catch (err: unknown) {
+      error.value = 'Error al cargar perfil del usuario actual';
+      console.error('Error al cargar perfil del usuario actual:', err);
+      
+      // En modo desarrollo, asegurarse de tener usuarios mock cargados
+      if (import.meta.env.DEV) {
+        console.log('Usando perfil mock en desarrollo');
+        
+        // Inicializar usuarios mock si no hay ninguno cargado
+        if (users.value.length === 0) {
+          console.log('Cargando usuarios mock primero');
+          initMockUsers();
+        }
+        
+        if (users.value.length > 0) {
+          currentProfile.value = users.value[0];
+          console.log('Perfil mock cargado:', currentProfile.value);
+          return currentProfile.value;
+        }
+      }
+      
+      return null;
+    } finally {
+      loading.value = false;
+    }
+  };
+  
+  // Alias para hacer más consistente la API con el auth store
+  const getCurrentUser = async (): Promise<User | null> => {
+    if (currentProfile.value) {
+      return currentProfile.value;
+    }
+    return fetchCurrentUserProfile();
+  };
+
+  // Obtener un usuario por su ID
+  const fetchUser = async (userId: string): Promise<User | null> => {
+    if (loading.value) return null;
+    
+    loading.value = true;
+    error.value = null;
+    
+    try {
+      console.log(`Obteniendo usuario con ID: ${userId}`);
+      
+      // Si hay usuarios cargados, intentar encontrarlo en la caché primero
+      if (users.value.length > 0) {
+        const cachedUser = users.value.find(u => u.id === userId);
+        if (cachedUser) {
+          console.log('Usuario encontrado en caché:', cachedUser);
+          return cachedUser;
+        }
+      }
+      
+      // Si no está en caché o no hay usuarios cargados, hacer petición al API
+      const response = await apiClient.get(`/users/${userId}`);
+      const userData = response.data;
+      
+      // Actualizar en la caché local si ya existe
+      const index = users.value.findIndex(u => u.id === userId);
+      if (index !== -1) {
+        users.value[index] = userData;
+      } else {
+        // Si no existe, añadirlo a la lista de usuarios
+        users.value.push(userData);
+      }
+      
+      return userData;
+    } catch (err) {
+      console.error(`Error al obtener usuario con ID ${userId}:`, err);
+      error.value = 'Error al obtener usuario';
+      
+      // En desarrollo, buscar en los usuarios mock
+      if (import.meta.env.DEV) {
+        if (users.value.length === 0) {
+          initMockUsers();
+        }
+        
+        const mockUser = users.value.find(u => u.id === userId);
+        if (mockUser) {
+          console.log('Usando usuario mock:', mockUser);
+          return mockUser;
+        }
+        
+        // Si estamos buscando el usuario actual en localStorage
+        if (userId === localStorage.getItem('userId')) {
+          console.log('Creando usuario actual mock');
+          return {
+            id: userId,
+            firstName: 'Usuario',
+            lastName: 'Actual',
+            email: 'current@example.com',
+            role: 'employee',
+            department: 'General',
+            active: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+        }
+      }
+      
+      return null;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  return {
+    // Estado
+    users,
+    currentProfile,
+    loading,
+    error,
+
+    // Getters
+    getUsersByRole,
+    getActiveUsers,
+    getInactiveUsers,
+
+    // Acciones
+    fetchUsers,
+    fetchUser,
+    fetchUserProfile,
+    fetchCurrentUserProfile,
+    getCurrentUser,
+    createUser,
+    updateUser,
+    changeUserRole,
+    toggleUserActive,
+    deleteUser,
+    initMockUsers
+  };
+});
+
+// Alias para mantener compatibilidad con código existente
+export const useUserStore = useUsersStore; 

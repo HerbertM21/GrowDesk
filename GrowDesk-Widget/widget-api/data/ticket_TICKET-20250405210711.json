@@ -1,0 +1,44 @@
+{
+  "id": "TICKET-20250405210711",
+  "title": "Soporte Web - Monitor6",
+  "description": "ahora.",
+  "status": "open",
+  "createdBy": "monitor6@mon.com",
+  "createdAt": "2025-04-05T21:07:11.361Z",
+  "updatedAt": "2025-04-05T21:07:11.361Z",
+  "messages": [
+    {
+      "id": "MSG-1743887231361",
+      "content": "ahora.",
+      "isClient": true,
+      "createdAt": "2025-04-05T21:07:11.361Z",
+      "userName": "Monitor6",
+      "userEmail": "monitor6@mon.com"
+    },
+    {
+      "id": "MSG-1743887244270",
+      "content": "veamos",
+      "isClient": false,
+      "createdAt": "2025-04-05T21:07:24.27Z",
+      "userName": "Monitor6",
+      "userEmail": "monitor6@mon.com"
+    },
+    {
+      "id": "MSG-1743887267748",
+      "content": "y ahora?",
+      "isClient": false,
+      "createdAt": "0001-01-01T00:00:00Z",
+      "userName": "Monitor6",
+      "userEmail": "monitor6@mon.com"
+    }
+  ],
+  "userEmail": "monitor6@mon.com",
+  "userName": "Monitor6",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": "TICKET-20250405210711"
+  }
+}

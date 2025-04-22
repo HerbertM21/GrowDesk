@@ -1,0 +1,36 @@
+{
+  "id": "TICKET-20250405172919",
+  "title": "Soporte Web - Monitor4",
+  "description": "Mensaje de prueba para sincronización",
+  "status": "open",
+  "createdBy": "herbert.mayorga.jbs@gmail.com",
+  "createdAt": "2025-04-05T17:29:19.277Z",
+  "updatedAt": "2025-04-05T14:31:14.133283634-03:00",
+  "messages": [
+    {
+      "id": "MSG-1743874159277",
+      "content": "Mensaje de prueba para sincronización",
+      "isClient": true,
+      "createdAt": "2025-04-05T17:29:19.277Z",
+      "userName": "Monitor4",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    },
+    {
+      "id": "0c96f5db-73c0-4050-bece-526f8ec0e306",
+      "content": "Mensaje enviado desde el widget después de la sincronización",
+      "isClient": true,
+      "createdAt": "2025-04-05T14:31:14.133282646-03:00",
+      "userName": "",
+      "userEmail": ""
+    }
+  ],
+  "userEmail": "herbert.mayorga.jbs@gmail.com",
+  "userName": "Monitor4",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": "TICKET-20250405172919"
+  }
+}
