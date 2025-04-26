@@ -186,4 +186,12 @@ onMounted(() => {
     }
   }
 }
+
+* {
+  font-family: var(--font-family);
+}
+
+select, input, textarea, button {
+  font-family: inherit;
+}
 </style> 

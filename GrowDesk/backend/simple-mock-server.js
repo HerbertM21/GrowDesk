@@ -2,11 +2,28 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const WebSocket = require('ws');
+const url = require('url'); // Asegúrate de que esto esté importado
 
 const PORT = process.env.PORT || 8000;
 const TICKETS_FILE = path.join(__dirname, 'tickets.json');
 const USERS_FILE = path.join(__dirname, 'users.json');
 const CATEGORIES_FILE = path.join(__dirname, 'categories.json');
+const FAQS_FILE = path.join(__dirname, 'faqs.json');
+
+// Definir un helper para res.json()
+// Añadir al principio del archivo, justo después de las importaciones de módulos
+
+// Helper para enviar respuestas JSON
+http.ServerResponse.prototype.json = function(data) {
+  this.setHeader('Content-Type', 'application/json');
+  this.end(JSON.stringify(data));
+};
+
+// Helper para enviar respuestas con estado
+http.ServerResponse.prototype.status = function(code) {
+  this.statusCode = code;
+  return this;
+};
 
 // Cargar tickets desde archivo o inicializar array vacío
 let tickets = [];
@@ -116,6 +133,81 @@ try {
   console.error('Error al cargar categorías:', err);
 }
 
+// Datos iniciales para FAQs (si no existen)
+const initialFaqs = [
+  {
+    id: 1,
+    question: '¿Cómo puedo restablecer mi contraseña?',
+    answer: 'Para restablecer su contraseña, haga clic en el enlace "¿Olvidó su contraseña?" en la pantalla de inicio de sesión y siga las instrucciones enviadas a su correo electrónico.',
+    category: 'Cuenta',
+    isPublished: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 2,
+    question: '¿Cómo puedo actualizar mi información de contacto?',
+    answer: 'Inicie sesión en su cuenta, vaya a "Mi Perfil" y haga clic en "Editar Información". Allí podrá actualizar su dirección de correo electrónico, número de teléfono y dirección postal.',
+    category: 'Cuenta',
+    isPublished: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 3,
+    question: '¿Cómo puedo reportar un problema técnico?',
+    answer: 'Para reportar un problema técnico, vaya a la sección "Soporte", haga clic en "Crear Ticket" y complete el formulario con los detalles del problema. Un técnico se pondrá en contacto con usted lo antes posible.',
+    category: 'Soporte Técnico',
+    isPublished: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 4,
+    question: '¿Cuáles son los horarios de atención al cliente?',
+    answer: 'Nuestro equipo de atención al cliente está disponible de lunes a viernes, de 9:00 a.m. a 6:00 p.m. (hora local). Para asistencia de emergencia fuera de este horario, por favor envíe un correo electrónico a soporte@ejemplo.com.',
+    category: 'General',
+    isPublished: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 5,
+    question: '¿Cómo funciona el sistema de tickets?',
+    answer: 'El sistema de tickets le permite enviar consultas o reportar problemas. Cada ticket recibe un número único de seguimiento. Puede ver el estado de sus tickets en cualquier momento iniciando sesión en su cuenta y accediendo a la sección "Mis Tickets".',
+    category: 'Soporte Técnico',
+    isPublished: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 6,
+    question: '¿Puedo cambiar el idioma de la plataforma?',
+    answer: 'Sí, puede cambiar el idioma de la plataforma accediendo a "Configuración" desde su perfil. Actualmente ofrecemos soporte para inglés y español.',
+    category: 'Configuración',
+    isPublished: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+];
+
+// Cargar las FAQs desde archivo o crear uno si no existe
+let faqs = [];
+try {
+  if (fs.existsSync(FAQS_FILE)) {
+    const faqsData = fs.readFileSync(FAQS_FILE, 'utf8');
+    faqs = JSON.parse(faqsData);
+    console.log(`Cargadas ${faqs.length} preguntas frecuentes desde ${FAQS_FILE}`);
+  } else {
+    faqs = initialFaqs;
+    saveFaqs();
+    console.log(`Creado archivo ${FAQS_FILE} con preguntas frecuentes iniciales.`);
+  }
+} catch (error) {
+  console.error('Error al cargar o crear el archivo de FAQs:', error);
+  faqs = initialFaqs;
+}
+
 // Función para guardar tickets en archivo
 const saveTickets = () => {
   try {
@@ -145,6 +237,17 @@ const saveCategories = () => {
     console.error('Error al guardar categorías:', err);
   }
 };
+
+// Función para guardar FAQs
+function saveFaqs() {
+  fs.writeFile(FAQS_FILE, JSON.stringify(faqs, null, 2), err => {
+    if (err) {
+      console.error('Error al guardar archivo FAQs:', err);
+    } else {
+      console.log(`FAQs guardadas en ${FAQS_FILE}`);
+    }
+  });
+}
 
 // Intentar guardar datos iniciales si no existen
 if (users.length > 0 && !fs.existsSync(USERS_FILE)) {
@@ -229,6 +332,16 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ status: 'ok', message: 'Server running' }));
       return;
+    }
+
+    // Extraer ruta base y parámetros
+    const urlParts = req.url ? req.url.split('?') : [];
+    const path = urlParts[0] || '';
+    
+    // Asegurarse de que path es una cadena antes de usar match
+    if (typeof path !== 'string') {
+      console.error('Path no es una cadena:', path);
+      path = String(path);
     }
 
     // Login
@@ -704,7 +817,7 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(category));
       } else {
-        res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Categoría no encontrada' }));
       }
       return;
@@ -730,36 +843,41 @@ const server = http.createServer(async (req, res) => {
       }
       
       // Leer datos de la categoría
-      const categoryData = await readBody(req);
-      
-      // Validar campos requeridos
-      if (!categoryData.name) {
+      const readBodyPromise = readBody(req);
+      readBodyPromise.then(categoryData => {
+        // Validar campos requeridos
+        if (!categoryData.name) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'El nombre de la categoría es obligatorio' }));
+          return;
+        }
+        
+        // Crear nueva categoría
+        const newCategory = {
+          id: (categories.length + 1).toString(),
+          name: categoryData.name,
+          description: categoryData.description || '',
+          color: categoryData.color || '#2196F3',
+          icon: categoryData.icon || 'category',
+          active: categoryData.active !== undefined ? categoryData.active : true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        // Añadir a la lista de categorías
+        categories.push(newCategory);
+        
+        // Guardar categorías en archivo
+        saveCategories();
+        
+        // Responder con la categoría creada
+        res.writeHead(201, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(newCategory));
+      }).catch(error => {
+        console.error('Error al leer los datos de la categoría:', error);
         res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'El nombre de la categoría es obligatorio' }));
-        return;
-      }
-      
-      // Crear nueva categoría
-      const newCategory = {
-        id: (categories.length + 1).toString(),
-        name: categoryData.name,
-        description: categoryData.description || '',
-        color: categoryData.color || '#2196F3',
-        icon: categoryData.icon || 'category',
-        active: categoryData.active !== undefined ? categoryData.active : true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      // Añadir a la lista de categorías
-      categories.push(newCategory);
-      
-      // Guardar categorías en archivo
-      saveCategories();
-      
-      // Responder con la categoría creada
-      res.writeHead(201, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(newCategory));
+        res.end(JSON.stringify({ error: 'Error al procesar los datos de la solicitud' }));
+      });
       return;
     }
     
@@ -794,28 +912,33 @@ const server = http.createServer(async (req, res) => {
       }
       
       // Leer datos de actualización
-      const updateData = await readBody(req);
-      
-      // Actualizar categoría
-      const updatedCategory = {
-        ...categories[categoryIndex],
-        name: updateData.name || categories[categoryIndex].name,
-        description: updateData.description !== undefined ? updateData.description : categories[categoryIndex].description,
-        color: updateData.color || categories[categoryIndex].color,
-        icon: updateData.icon || categories[categoryIndex].icon,
-        active: updateData.active !== undefined ? updateData.active : categories[categoryIndex].active,
-        updatedAt: new Date().toISOString()
-      };
-      
-      // Actualizar en el array
-      categories[categoryIndex] = updatedCategory;
-      
-      // Guardar cambios
-      saveCategories();
-      
-      // Responder con la categoría actualizada
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(updatedCategory));
+      const readUpdateDataPromise = readBody(req);
+      readUpdateDataPromise.then(updateData => {
+        // Actualizar categoría
+        const updatedCategory = {
+          ...categories[categoryIndex],
+          name: updateData.name || categories[categoryIndex].name,
+          description: updateData.description !== undefined ? updateData.description : categories[categoryIndex].description,
+          color: updateData.color || categories[categoryIndex].color,
+          icon: updateData.icon || categories[categoryIndex].icon,
+          active: updateData.active !== undefined ? updateData.active : categories[categoryIndex].active,
+          updatedAt: new Date().toISOString()
+        };
+        
+        // Actualizar en el array
+        categories[categoryIndex] = updatedCategory;
+        
+        // Guardar cambios
+        saveCategories();
+        
+        // Responder con la categoría actualizada
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(updatedCategory));
+      }).catch(error => {
+        console.error('Error al leer los datos de actualización:', error);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Error al procesar los datos de la solicitud' }));
+      });
       return;
     }
     
@@ -872,13 +995,251 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Endpoint para obtener FAQs (widget)
+    if (req.method === 'GET' && req.url === '/widget/faqs') {
+      // Verificar widget token de seguridad
+      const widgetId = req.headers['x-widget-id'];
+      const widgetToken = req.headers['x-widget-token'];
+      
+      console.log('GET /widget/faqs - Widget ID:', widgetId);
+      
+      // En un entorno real, verificaríamos que el widgetId y token sean válidos
+      // Para este demo, permitimos cualquier token
+      
+      // Solo devolver FAQs publicadas
+      const publishedFaqs = faqs.filter(faq => faq.isPublished);
+      
+      // Loggear respuesta
+      console.log(`Respondiendo con ${publishedFaqs.length} FAQs publicadas`);
+      
+      res.json(publishedFaqs);
+      return;
+    }
+
+    // Endpoint alternativo para obtener FAQs (widget)
+    if (req.method === 'GET' && req.url === '/faqs') {
+      // Verificar widget token de seguridad
+      const widgetId = req.headers['x-widget-id'];
+      const widgetToken = req.headers['x-widget-token'];
+      
+      console.log('GET /faqs - Widget ID:', widgetId);
+      
+      // En un entorno real, verificaríamos que el widgetId y token sean válidos
+      // Para este demo, permitimos cualquier token
+      
+      // Solo devolver FAQs publicadas
+      const publishedFaqs = faqs.filter(faq => faq.isPublished);
+      
+      // Loggear respuesta
+      console.log(`Respondiendo con ${publishedFaqs.length} FAQs publicadas`);
+      
+      res.json(publishedFaqs);
+      return;
+    }
+
+    // Endpoint para obtener todas las FAQs (admin)
+    if (req.method === 'GET' && req.url === '/api/faqs') {
+      console.log('GET /api/faqs');
+      res.json(faqs);
+      return;
+    }
+
+    // Endpoint para obtener una FAQ específica
+    if (req.method === 'GET' && req.url.match(/^\/api\/faqs\/\d+$/)) {
+      const id = parseInt(req.url.split('/').pop());
+      const faq = faqs.find(f => f.id === id);
+      
+      if (!faq) {
+        return res.status(404).json({ error: 'FAQ no encontrada' });
+      }
+      
+      res.json(faq);
+      return;
+    }
+
+    // Endpoint para crear una nueva FAQ
+    if (req.method === 'POST' && req.url === '/api/faqs') {
+      // Verificar que el usuario sea admin o assistant
+      const token = extractToken(req);
+      
+      if (!validateToken(token)) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'No tiene permisos para crear FAQs' }));
+        return;
+      }
+      
+      // Leer datos de la solicitud
+      try {
+        const data = await readBody(req);
+        
+        // Validaciones
+        if (!data.question || !data.answer || !data.category) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'La pregunta, respuesta y categoría son obligatorias' }));
+          return;
+        }
+        
+        // Generar ID único
+        const newId = faqs.length > 0 ? Math.max(...faqs.map(f => f.id)) + 1 : 1;
+        
+        // Crear nueva FAQ
+        const now = new Date().toISOString();
+        const newFaq = {
+          id: newId,
+          question: data.question,
+          answer: data.answer,
+          category: data.category,
+          isPublished: data.isPublished === undefined ? false : data.isPublished,
+          createdAt: now,
+          updatedAt: now
+        };
+        
+        // Agregar a la lista y guardar
+        faqs.push(newFaq);
+        saveFaqs();
+        
+        console.log('FAQ creada:', newFaq);
+        
+        res.writeHead(201, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(newFaq));
+      } catch (error) {
+        console.error('Error al crear FAQ:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Error interno al crear la FAQ' }));
+      }
+      return;
+    }
+
+    // Endpoint para actualizar una FAQ existente
+    if (req.method === 'PUT' && req.url.match(/^\/api\/faqs\/\d+$/)) {
+      // Verificar que el usuario sea admin o assistant
+      const token = extractToken(req);
+      
+      if (!validateToken(token)) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'No tiene permisos para actualizar FAQs' }));
+        return;
+      }
+      
+      try {
+        const id = parseInt(req.url.split('/').pop());
+        const faqIndex = faqs.findIndex(f => f.id === id);
+        
+        if (faqIndex === -1) {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'FAQ no encontrada' }));
+          return;
+        }
+        
+        const data = await readBody(req);
+        
+        // Validaciones
+        if (!data.question || !data.answer || !data.category) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'La pregunta, respuesta y categoría son obligatorias' }));
+          return;
+        }
+        
+        // Actualizar FAQ
+        faqs[faqIndex] = {
+          ...faqs[faqIndex],
+          question: data.question,
+          answer: data.answer,
+          category: data.category,
+          isPublished: data.isPublished === undefined ? faqs[faqIndex].isPublished : data.isPublished,
+          updatedAt: new Date().toISOString()
+        };
+        
+        saveFaqs();
+        
+        console.log('FAQ actualizada:', faqs[faqIndex]);
+        
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(faqs[faqIndex]));
+      } catch (error) {
+        console.error('Error al actualizar FAQ:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Error interno al actualizar la FAQ' }));
+      }
+      return;
+    }
+
+    // Endpoint para eliminar una FAQ
+    if (req.method === 'DELETE' && req.url.match(/^\/api\/faqs\/\d+$/)) {
+      try {
+        // Verificar que el usuario sea admin
+        const token = extractToken(req);
+        const decodedToken = validateToken(token);
+        if (!decodedToken) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'No tiene permisos para eliminar FAQs' }));
+          return;
+        }
+        
+        const id = parseInt(req.url.split('/').pop());
+        const faqIndex = faqs.findIndex(f => f.id === id);
+        
+        if (faqIndex === -1) {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'FAQ no encontrada' }));
+          return;
+        }
+        
+        // Eliminar FAQ
+        faqs.splice(faqIndex, 1);
+        
+        // Guardar cambios de forma síncrona para evitar problemas
+        fs.writeFileSync(FAQS_FILE, JSON.stringify(faqs, null, 2));
+        console.log(`FAQ con ID ${id} eliminada correctamente. FAQs restantes: ${faqs.length}`);
+        
+        // Responder con código 204 (Sin contenido)
+        res.writeHead(204);
+        res.end();
+      } catch (error) {
+        console.error('Error al eliminar FAQ:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Error interno al eliminar la FAQ' }));
+      }
+      return;
+    }
+
+    // Endpoint para cambiar el estado de publicación de una FAQ
+    if (req.method === 'PATCH' && req.url.match(/^\/api\/faqs\/\d+\/toggle-publish$/)) {
+      // Verificar que el usuario sea admin o assistant
+      const token = extractToken(req);
+      const decodedToken = validateToken(token);
+      if (!decodedToken) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'No tiene permisos para cambiar el estado de publicación' }));
+        return;
+      }
+      
+      const id = parseInt(req.url.split('/').pop());
+      const faqIndex = faqs.findIndex(f => f.id === id);
+      
+      if (faqIndex === -1) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'FAQ no encontrada' }));
+        return;
+      }
+      
+      // Cambiar estado de publicación
+      faqs[faqIndex].isPublished = !faqs[faqIndex].isPublished;
+      faqs[faqIndex].updatedAt = new Date().toISOString();
+      
+      saveFaqs();
+      
+      res.json(faqs[faqIndex]);
+      return;
+    }
+
     // Si ninguna ruta coincide
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Ruta no encontrada' }));
   } catch (error) {
     console.error('Error interno del servidor:', error);
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Error interno del servidor' }));
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Error interno del servidor' }));
   }
 });
 
@@ -1063,16 +1424,6 @@ function broadcastMessage(ticketId, message) {
   }
   
   if (!connectionFound) {
-    console.log(`No se encontraron conexiones para el ticket ${ticketId}. Mensaje en espera.`);
-  }
-  
-  console.log('======== FIN BROADCAST ========');
-}
-
-// Función auxiliar para enviar a un conjunto de conexiones
-function sendToConnections(connections, ticketId, message) {
-  // Preparar mensaje websocket
-  // IMPORTANTE: Mantener el isClient original del mensaje
   const wsMessage = {
     type: 'new_message', // Cambiar a minúsculas para coincidencia
     ticketId: ticketId,
@@ -1084,7 +1435,7 @@ function sendToConnections(connections, ticketId, message) {
       userName: message.userName || (message.isClient ? 'Cliente' : 'Agente de Soporte'),
       userEmail: message.userEmail || 'user@example.com'
     }
-  };
+  }};
   
   // Serializar para envío
   const messageString = JSON.stringify(wsMessage);
@@ -1114,7 +1465,7 @@ const handleRequest = (req, res) => {
   // Habilitar CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Widget-ID, X-Widget-Token, X-User-Name, X-User-Email, X-Ticket-ID');
   
   if (method === 'OPTIONS') {
     res.writeHead(200);
@@ -1219,23 +1570,475 @@ const handleRequest = (req, res) => {
     return;
   }
   
-  // Si no coincide con ninguna ruta conocida
+  // === RUTAS PARA CATEGORÍAS ===
+  
+  // Listar todas las categorías
+  if (req.method === 'GET' && req.url === '/api/categories') {
+    // Verificar autenticación
+    const token = extractToken(req);
+    if (!validateToken(token)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No autorizado' }));
+      return;
+    }
+    
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(categories));
+    return;
+  }
+  
+  // Obtener una categoría específica
+  if (req.method === 'GET' && req.url.match(/^\/api\/categories\/\d+$/)) {
+    // Verificar autenticación
+    const token = extractToken(req);
+    if (!validateToken(token)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No autorizado' }));
+      return;
+    }
+    
+    const id = req.url.split('/').pop();
+    const category = categories.find(c => c.id === id);
+    
+    if (category) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(category));
+    } else {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Categoría no encontrada' }));
+    }
+    return;
+  }
+  
+  // Crear una nueva categoría
+  if (req.method === 'POST' && req.url === '/api/categories') {
+    // Verificar autenticación y rol
+    const token = extractToken(req);
+    const decodedToken = validateToken(token);
+    if (!decodedToken) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No autorizado' }));
+      return;
+    }
+    
+    // Verificar que el usuario es administrador
+    const currentUser = users.find(u => u.id === decodedToken.userId);
+    if (!currentUser || currentUser.role !== 'admin') {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Acceso denegado. Se requiere rol de administrador.' }));
+      return;
+    }
+    
+    // Leer datos de la categoría
+    const readBodyPromise = readBody(req);
+    readBodyPromise.then(categoryData => {
+      // Validar campos requeridos
+      if (!categoryData.name) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'El nombre de la categoría es obligatorio' }));
+        return;
+      }
+      
+      // Crear nueva categoría
+      const newCategory = {
+        id: (categories.length + 1).toString(),
+        name: categoryData.name,
+        description: categoryData.description || '',
+        color: categoryData.color || '#2196F3',
+        icon: categoryData.icon || 'category',
+        active: categoryData.active !== undefined ? categoryData.active : true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Añadir a la lista de categorías
+      categories.push(newCategory);
+      
+      // Guardar categorías en archivo
+      saveCategories();
+      
+      // Responder con la categoría creada
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(newCategory));
+    }).catch(error => {
+      console.error('Error al leer los datos de la categoría:', error);
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Error al procesar los datos de la solicitud' }));
+    });
+    return;
+  }
+  
+  // Actualizar una categoría existente
+  if (req.method === 'PUT' && req.url.match(/^\/api\/categories\/\d+$/)) {
+    // Verificar autenticación y rol
+    const token = extractToken(req);
+    const decodedToken = validateToken(token);
+    if (!decodedToken) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No autorizado' }));
+      return;
+    }
+    
+    // Verificar que el usuario es administrador
+    const currentUser = users.find(u => u.id === decodedToken.userId);
+    if (!currentUser || currentUser.role !== 'admin') {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Acceso denegado. Se requiere rol de administrador.' }));
+      return;
+    }
+    
+    // Obtener ID de la categoría
+    const id = req.url.split('/').pop();
+    
+    // Buscar categoría
+    const categoryIndex = categories.findIndex(c => c.id === id);
+    if (categoryIndex === -1) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Categoría no encontrada' }));
+      return;
+    }
+    
+    // Leer datos de actualización
+    const readUpdateDataPromise = readBody(req);
+    readUpdateDataPromise.then(updateData => {
+      // Actualizar categoría
+      const updatedCategory = {
+        ...categories[categoryIndex],
+        name: updateData.name || categories[categoryIndex].name,
+        description: updateData.description !== undefined ? updateData.description : categories[categoryIndex].description,
+        color: updateData.color || categories[categoryIndex].color,
+        icon: updateData.icon || categories[categoryIndex].icon,
+        active: updateData.active !== undefined ? updateData.active : categories[categoryIndex].active,
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Actualizar en el array
+      categories[categoryIndex] = updatedCategory;
+      
+      // Guardar cambios
+      saveCategories();
+      
+      // Responder con la categoría actualizada
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(updatedCategory));
+    }).catch(error => {
+      console.error('Error al leer los datos de actualización:', error);
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Error al procesar los datos de la solicitud' }));
+    });
+    return;
+  }
+  
+  // Eliminar una categoría
+  if (req.method === 'DELETE' && req.url.match(/^\/api\/categories\/\d+$/)) {
+    // Verificar autenticación y rol
+    const token = extractToken(req);
+    const decodedToken = validateToken(token);
+    if (!decodedToken) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No autorizado' }));
+      return;
+    }
+    
+    // Verificar que el usuario es administrador
+    const currentUser = users.find(u => u.id === decodedToken.userId);
+    if (!currentUser || currentUser.role !== 'admin') {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Acceso denegado. Se requiere rol de administrador.' }));
+      return;
+    }
+    
+    // Obtener ID de la categoría
+    const id = req.url.split('/').pop();
+    
+    // Buscar categoría
+    const categoryIndex = categories.findIndex(c => c.id === id);
+    if (categoryIndex === -1) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Categoría no encontrada' }));
+      return;
+    }
+    
+    // Verificar si la categoría está en uso en algún ticket
+    const categoryInUse = tickets.some(ticket => ticket.categoryId === id);
+    if (categoryInUse) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ 
+        error: 'No se puede eliminar esta categoría porque está siendo utilizada en tickets existentes',
+        solution: 'Puede desactivar la categoría en lugar de eliminarla'
+      }));
+      return;
+    }
+    
+    // Eliminar categoría
+    categories.splice(categoryIndex, 1);
+    
+    // Guardar cambios
+    saveCategories();
+    
+    // Responder éxito
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ message: 'Categoría eliminada correctamente' }));
+    return;
+  }
+
+  // Endpoint para obtener FAQs (widget)
+  if (req.method === 'GET' && req.url === '/widget/faqs') {
+    // Verificar widget token de seguridad
+    const widgetId = req.headers['x-widget-id'];
+    const widgetToken = req.headers['x-widget-token'];
+    
+    console.log('GET /widget/faqs - Widget ID:', widgetId);
+    
+    // En un entorno real, verificaríamos que el widgetId y token sean válidos
+    // Para este demo, permitimos cualquier token
+    
+    // Solo devolver FAQs publicadas
+    const publishedFaqs = faqs.filter(faq => faq.isPublished);
+    
+    // Loggear respuesta
+    console.log(`Respondiendo con ${publishedFaqs.length} FAQs publicadas`);
+    
+    res.json(publishedFaqs);
+    return;
+  }
+
+  // Endpoint alternativo para obtener FAQs (widget)
+  if (req.method === 'GET' && req.url === '/faqs') {
+    // Verificar widget token de seguridad
+    const widgetId = req.headers['x-widget-id'];
+    const widgetToken = req.headers['x-widget-token'];
+    
+    console.log('GET /faqs - Widget ID:', widgetId);
+    
+    // En un entorno real, verificaríamos que el widgetId y token sean válidos
+    // Para este demo, permitimos cualquier token
+    
+    // Solo devolver FAQs publicadas
+    const publishedFaqs = faqs.filter(faq => faq.isPublished);
+    
+    // Loggear respuesta
+    console.log(`Respondiendo con ${publishedFaqs.length} FAQs publicadas`);
+    
+    res.json(publishedFaqs);
+    return;
+  }
+
+  // Endpoint para obtener todas las FAQs (admin)
+  if (req.method === 'GET' && req.url === '/api/faqs') {
+    try {
+      console.log('GET /api/faqs - Enviando respuesta');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(faqs));
+    } catch (error) {
+      console.error('Error al procesar /api/faqs:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Error interno al procesar FAQs' }));
+    }
+    return;
+  }
+
+  // Endpoint para obtener una FAQ específica
+  if (req.method === 'GET' && req.url.match(/^\/api\/faqs\/\d+$/)) {
+    const id = parseInt(req.url.split('/').pop());
+    const faq = faqs.find(f => f.id === id);
+    
+    if (!faq) {
+      return res.status(404).json({ error: 'FAQ no encontrada' });
+    }
+    
+    res.json(faq);
+    return;
+  }
+
+  // Endpoint para crear una nueva FAQ
+  if (req.method === 'POST' && req.url === '/api/faqs') {
+    // Verificar que el usuario sea admin o assistant
+    const token = extractToken(req);
+    
+    if (!validateToken(token)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No tiene permisos para crear FAQs' }));
+      return;
+    }
+    
+    // Leer datos de la solicitud
+    try {
+      const data = readBody(req);
+      
+      // Validaciones
+      if (!data.question || !data.answer || !data.category) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'La pregunta, respuesta y categoría son obligatorias' }));
+        return;
+      }
+      
+      // Generar ID único
+      const newId = faqs.length > 0 ? Math.max(...faqs.map(f => f.id)) + 1 : 1;
+      
+      // Crear nueva FAQ
+      const now = new Date().toISOString();
+      const newFaq = {
+        id: newId,
+        question: data.question,
+        answer: data.answer,
+        category: data.category,
+        isPublished: data.isPublished === undefined ? false : data.isPublished,
+        createdAt: now,
+        updatedAt: now
+      };
+      
+      // Agregar a la lista y guardar
+      faqs.push(newFaq);
+      saveFaqs();
+      
+      console.log('FAQ creada:', newFaq);
+      
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(newFaq));
+    } catch (error) {
+      console.error('Error al crear FAQ:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Error interno al crear la FAQ' }));
+    }
+    return;
+  }
+
+  // Endpoint para actualizar una FAQ existente
+  if (req.method === 'PUT' && req.url.match(/^\/api\/faqs\/\d+$/)) {
+    // Verificar que el usuario sea admin o assistant
+    const token = extractToken(req);
+    
+    if (!validateToken(token)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No tiene permisos para actualizar FAQs' }));
+      return;
+    }
+    
+    try {
+      const id = parseInt(req.url.split('/').pop());
+      const faqIndex = faqs.findIndex(f => f.id === id);
+      
+      if (faqIndex === -1) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'FAQ no encontrada' }));
+        return;
+      }
+      
+      const data = readBody(req);
+      
+      // Validaciones
+      if (!data.question || !data.answer || !data.category) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'La pregunta, respuesta y categoría son obligatorias' }));
+        return;
+      }
+      
+      // Actualizar FAQ
+      faqs[faqIndex] = {
+        ...faqs[faqIndex],
+        question: data.question,
+        answer: data.answer,
+        category: data.category,
+        isPublished: data.isPublished === undefined ? faqs[faqIndex].isPublished : data.isPublished,
+        updatedAt: new Date().toISOString()
+      };
+      
+      saveFaqs();
+      
+      console.log('FAQ actualizada:', faqs[faqIndex]);
+      
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(faqs[faqIndex]));
+    } catch (error) {
+      console.error('Error al actualizar FAQ:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Error interno al actualizar la FAQ' }));
+    }
+    return;
+  }
+
+  // Endpoint para eliminar una FAQ
+  if (req.method === 'DELETE' && req.url.match(/^\/api\/faqs\/\d+$/)) {
+    try {
+      // Verificar que el usuario sea admin
+      const token = extractToken(req);
+      const decodedToken = validateToken(token);
+      if (!decodedToken) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'No tiene permisos para eliminar FAQs' }));
+        return;
+      }
+      
+      const id = parseInt(req.url.split('/').pop());
+      const faqIndex = faqs.findIndex(f => f.id === id);
+      
+      if (faqIndex === -1) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'FAQ no encontrada' }));
+        return;
+      }
+      
+      // Eliminar FAQ
+      faqs.splice(faqIndex, 1);
+      
+      // Guardar cambios de forma síncrona para evitar problemas
+      fs.writeFileSync(FAQS_FILE, JSON.stringify(faqs, null, 2));
+      console.log(`FAQ con ID ${id} eliminada correctamente. FAQs restantes: ${faqs.length}`);
+      
+      // Responder con código 204 (Sin contenido)
+      res.writeHead(204);
+      res.end();
+    } catch (error) {
+      console.error('Error al eliminar FAQ:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Error interno al eliminar la FAQ' }));
+    }
+    return;
+  }
+
+  // Endpoint para cambiar el estado de publicación de una FAQ
+  if (req.method === 'PATCH' && req.url.match(/^\/api\/faqs\/\d+\/toggle-publish$/)) {
+    // Verificar que el usuario sea admin o assistant
+    const token = extractToken(req);
+    const decodedToken = validateToken(token);
+    if (!decodedToken) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No tiene permisos para cambiar el estado de publicación' }));
+      return;
+    }
+    
+    const id = parseInt(req.url.split('/').pop());
+    const faqIndex = faqs.findIndex(f => f.id === id);
+    
+    if (faqIndex === -1) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'FAQ no encontrada' }));
+      return;
+    }
+    
+    // Cambiar estado de publicación
+    faqs[faqIndex].isPublished = !faqs[faqIndex].isPublished;
+    faqs[faqIndex].updatedAt = new Date().toISOString();
+    
+    saveFaqs();
+    
+    res.json(faqs[faqIndex]);
+    return;
+  }
+
+  // Si ninguna ruta coincide
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'Ruta no encontrada' }));
 };
 
 // Función para manejar login
-const handleLogin = (req, res) => {
-  let body = '';
-  
-  req.on('data', chunk => {
-    body += chunk.toString();
-  });
-  
-  req.on('end', () => {
-    try {
-      const { email, password } = JSON.parse(body);
-      const user = users.find(u => u.email === email && u.password === password);
+const handleLogin = async (req, res) => {
+  try {
+    const data = await readBody(req);
+    
+    if (data.email && data.password) {
+      const user = users.find(u => u.email === data.email && u.password === data.password);
       
       if (user) {
         // En un sistema real, generaríamos un JWT aquí
@@ -1251,203 +2054,184 @@ const handleLogin = (req, res) => {
         res.writeHead(401, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Credenciales inválidas' }));
       }
-    } catch (err) {
-      console.error('Error en login:', err);
+    } else {
       res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Datos de solicitud inválidos' }));
+      res.end(JSON.stringify({ error: 'Email y contraseña requeridos' }));
     }
-  });
+  } catch (err) {
+    console.error('Error en login:', err);
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Datos de solicitud inválidos' }));
+  }
 };
 
 // Función para manejar creación de usuario
-const handleCreateUser = (req, res) => {
-  let body = '';
-  
-  req.on('data', chunk => {
-    body += chunk.toString();
-  });
-  
-  req.on('end', () => {
-    try {
-      const userData = JSON.parse(body);
-      
-      // Verificar si el email ya existe
-      if (users.some(u => u.email === userData.email)) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'El email ya está registrado' }));
-        return;
-      }
-      
-      // Generar ID para el nuevo usuario
-      const newId = (users.length > 0) 
-        ? String(Math.max(...users.map(u => parseInt(u.id))) + 1) 
-        : '1';
-      
-      // Crear nuevo usuario
-      const newUser = {
-        id: newId,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        email: userData.email,
-        password: userData.password, // En un sistema real, esto se hashearía
-        role: userData.role || 'employee',
-        department: userData.department || null,
-        active: userData.active !== undefined ? userData.active : true
-      };
-      
-      users.push(newUser);
-      saveUsers();
-      
-      // Retornar el usuario sin la contraseña
-      const { password, ...safeUser } = newUser;
-      
-      res.writeHead(201, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(safeUser));
-    } catch (err) {
-      console.error('Error al crear usuario:', err);
+const handleCreateUser = async (req, res) => {
+  try {
+    const userData = await readBody(req);
+    
+    // Verificar si el email ya existe
+    if (users.some(u => u.email === userData.email)) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Datos de solicitud inválidos' }));
+      res.end(JSON.stringify({ error: 'El email ya está registrado' }));
+      return;
     }
-  });
+    
+    // Generar ID para el nuevo usuario
+    const newId = (users.length > 0) 
+      ? String(Math.max(...users.map(u => parseInt(u.id))) + 1) 
+      : '1';
+    
+    // Crear nuevo usuario
+    const newUser = {
+      id: newId,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      email: userData.email,
+      password: userData.password, // En un sistema real, esto se hashearía
+      role: userData.role || 'employee',
+      department: userData.department || null,
+      active: userData.active !== undefined ? userData.active : true
+    };
+    
+    users.push(newUser);
+    saveUsers();
+    
+    // Retornar el usuario sin la contraseña
+    const { password, ...safeUser } = newUser;
+    
+    res.writeHead(201, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(safeUser));
+  } catch (err) {
+    console.error('Error al crear usuario:', err);
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Datos de solicitud inválidos' }));
+  }
 };
 
 // Función para manejar actualización de usuario
-const handleUpdateUser = (req, res) => {
-  let body = '';
-  const id = req.url.split('/').pop();
-  
-  req.on('data', chunk => {
-    body += chunk.toString();
-  });
-  
-  req.on('end', () => {
-    try {
-      const userData = JSON.parse(body);
-      const userIndex = users.findIndex(u => u.id === id);
-      
-      if (userIndex === -1) {
-        res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Usuario no encontrado' }));
-        return;
-      }
-      
-      // Verificar si está intentando actualizar el email a uno que ya existe
-      if (userData.email && userData.email !== users[userIndex].email && 
-          users.some(u => u.email === userData.email)) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'El email ya está registrado por otro usuario' }));
-        return;
-      }
-      
-      // Verificar permisos - solo administradores y asistentes pueden modificar otros usuarios
-      const authHeader = req.headers.authorization;
-      const token = authHeader && authHeader.split(' ')[1];
-      const decodedToken = validateToken(token);
-      
-      if (!decodedToken) {
-        res.writeHead(401, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Token inválido o expirado' }));
-        return;
-      }
-      
-      const currentUser = users.find(u => u.id === decodedToken.userId);
-      
-      // Si no es admin ni asistente y está intentando modificar a otro usuario
-      if (currentUser.role !== 'admin' && currentUser.role !== 'assistant' && id !== currentUser.id) {
-        res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'No tienes permisos para modificar este usuario' }));
-        return;
-      }
-      
-      // Solo los administradores pueden cambiar roles
-      if (userData.role && userData.role !== users[userIndex].role && currentUser.role !== 'admin') {
-        res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Solo los administradores pueden cambiar roles' }));
-        return;
-      }
-      
-      // Actualizar campos del usuario
-      const updatedUser = {
-        ...users[userIndex],
-        firstName: userData.firstName || users[userIndex].firstName,
-        lastName: userData.lastName || users[userIndex].lastName,
-        email: userData.email || users[userIndex].email,
-        department: userData.department !== undefined ? userData.department : users[userIndex].department,
-        active: userData.active !== undefined ? userData.active : users[userIndex].active,
-        // Campos adicionales del perfil
-        position: userData.position !== undefined ? userData.position : users[userIndex].position,
-        phone: userData.phone !== undefined ? userData.phone : users[userIndex].phone,
-        language: userData.language || users[userIndex].language || 'es',
-      };
-      
-      // Actualizar rol si viene en la solicitud y el usuario tiene permisos
-      if (userData.role && currentUser.role === 'admin') {
-        updatedUser.role = userData.role;
-      }
-      
-      // Actualizar contraseña solo si viene en la solicitud
-      if (userData.password) {
-        updatedUser.password = userData.password;
-      }
-      
-      users[userIndex] = updatedUser;
-      saveUsers();
-      
-      // Retornar el usuario actualizado sin la contraseña
-      const { password, ...safeUser } = updatedUser;
-      
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(safeUser));
-    } catch (err) {
-      console.error('Error al actualizar usuario:', err);
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Datos de solicitud inválidos' }));
+const handleUpdateUser = async (req, res) => {
+  try {
+    const id = req.url.split('/').pop();
+    const userData = await readBody(req);
+    const userIndex = users.findIndex(u => u.id === id);
+    
+    if (userIndex === -1) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Usuario no encontrado' }));
+      return;
     }
-  });
+    
+    // Verificar si está intentando actualizar el email a uno que ya existe
+    if (userData.email && userData.email !== users[userIndex].email && 
+        users.some(u => u.email === userData.email)) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'El email ya está registrado por otro usuario' }));
+      return;
+    }
+    
+    // Verificar permisos - solo administradores y asistentes pueden modificar otros usuarios
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
+    const decodedToken = validateToken(token);
+    
+    if (!decodedToken) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Token inválido o expirado' }));
+      return;
+    }
+    
+    const currentUser = users.find(u => u.id === decodedToken.userId);
+    
+    // Si no es admin ni asistente y está intentando modificar a otro usuario
+    if (currentUser.role !== 'admin' && currentUser.role !== 'assistant' && id !== currentUser.id) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No tienes permisos para modificar este usuario' }));
+      return;
+    }
+    
+    // Solo los administradores pueden cambiar roles
+    if (userData.role && userData.role !== users[userIndex].role && currentUser.role !== 'admin') {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Solo los administradores pueden cambiar roles' }));
+      return;
+    }
+    
+    // Actualizar campos del usuario
+    const updatedUser = {
+      ...users[userIndex],
+      firstName: userData.firstName || users[userIndex].firstName,
+      lastName: userData.lastName || users[userIndex].lastName,
+      email: userData.email || users[userIndex].email,
+      department: userData.department !== undefined ? userData.department : users[userIndex].department,
+      active: userData.active !== undefined ? userData.active : users[userIndex].active,
+      // Campos adicionales del perfil
+      position: userData.position !== undefined ? userData.position : users[userIndex].position,
+      phone: userData.phone !== undefined ? userData.phone : users[userIndex].phone,
+      language: userData.language || users[userIndex].language || 'es',
+    };
+    
+    // Actualizar rol si viene en la solicitud y el usuario tiene permisos
+    if (userData.role && currentUser.role === 'admin') {
+      updatedUser.role = userData.role;
+    }
+    
+    // Actualizar contraseña solo si viene en la solicitud
+    if (userData.password) {
+      updatedUser.password = userData.password;
+    }
+    
+    users[userIndex] = updatedUser;
+    saveUsers();
+    
+    // Retornar el usuario actualizado sin la contraseña
+    const { password, ...safeUser } = updatedUser;
+    
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(safeUser));
+  } catch (err) {
+    console.error('Error al actualizar usuario:', err);
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Datos de solicitud inválidos' }));
+  }
 };
 
 // Función para manejar cambio de rol de usuario
-const handleChangeUserRole = (req, res) => {
-  let body = '';
-  const id = req.url.split('/')[3]; // Extrae el ID de la URL /api/users/{id}/role
-  
-  req.on('data', chunk => {
-    body += chunk.toString();
-  });
-  
-  req.on('end', () => {
-    try {
-      const { role } = JSON.parse(body);
-      const userIndex = users.findIndex(u => u.id === id);
-      
-      if (userIndex === -1) {
-        res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Usuario no encontrado' }));
-        return;
-      }
-      
-      // Validar rol
-      if (!['admin', 'assistant', 'employee'].includes(role)) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Rol no válido' }));
-        return;
-      }
-      
-      // Actualizar rol del usuario
-      users[userIndex].role = role;
-      saveUsers();
-      
-      // Retornar el usuario actualizado sin la contraseña
-      const { password, ...safeUser } = users[userIndex];
-      
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(safeUser));
-    } catch (err) {
-      console.error('Error al cambiar rol de usuario:', err);
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Datos de solicitud inválidos' }));
+const handleChangeUserRole = async (req, res) => {
+  try {
+    const id = req.url.split('/')[3]; // Extrae el ID de la URL /api/users/{id}/role
+    const data = await readBody(req);
+    const { role } = data;
+    
+    const userIndex = users.findIndex(u => u.id === id);
+    
+    if (userIndex === -1) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Usuario no encontrado' }));
+      return;
     }
-  });
+    
+    // Validar rol
+    if (!['admin', 'assistant', 'employee'].includes(role)) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Rol no válido' }));
+      return;
+    }
+    
+    // Actualizar rol del usuario
+    users[userIndex].role = role;
+    saveUsers();
+    
+    // Retornar el usuario actualizado sin la contraseña
+    const { password, ...safeUser } = users[userIndex];
+    
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(safeUser));
+  } catch (err) {
+    console.error('Error al cambiar rol de usuario:', err);
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Datos de solicitud inválidos' }));
+  }
 };
 
 // Función para manejar eliminación de usuario

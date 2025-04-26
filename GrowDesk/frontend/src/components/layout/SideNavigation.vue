@@ -12,11 +12,6 @@
           <i class="pi pi-ticket"></i>
           <span>Tickets</span>
         </router-link>
-        
-        <router-link to="/tickets/new" class="nav-item" :class="{ 'active': isActive('/tickets/new') }">
-          <i class="pi pi-plus"></i>
-          <span>Crear Ticket</span>
-        </router-link>
       </div>
     </div>
     
@@ -180,4 +175,4 @@ const isAdmin = computed(() => {
 :deep(.app-content) {
   margin-left: 280px;
 }
-</style> 
+</style>

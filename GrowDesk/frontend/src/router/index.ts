@@ -31,12 +31,6 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/tickets/new',
-    name: 'new-ticket',
-    component: () => import('../views/tickets/CreateTicket.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
     path: '/tickets/:id',
     name: 'ticket-detail',
     component: () => import('../views/tickets/TicketDetail.vue'),
@@ -182,4 +176,4 @@ router.beforeEach((to, from, next) => {
 })
 
 // Exportar la instancia del router
-export default router 
+export default router

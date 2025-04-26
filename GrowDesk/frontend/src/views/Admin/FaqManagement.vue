@@ -255,12 +255,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useFaqsStore, type FAQ } from '@/stores/faqs';
+import { useFaqsStore } from '../../stores/faqs';
+import type { FAQ } from '../../types/faq.types';
 import { storeToRefs } from 'pinia';
 
 // Store para FAQs
 const faqStore = useFaqsStore();
-const { faqs, loading, error } = storeToRefs(faqStore);
+const { faqs, isLoading: loading, error } = storeToRefs(faqStore);
 
 // Estado para filtros
 const searchQuery = ref('');
@@ -727,4 +728,4 @@ const addNewCategory = () => {
     margin-top: 0.5rem;
   }
 }
-</style> 
+</style>

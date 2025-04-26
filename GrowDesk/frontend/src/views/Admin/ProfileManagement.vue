@@ -569,43 +569,52 @@ const translateRole = (role: string) => {
 <style scoped lang="scss">
 .profile-management {
   padding: 1.5rem;
-  
-  .profile-header {
-    margin-bottom: 2rem;
-    text-align: center;
-    
-    .profile-title {
-      font-size: 1.8rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin: 0;
-    }
-    
-    .profile-subtitle {
-      margin-top: 0.5rem;
-      color: var(--text-secondary);
-      font-size: 1.1rem;
-    }
-  }
-}
-
-.profile-content {
   max-width: 1200px;
   margin: 0 auto;
 }
 
-.user-selection {
-  margin-bottom: 2rem;
-  background-color: var(--bg-secondary, white);
+.profile-header {
+  margin-bottom: 1.5rem;
   padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-color);
+  
+  .profile-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  
+  .profile-subtitle {
+    margin: 0;
+    color: var(--text-secondary);
+  }
+}
+
+.profile-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.user-selection {
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-color);
   
   label {
     display: block;
     margin-bottom: 0.75rem;
-    font-weight: 600;
-    color: var(--text-primary);
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    font-family: inherit;
   }
   
   .select-container {
@@ -615,23 +624,24 @@ const translateRole = (role: string) => {
       width: 100%;
       padding: 0.75rem;
       padding-right: 2.5rem;
-      border: 1px solid var(--border-color, #ddd);
-      border-radius: 4px;
-      background-color: var(--bg-tertiary, #f5f5f5);
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
       color: var(--text-primary);
       appearance: none;
-      cursor: pointer;
+      font-size: 0.95rem;
+      font-family: inherit;
       
       &:focus {
         outline: none;
         border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+        box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
       }
     }
     
     i {
       position: absolute;
-      right: 10px;
+      right: 0.75rem;
       top: 50%;
       transform: translateY(-50%);
       color: var(--text-secondary);
@@ -640,289 +650,252 @@ const translateRole = (role: string) => {
   }
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem;
-  text-align: center;
-  color: var(--text-secondary);
-  background-color: var(--bg-tertiary);
-  border-radius: var(--border-radius);
-  
-  p {
-    margin-top: 1rem;
-    font-size: 1.1rem;
-  }
-}
-
 .profile-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .profile-card {
-  background-color: var(--bg-secondary, white);
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-color);
   overflow: hidden;
-  transition: box-shadow 0.3s ease;
   
-  &:hover {
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  .profile-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.25rem 1.5rem;
+    background-color: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    
+    i {
+      font-size: 1.2rem;
+      color: var(--primary-color);
+    }
+    
+    h2 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: var(--text-primary);
+    }
   }
-}
-
-.profile-card-header {
-  display: flex;
-  align-items: center;
-  padding: 1.25rem;
-  background-color: var(--primary-color-light, #e3f2fd);
-  border-bottom: 1px solid var(--border-color, #e0e0e0);
   
-  i {
-    font-size: 1.5rem;
-    color: var(--primary-color);
-    margin-right: 0.75rem;
+  .profile-card-body {
+    padding: 1.5rem;
   }
   
-  h2 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--text-primary);
+  .profile-card-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--border-radius);
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      
+      &.btn-primary {
+        background-color: var(--primary-color);
+        color: white;
+        
+        &:hover {
+          background-color: var(--primary-hover);
+        }
+        
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+    }
   }
-}
-
-.profile-card-body {
-  padding: 1.5rem;
 }
 
 .profile-form-group {
   margin-bottom: 1.25rem;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
   
   label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
     color: var(--text-secondary);
+    font-size: 0.95rem;
+    font-family: inherit;
   }
   
-  .form-control {
+  input, select, textarea {
     width: 100%;
     padding: 0.75rem;
-    border: 1px solid var(--border-color, #ddd);
-    border-radius: 4px;
-    background-color: var(--bg-tertiary, #f5f5f5);
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
     color: var(--text-primary);
-    transition: border-color 0.2s, box-shadow 0.2s;
+    font-size: 0.95rem;
+    font-family: inherit;
     
     &:focus {
       outline: none;
       border-color: var(--primary-color);
-      box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+      box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
     }
     
     &.is-invalid {
-      border-color: var(--error-color, #d32f2f);
+      border-color: var(--danger-color);
     }
-    
-    &:disabled {
-      background-color: var(--bg-disabled, #e9ecef);
-      cursor: not-allowed;
+
+    &::placeholder {
+      color: var(--text-tertiary);
       opacity: 0.7;
+    }
+
+    &:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
     }
   }
   
   .invalid-feedback {
     display: block;
-    width: 100%;
     margin-top: 0.25rem;
-    font-size: 0.875rem;
-    color: var(--error-color, #d32f2f);
+    color: var(--danger-color);
+    font-size: 0.85rem;
+    font-family: inherit;
   }
   
-  .form-text {
-    display: block;
-    margin-top: 0.25rem;
-    font-size: 0.875rem;
-  }
-}
-
-.password-input-container {
-  position: relative;
-  
-  .form-control {
-    padding-right: 2.5rem;
-  }
-  
-  .password-toggle {
-    position: absolute;
-    right: 0.5rem;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 0.25rem;
+  .password-input-container {
+    position: relative;
     
-    &:hover {
-      color: var(--text-primary);
-    }
-  }
-}
-
-.password-strength {
-  margin-top: 0.5rem;
-  
-  .strength-meter {
-    height: 4px;
-    background-color: var(--bg-tertiary, #eee);
-    border-radius: 2px;
-    margin-bottom: 0.25rem;
-    
-    .strength-meter-fill {
-      height: 100%;
-      border-radius: 2px;
-      transition: width 0.3s ease;
-      
-      &.weak {
-        background-color: var(--error-color, #d32f2f);
-      }
-      
-      &.medium {
-        background-color: var(--warning-color, #f57c00);
-      }
-      
-      &.good {
-        background-color: var(--info-color, #0288d1);
-      }
-      
-      &.strong {
-        background-color: var(--success-color, #388e3c);
-      }
-    }
-  }
-  
-  .strength-text {
-    font-size: 0.75rem;
-    
-    &.weak {
-      color: var(--error-color, #d32f2f);
+    input {
+      padding-right: 3rem;
     }
     
-    &.medium {
-      color: var(--warning-color, #f57c00);
-    }
-    
-    &.good {
-      color: var(--info-color, #0288d1);
-    }
-    
-    &.strong {
-      color: var(--success-color, #388e3c);
-    }
-  }
-}
-
-.toggle-switch-container {
-  display: flex;
-  align-items: center;
-}
-
-.toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 50px;
-  height: 24px;
-  margin-right: 0.75rem;
-  
-  input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-    
-    &:checked + .slider {
-      background-color: var(--primary-color);
-    }
-    
-    &:checked + .slider:before {
-      transform: translateX(26px);
-    }
-  }
-  
-  .slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: var(--text-muted, #ccc);
-    transition: .4s;
-    
-    &:before {
+    .password-toggle {
       position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
-      transition: .4s;
-    }
-    
-    &.round {
-      border-radius: 24px;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-secondary);
       
-      &:before {
-        border-radius: 50%;
+      &:hover {
+        color: var(--text-primary);
       }
     }
   }
-}
-
-.toggle-label {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
-.profile-card-actions {
-  margin-top: 1.5rem;
-  display: flex;
-  justify-content: flex-end;
   
-  .btn {
-    padding: 0.75rem 1.5rem;
-    border-radius: 4px;
-    font-weight: 500;
-    cursor: pointer;
+  .toggle-switch-container {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
     
-    &-primary {
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      transition: background-color 0.2s;
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 3.5rem;
+      height: 1.75rem;
       
-      &:hover:not(:disabled) {
-        background-color: var(--primary-color-dark, #1565c0);
+      input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        
+        &:checked + .slider {
+          background-color: var(--primary-color);
+        }
+        
+        &:checked + .slider:before {
+          transform: translateX(1.75rem);
+        }
       }
       
-      &:disabled {
-        opacity: 0.7;
-        cursor: not-allowed;
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--text-muted);
+        transition: .4s;
+        
+        &:before {
+          position: absolute;
+          content: "";
+          height: 1.25rem;
+          width: 1.25rem;
+          left: 0.25rem;
+          bottom: 0.25rem;
+          background-color: white;
+          transition: .4s;
+        }
+        
+        &.round {
+          border-radius: 34px;
+          
+          &:before {
+            border-radius: 50%;
+          }
+        }
       }
+    }
+    
+    .toggle-label {
+      font-weight: 500;
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      font-family: inherit;
     }
   }
 }
 
-// Responsive adjustments
+.toast-notification {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(150%);
+  transition: transform 0.3s ease-in-out;
+  z-index: 1000;
+  
+  &.show {
+    transform: translateY(0);
+  }
+  
+  &.success {
+    background-color: rgba(46, 213, 115, 0.95);
+    color: white;
+  }
+  
+  &.error {
+    background-color: rgba(255, 71, 87, 0.95);
+    color: white;
+  }
+  
+  i {
+    font-size: 1.2rem;
+  }
+}
+
 @media (max-width: 768px) {
   .profile-grid {
     grid-template-columns: 1fr;

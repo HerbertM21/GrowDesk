@@ -1,0 +1,28 @@
+{
+  "id": "7d15ed2b-1c02-49a9-854e-33dab679e767",
+  "title": "Support request from PyGeo",
+  "description": "lol\n",
+  "status": "new",
+  "createdBy": "herbert.mayorga@alu.ucm.cl",
+  "createdAt": "2025-04-25T20:45:34.767251176-04:00",
+  "updatedAt": "2025-04-25T20:45:34.767251231-04:00",
+  "messages": [
+    {
+      "id": "4114e9ed-007d-46b0-8661-a6c346502c79",
+      "content": "lol\n",
+      "isClient": true,
+      "createdAt": "2025-04-25T20:45:34.767250275-04:00",
+      "userName": "PyGeo",
+      "userEmail": "herbert.mayorga@alu.ucm.cl"
+    }
+  ],
+  "userEmail": "herbert.mayorga@alu.ucm.cl",
+  "userName": "PyGeo",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+    "screenSize": "1920x914",
+    "externalId": "TICKET-20250426004534"
+  }
+}

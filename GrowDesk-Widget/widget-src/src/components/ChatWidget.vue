@@ -78,26 +78,86 @@
         </form>
       </div>
       
-      <!-- Chat messages (displayed after registration) -->
-      <div v-else class="flex-1 p-4 overflow-y-auto bg-gray-50 chat-messages">
-        <div v-if="messages.length === 0" class="text-center text-gray-500 mt-20">
-          Inicia una conversación escribiendo un mensaje.
+      <!-- FAQ and Chat sections (displayed after registration) -->
+      <div v-else class="flex-1 overflow-y-auto bg-gray-50">
+        <!-- Chat View -->
+        <div v-if="showChatView" class="p-4 chat-messages">
+          <div v-if="messages.length === 0" class="text-center text-gray-500 mt-20">
+            Inicia una conversación escribiendo un mensaje.
+          </div>
+          <div v-for="(message, index) in messages" :key="index" class="mb-3">
+            <div 
+              :class="[
+                'max-w-[80%] p-3 rounded-lg', 
+                message.isUser ? 'text-white ml-auto rounded-br-none' : 'bg-gray-200 text-gray-800 rounded-bl-none'
+              ]"
+              :style="message.isUser ? { backgroundColor: primaryColor } : {}"
+            >
+              {{ message.text }}
+            </div>
+          </div>
         </div>
-        <div v-for="(message, index) in messages" :key="index" class="mb-3">
-          <div 
-            :class="[
-              'max-w-[80%] p-3 rounded-lg', 
-              message.isUser ? 'text-white ml-auto rounded-br-none' : 'bg-gray-200 text-gray-800 rounded-bl-none'
-            ]"
-            :style="message.isUser ? { backgroundColor: primaryColor } : {}"
-          >
-            {{ message.text }}
+        
+        <!-- FAQ View -->
+        <div v-else class="p-4">
+          <div class="text-center mb-4">
+            <button 
+              @click="showChatView = true" 
+              class="text-white rounded-md py-2 px-4 font-medium focus:outline-none w-full"
+              :style="{ backgroundColor: primaryColor }"
+            >
+              <i class="pi pi-comments mr-2"></i>Iniciar chat
+            </button>
+          </div>
+          
+          <h3 class="text-lg font-semibold mb-3 text-gray-700">Preguntas Frecuentes</h3>
+          
+          <div v-if="loadingFaqs" class="text-center py-4">
+            <i class="pi pi-spin pi-spinner text-gray-500"></i>
+            <p class="text-sm text-gray-500 mt-2">Cargando preguntas frecuentes...</p>
+          </div>
+          
+          <div v-else-if="faqs.length === 0" class="text-center py-4 text-gray-500">
+            No hay preguntas frecuentes disponibles.
+          </div>
+          
+          <div v-else>
+            <div v-for="(category, index) in faqCategories" :key="index" class="mb-4">
+              <h4 class="font-medium text-gray-700 mb-2">{{ category }}</h4>
+              <div class="space-y-2">
+                <div 
+                  v-for="faq in getFaqsByCategory(category)" 
+                  :key="faq.id" 
+                  class="border border-gray-200 rounded-lg overflow-hidden"
+                >
+                  <div 
+                    class="p-3 bg-gray-100 cursor-pointer flex justify-between items-center"
+                    @click="toggleFaq(faq.id)"
+                  >
+                    <span class="font-medium text-gray-800">{{ faq.question }}</span>
+                    <i class="pi" :class="expandedFaqs.includes(faq.id) ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
+                  </div>
+                  <div v-if="expandedFaqs.includes(faq.id)" class="p-3 bg-white">
+                    <p class="text-gray-700">{{ faq.answer }}</p>
+                    <div class="mt-2 flex justify-end">
+                      <button 
+                        @click="setInitialQuestion(faq.question)" 
+                        class="text-xs text-white rounded-md py-1 px-2 focus:outline-none"
+                        :style="{ backgroundColor: primaryColor }"
+                      >
+                        Consultar más
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
       
-      <!-- Chat input (displayed after registration) -->
-      <div v-if="isRegistered" class="p-3 border-t border-gray-200 bg-white">
+      <!-- Chat input (displayed after registration and when in chat view) -->
+      <div v-if="isRegistered && showChatView" class="p-3 border-t border-gray-200 bg-white">
         <div class="flex items-center">
           <input 
             v-model="newMessage" 
@@ -116,13 +176,32 @@
           </button>
         </div>
       </div>
+      
+      <!-- Bottom navigation when in FAQ view -->
+      <div v-if="isRegistered && !showChatView" class="p-3 border-t border-gray-200 bg-white">
+        <div class="flex justify-between items-center">
+          <button 
+            @click="refreshFaqs" 
+            class="text-xs text-gray-600 focus:outline-none flex items-center"
+          >
+            <i class="pi pi-refresh mr-1"></i> Actualizar
+          </button>
+          <button 
+            @click="showChatView = true" 
+            class="text-white rounded-md py-1 px-4 text-sm focus:outline-none"
+            :style="{ backgroundColor: primaryColor }"
+          >
+            <i class="pi pi-comments mr-1"></i> Chat
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed, onBeforeUnmount } from 'vue';
-import { useWidgetApi, getSession, apiConfig } from '../api/widgetApi';
+import { useWidgetApi, getSession, apiConfig, type FAQ } from '../api/widgetApi';
 
 // Props del componente
 const props = defineProps({
@@ -148,9 +227,17 @@ const isOpen = ref(false);
 const isRegistered = ref(false);
 const loading = ref(false);
 const currentTicketId = ref('');
-const messages = ref<Array<{text: string, isUser: boolean}>>([]);
+const messages = ref<Array<{text: string, isUser: boolean, id?: string, pending?: boolean, error?: boolean}>>([]);
 const newMessage = ref('');
 const webSocket = ref<WebSocket | null>(null);
+
+// Vista actual (chat o FAQs)
+const showChatView = ref(false);
+
+// Estado de FAQs
+const faqs = ref<FAQ[]>([]);
+const loadingFaqs = ref(false);
+const expandedFaqs = ref<number[]>([]);
 
 // Datos del usuario para el registro
 const userData = ref({
@@ -166,6 +253,102 @@ const api = useWidgetApi();
 const hasSession = computed(() => {
   return api.hasActiveSession();
 });
+
+// Categorías de FAQs (computed)
+const faqCategories = computed(() => {
+  const categories = new Set<string>();
+  faqs.value.forEach(faq => categories.add(faq.category));
+  return Array.from(categories);
+});
+
+// Filtrar FAQs por categoría
+const getFaqsByCategory = (category: string) => {
+  return faqs.value.filter(faq => faq.category === category);
+};
+
+// Toggle expandir/colapsar FAQ
+const toggleFaq = (id: number) => {
+  const index = expandedFaqs.value.indexOf(id);
+  if (index === -1) {
+    expandedFaqs.value.push(id);
+  } else {
+    expandedFaqs.value.splice(index, 1);
+  }
+};
+
+// Mejorar el método loadFaqs con mejor manejo de errores
+const loadFaqs = async () => {
+  loadingFaqs.value = true;
+  console.log('Iniciando carga de FAQs desde el servidor...');
+  
+  try {
+    // Hacer la llamada a la API con log detallado
+    console.log('Llamando a api.getFaqs()...');
+    const response = await api.getFaqs();
+    console.log('Respuesta de API para FAQs:', response);
+    
+    if (response && Array.isArray(response)) {
+      // Filtrar solo las publicadas
+      const publishedFaqs = response.filter(faq => faq.isPublished);
+      console.log(`FAQs publicadas encontradas: ${publishedFaqs.length}`);
+      
+      faqs.value = publishedFaqs;
+      
+      // Si no hay FAQs, mostrar mensaje en consola
+      if (publishedFaqs.length === 0) {
+        console.warn('No se encontraron FAQs publicadas para mostrar');
+      } else {
+        // Expandir la primera FAQ de cada categoría
+        const categories = new Set<string>();
+        const firstFaqsIds: number[] = [];
+        
+        faqs.value.forEach(faq => {
+          if (!categories.has(faq.category)) {
+            categories.add(faq.category);
+            firstFaqsIds.push(faq.id);
+          }
+        });
+        
+        expandedFaqs.value = firstFaqsIds;
+        console.log('Categorías de FAQs encontradas:', Array.from(categories));
+      }
+    } else {
+      console.error('Formato inesperado en la respuesta de FAQs:', response);
+      faqs.value = [];
+    }
+  } catch (error) {
+    console.error('Error al cargar FAQs:', error);
+    faqs.value = []; // Asegurarnos de que no hay FAQs antiguas
+    
+    // Si falla la carga de FAQs, mostrar el chat
+    if (isRegistered.value) {
+      showChatView.value = true;
+      console.log('Cambiando a vista de chat debido a error en FAQs');
+    }
+  } finally {
+    loadingFaqs.value = false;
+    console.log('Carga de FAQs finalizada. Estado:', { 
+      faqsCount: faqs.value.length, 
+      expandedFaqsCount: expandedFaqs.value.length,
+      showingChat: showChatView.value
+    });
+  }
+};
+
+// Refrescar FAQs
+const refreshFaqs = () => {
+  loadFaqs();
+};
+
+// Usar una pregunta como mensaje inicial
+const setInitialQuestion = (question: string) => {
+  newMessage.value = question;
+  showChatView.value = true;
+  // Dar tiempo para que la UI se actualice y luego enviar
+  setTimeout(() => {
+    sendMessage();
+  }, 100);
+};
 
 // Conexión WebSocket
 const connectWebSocket = (ticketId: string) => {
@@ -261,7 +444,7 @@ const connectWebSocket = (ticketId: string) => {
   }
 };
 
-// Actualizar onMounted para añadir WebSocket
+// Actualizar onMounted para añadir carga de FAQs
 onMounted(() => {
   const container = document.getElementById('growdesk-widget-container');
   if (container) {
@@ -282,6 +465,12 @@ onMounted(() => {
       userData.value.email = session.email;
       currentTicketId.value = session.ticketId;
       isRegistered.value = true;
+      
+      // Inicialmente mostrar las FAQs en lugar del chat
+      showChatView.value = false;
+      
+      // Cargar preguntas frecuentes
+      loadFaqs();
       
       // Cargar mensajes anteriores
       loadPreviousMessages(session.ticketId);
@@ -332,7 +521,15 @@ const submitRegistration = async () => {
     // Marcar al usuario como registrado
     isRegistered.value = true;
     
-    // Agregar el mensaje del usuario al chat
+    // EXPLÍCITAMENTE establecer showChatView a false para mostrar las FAQs primero
+    showChatView.value = false;
+    
+    // Cargar FAQs inmediatamente después de registrarse
+    await loadFaqs();
+    
+    console.log('FAQs cargadas después del registro:', faqs.value);
+    
+    // Agregar el mensaje del usuario al chat (para cuando cambie a vista de chat)
     messages.value.push({
       text: userData.value.initialMessage,
       isUser: true
@@ -340,7 +537,7 @@ const submitRegistration = async () => {
     
     // Agregar mensaje de bienvenida
     messages.value.push({
-      text: `Hola ${userData.value.name}, gracias por contactarnos. Hemos recibido tu mensaje y un representante te responderá pronto.`,
+      text: `Hola ${userData.value.name}, gracias por contactarnos. Puedes consultar nuestras preguntas frecuentes o iniciar un chat con nosotros.`,
       isUser: false
     });
     
@@ -355,16 +552,6 @@ const submitRegistration = async () => {
   } finally {
     loading.value = false;
   }
-};
-
-// Función para hacer scroll al final del chat
-const scrollToBottom = () => {
-  setTimeout(() => {
-    const messagesContainer = document.querySelector('.chat-messages');
-    if (messagesContainer) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-  }, 100);
 };
 
 // Cargar mensajes anteriores
@@ -400,12 +587,24 @@ const loadPreviousMessages = async (ticketId: string) => {
   }
 };
 
+// Función para hacer scroll al final del chat
+const scrollToBottom = () => {
+  setTimeout(() => {
+    const messagesContainer = document.querySelector('.chat-messages');
+    if (messagesContainer) {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+  }, 100);
+};
+
 // Cerrar sesión
 const logout = () => {
   api.logout();
   isRegistered.value = false;
   currentTicketId.value = '';
   messages.value = [];
+  faqs.value = [];
+  expandedFaqs.value = [];
   userData.value = {
     name: '',
     email: '',

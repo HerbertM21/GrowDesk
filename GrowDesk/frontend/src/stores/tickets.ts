@@ -187,34 +187,11 @@ export const useTicketStore = defineStore('tickets', {
       priority: Ticket['priority']
       category: string
     }) {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await apiClient.post('/tickets', ticketData)
-        this.tickets.push(response.data)
-        
-        // Registrar actividad de creación de ticket
-        const activityStore = useActivityStore()
-        const authStore = useAuthStore()
-        const currentUserId = authStore.user?.id
-        
-        if (currentUserId) {
-          await activityStore.logActivity({
-            userId: currentUserId,
-            type: 'ticket_created',
-            targetId: response.data.id,
-            description: `Creó el ticket #${response.data.id}: "${response.data.title}"`
-          })
-        }
-        
-        return response.data
-      } catch (error) {
-        this.error = 'Failed to create ticket'
-        console.error('Error creating ticket:', error)
-        return null
-      } finally {
-        this.loading = false
-      }
+      // Esta función ha sido deshabilitada porque conceptualmente
+      // los tickets solo deben ser creados por los clientes a través del widget.
+      console.warn('La creación de tickets desde el panel de soporte está deshabilitada. Los tickets deben ser creados por los clientes a través del widget.');
+      this.error = 'La creación de tickets desde el panel de soporte no está permitida';
+      return null;
     },
 
     async updateTicket(ticketOrId: string | Ticket, ticketData?: Partial<Ticket>) {

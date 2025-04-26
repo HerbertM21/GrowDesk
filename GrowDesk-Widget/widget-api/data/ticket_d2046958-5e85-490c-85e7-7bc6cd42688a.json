@@ -1,0 +1,28 @@
+{
+  "id": "d2046958-5e85-490c-85e7-7bc6cd42688a",
+  "title": "Support request from test",
+  "description": "test3",
+  "status": "new",
+  "createdBy": "test@test.com",
+  "createdAt": "2025-04-26T13:57:55.865311384-04:00",
+  "updatedAt": "2025-04-26T13:57:55.865311436-04:00",
+  "messages": [
+    {
+      "id": "7934903e-4802-4ae8-aeae-a1a013f3bf14",
+      "content": "test3",
+      "isClient": true,
+      "createdAt": "2025-04-26T13:57:55.865310541-04:00",
+      "userName": "test",
+      "userEmail": "test@test.com"
+    }
+  ],
+  "userEmail": "test@test.com",
+  "userName": "test",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+    "screenSize": "1920x914",
+    "externalId": "TICKET-20250426175755"
+  }
+}

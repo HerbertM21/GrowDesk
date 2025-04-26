@@ -9,7 +9,7 @@ const LOCAL_STORAGE_KEY = 'growdesk_session_data';
 
 // Configuración global de la API
 export let apiConfig = {
-  apiUrl: 'http://localhost:8082/widget',
+  apiUrl: 'http://localhost:8000/widget',
   widgetId: 'demo-widget',
   widgetToken: 'demo-token'
 };
@@ -81,6 +81,15 @@ interface MessageRequest {
   message: string;
   userName?: string;
   userEmail?: string;
+}
+
+// Añadir interfaz para FAQs
+export interface FAQ {
+  id: number;
+  question: string;
+  answer: string;
+  category: string;
+  isPublished: boolean;
 }
 
 // Función para guardar la sesión en cookies usando formato similar a JWT
@@ -343,6 +352,66 @@ export const useWidgetApi = () => {
     }
   };
   
+  // Obtener las preguntas frecuentes publicadas
+  const getFaqs = async () => {
+    try {
+      // Verificar que la URL base sea correcta
+      const baseUrl = apiConfig.apiUrl.endsWith('/') ? apiConfig.apiUrl : `${apiConfig.apiUrl}/`;
+      const faqsUrl = `${baseUrl}faqs`;
+      
+      console.log('Intentando obtener FAQs de URL:', faqsUrl);
+      console.log('Headers utilizados:', {
+        'X-Widget-ID': apiConfig.widgetId,
+        'X-Widget-Token': apiConfig.widgetToken
+      });
+
+      // Intento estándar con axios
+      let response;
+      try {
+        console.log('Usando axios.get para obtener FAQs');
+        response = await apiClient.get('/faqs');
+        console.log('Respuesta recibida de axios:', response.status);
+      } catch (axiosError) {
+        console.warn('Error al usar Axios estándar para obtener FAQs:', axiosError);
+        
+        // Si falla, intenta con fetch como respaldo
+        console.log('Intentando fetch a:', faqsUrl);
+        const fetchResponse = await fetch(faqsUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Widget-ID': apiConfig.widgetId,
+            'X-Widget-Token': apiConfig.widgetToken
+          }
+        });
+        
+        if (!fetchResponse.ok) {
+          const statusText = fetchResponse.statusText || 'Error desconocido';
+          console.error(`Error en fetch: ${fetchResponse.status} ${statusText}`);
+          throw new Error(`Error ${fetchResponse.status}: ${statusText}`);
+        }
+        
+        const responseData = await fetchResponse.json();
+        console.log('Datos recibidos con fetch:', responseData);
+        response = { data: responseData };
+      }
+      
+      console.log('FAQs obtenidas correctamente:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error obteniendo FAQs:', error);
+      
+      // Proporcionar información adicional de depuración
+      console.error('Configuración actual:', { 
+        apiUrl: apiConfig.apiUrl,
+        widgetId: apiConfig.widgetId
+      });
+      
+      // Retornar un array vacío en caso de error para evitar errores adicionales
+      return [];
+    }
+  };
+  
   // Cerrar sesión (logout)
   const logout = () => {
     clearSession();
@@ -354,6 +423,7 @@ export const useWidgetApi = () => {
     createTicket,
     sendMessage,
     getMessageHistory,
-    logout
+    logout,
+    getFaqs
   };
 }; 

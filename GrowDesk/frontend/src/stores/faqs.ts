@@ -1,214 +1,162 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
-
-export interface FAQ {
-  id: number
-  question: string
-  answer: string
-  category: string
-  isPublished: boolean
-  createdAt: string
-  updatedAt: string
-}
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import faqService from '../services/faqService';
+import type { FAQ, FaqCreateData, FaqUpdateData } from '../types/faq.types';
 
 export const useFaqsStore = defineStore('faqs', () => {
-  const faqs = ref<FAQ[]>([])
-  const loading = ref(false)
-  const error = ref('')
+  const faqs = ref<FAQ[]>([]);
+  const isLoading = ref(false);
+  const error = ref<string | null>(null);
 
-  // FAQs de ejemplo (mock)
-  const mockFaqs: FAQ[] = [
-    {
-      id: 1,
-      question: '¿Cómo puedo restablecer mi contraseña?',
-      answer: 'Para restablecer su contraseña, haga clic en el enlace "¿Olvidó su contraseña?" en la pantalla de inicio de sesión y siga las instrucciones enviadas a su correo electrónico.',
-      category: 'Cuenta',
-      isPublished: true,
-      createdAt: '2023-01-15T10:30:00Z',
-      updatedAt: '2023-01-15T10:30:00Z'
-    },
-    {
-      id: 2,
-      question: '¿Cómo puedo actualizar mi información de contacto?',
-      answer: 'Inicie sesión en su cuenta, vaya a "Mi Perfil" y haga clic en "Editar Información". Allí podrá actualizar su dirección de correo electrónico, número de teléfono y dirección postal.',
-      category: 'Cuenta',
-      isPublished: true,
-      createdAt: '2023-01-20T14:15:00Z',
-      updatedAt: '2023-02-05T09:45:00Z'
-    },
-    {
-      id: 3,
-      question: '¿Cómo puedo reportar un problema técnico?',
-      answer: 'Para reportar un problema técnico, vaya a la sección "Soporte", haga clic en "Crear Ticket" y complete el formulario con los detalles del problema. Un técnico se pondrá en contacto con usted lo antes posible.',
-      category: 'Soporte Técnico',
-      isPublished: true,
-      createdAt: '2023-02-10T11:20:00Z',
-      updatedAt: '2023-02-10T11:20:00Z'
-    },
-    {
-      id: 4,
-      question: '¿Cuáles son los horarios de atención al cliente?',
-      answer: 'Nuestro equipo de atención al cliente está disponible de lunes a viernes, de 9:00 a.m. a 6:00 p.m. (hora local). Para asistencia de emergencia fuera de este horario, por favor envíe un correo electrónico a soporte@ejemplo.com.',
-      category: 'General',
-      isPublished: false,
-      createdAt: '2023-03-01T16:40:00Z',
-      updatedAt: '2023-03-10T08:30:00Z'
+  /**
+   * Carga todas las FAQs (alias para compatibilidad con FaqManagement)
+   */
+  const fetchFaqs = async () => {
+    return loadFaqs();
+  };
+
+  /**
+   * Carga todas las FAQs
+   */
+  const loadFaqs = async () => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      faqs.value = await faqService.getAllFaqs();
+    } catch (err) {
+      error.value = 'Error al cargar preguntas frecuentes';
+      console.error(error.value, err);
+    } finally {
+      isLoading.value = false;
     }
-  ]
+  };
 
-  // Obtener todas las categorías disponibles
+  /**
+   * Añade una nueva FAQ
+   */
+  const addFaq = async (faq: FaqCreateData) => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const newFaq = await faqService.createFaq(faq);
+      faqs.value.push(newFaq);
+      return newFaq;
+    } catch (err) {
+      error.value = 'Error al crear la pregunta frecuente';
+      console.error(error.value, err);
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  /**
+   * Actualiza una FAQ existente
+   */
+  const updateFaq = async (faq: FaqUpdateData) => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const updatedFaq = await faqService.updateFaq(faq);
+      const index = faqs.value.findIndex(f => f.id === faq.id);
+      if (index !== -1) {
+        faqs.value[index] = updatedFaq;
+      }
+      return updatedFaq;
+    } catch (err) {
+      error.value = 'Error al actualizar la pregunta frecuente';
+      console.error(error.value, err);
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  /**
+   * Alias de updateFaq para mantener compatibilidad con FaqManagement
+   */
+  const editFaq = async (faq: FaqUpdateData) => {
+    return updateFaq(faq);
+  };
+
+  /**
+   * Elimina una FAQ
+   */
+  const deleteFaq = async (id: number) => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      await faqService.deleteFaq(id);
+      faqs.value = faqs.value.filter(f => f.id !== id);
+    } catch (err) {
+      error.value = 'Error al eliminar la pregunta frecuente';
+      console.error(error.value, err);
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  /**
+   * Cambia el estado de publicación de una FAQ
+   */
+  const togglePublish = async (id: number) => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const updatedFaq = await faqService.togglePublishStatus(id);
+      const index = faqs.value.findIndex(f => f.id === id);
+      if (index !== -1) {
+        faqs.value[index] = updatedFaq;
+      }
+      return updatedFaq;
+    } catch (err) {
+      error.value = 'Error al cambiar el estado de publicación';
+      console.error(error.value, err);
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  /**
+   * Alias para togglePublish para mantener compatibilidad con FaqManagement
+   */
+  const togglePublishStatus = async (id: number) => {
+    return togglePublish(id);
+  };
+
+  /**
+   * Obtiene todas las categorías únicas de las FAQs
+   */
   const getCategories = () => {
-    const uniqueCategories = new Set<string>()
-    faqs.value.forEach(faq => uniqueCategories.add(faq.category))
-    return Array.from(uniqueCategories).sort()
-  }
-
-  // Inicializar el store
-  function initializeStore() {
-    faqs.value = [...mockFaqs]
-  }
-
-  // Cargar FAQs
-  async function fetchFaqs() {
-    loading.value = true
-    error.value = ''
-    
-    try {
-      // Simulamos la llamada a la API
-      await new Promise(resolve => setTimeout(resolve, 500))
-      faqs.value = [...mockFaqs]
-    } catch (err) {
-      error.value = 'Error al cargar las preguntas frecuentes'
-      console.error(err)
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // Añadir una FAQ
-  async function addFaq(faq: Omit<FAQ, 'id' | 'createdAt' | 'updatedAt'>) {
-    loading.value = true
-    error.value = ''
-    
-    try {
-      // Simulamos la llamada a la API
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      const now = new Date().toISOString()
-      const newId = faqs.value.length > 0 
-        ? Math.max(...faqs.value.map((f: FAQ) => f.id)) + 1 
-        : 1
-        
-      const newFaq: FAQ = {
-        id: newId,
-        createdAt: now,
-        updatedAt: now,
-        ...faq
+    const categories = new Set<string>();
+    faqs.value.forEach(faq => {
+      if (faq.category) {
+        categories.add(faq.category);
       }
-      
-      faqs.value.push(newFaq)
-      return newFaq
-    } catch (err) {
-      error.value = 'Error al añadir la pregunta frecuente'
-      console.error(err)
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
+    });
+    return Array.from(categories);
+  };
 
-  // Actualizar una FAQ
-  async function updateFaq(faq: Omit<FAQ, 'createdAt' | 'updatedAt'>) {
-    loading.value = true
-    error.value = ''
-    
-    try {
-      // Simulamos la llamada a la API
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      const now = new Date().toISOString()
-      const index = faqs.value.findIndex((f: FAQ) => f.id === faq.id)
-      
-      if (index !== -1) {
-        const updatedFaq = {
-          ...faq,
-          updatedAt: now,
-          createdAt: faqs.value[index].createdAt
-        }
-        
-        faqs.value[index] = updatedFaq
-        return updatedFaq
-      } else {
-        throw new Error('Pregunta frecuente no encontrada')
-      }
-    } catch (err) {
-      error.value = 'Error al actualizar la pregunta frecuente'
-      console.error(err)
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // Eliminar una FAQ
-  async function deleteFaq(id: number) {
-    loading.value = true
-    error.value = ''
-    
-    try {
-      // Simulamos la llamada a la API
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      faqs.value = faqs.value.filter((f: FAQ) => f.id !== id)
-    } catch (err) {
-      error.value = 'Error al eliminar la pregunta frecuente'
-      console.error(err)
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // Cambiar el estado de publicación
-  async function togglePublishStatus(id: number) {
-    loading.value = true
-    error.value = ''
-    
-    try {
-      const index = faqs.value.findIndex((f: FAQ) => f.id === id)
-      
-      if (index !== -1) {
-        const faq = { ...faqs.value[index] }
-        faq.isPublished = !faq.isPublished
-        faq.updatedAt = new Date().toISOString()
-        
-        // Simulamos la llamada a la API
-        await new Promise(resolve => setTimeout(resolve, 300))
-        
-        faqs.value[index] = faq
-        return faq
-      } else {
-        throw new Error('Pregunta frecuente no encontrada')
-      }
-    } catch (err) {
-      error.value = 'Error al cambiar el estado de publicación'
-      console.error(err)
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  return {
-    faqs,
-    loading,
-    error,
+  return { 
+    faqs, 
+    isLoading, 
+    error, 
+    loadFaqs,
     fetchFaqs,
-    addFaq,
+    addFaq, 
+    editFaq,
     updateFaq,
+    removeFaq: deleteFaq,
     deleteFaq,
+    togglePublish,
     togglePublishStatus,
-    getCategories,
-    initializeStore
-  }
-}) 
+    getCategories
+  };
+});

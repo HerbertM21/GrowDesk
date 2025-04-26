@@ -269,8 +269,8 @@ const formatDate = (dateString: string): string => {
   return new Intl.DateTimeFormat('es-ES', {
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
+    year: 'numeric', 
+    hour: '2-digit', 
     minute: '2-digit'
   }).format(date);
 };
@@ -519,8 +519,8 @@ const loadUserActivities = async (userId: string) => {
       // Si no hay actividades reales después del filtrado, crear algunas actividades de demostración
       if (realActivities.length === 0) {
         console.log('No se encontraron actividades reales para este usuario, creando actividades de demostración');
-        userActivity.value = [
-          {
+  userActivity.value = [
+    {
             id: '1',
             userId: userId,
             type: 'ticket_assigned',
