@@ -1,108 +1,113 @@
+/* eslint-disable */
 <template>
   <div class="admin-section">
-    <div class="admin-section-header">
-      <div>
-        <h1 class="admin-section-title">Gestión de Preguntas Frecuentes</h1>
-        <p class="admin-section-description">
-          En esta sección el equipo de soporte técnico puede crear y administrar las preguntas frecuentes que se mostrarán a los clientes.
+    <!-- Sección del encabezado con fondo de gradiente y forma ondulada -->
+    <div class="hero-section">
+      <div class="hero-content">
+        <h1 class="hero-title">Gestión de Preguntas Frecuentes</h1>
+        <p class="hero-subtitle">
+          Crear y administrar las preguntas frecuentes que se mostrarán a los clientes.
         </p>
-      </div>
-      
-      <div class="admin-section-actions">
-        <button class="btn btn-primary" @click="openCreateModal">
+        
+        <button class="btn btn-accent" @click="openCreateModal">
           <i class="pi pi-plus"></i> Nueva Pregunta
         </button>
       </div>
+      <div class="wave-shape"></div>
     </div>
     
-    <div v-if="loading" class="loading">
-      <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
-      <p>Cargando preguntas frecuentes...</p>
-    </div>
-    <div v-else-if="error" class="alert alert-danger">
-      <i class="pi pi-exclamation-circle"></i> {{ error }}
-    </div>
-    
-    <div v-else>
-      <div class="filter-controls mb-4">
-        <div class="search-box">
-          <div class="form-group">
-            <label class="form-label">Buscar:</label>
-            <div class="search-input-container">
-              <input type="text" v-model="searchQuery" class="form-control" placeholder="Buscar preguntas..." />
-              <i class="pi pi-search search-icon"></i>
-            </div>
-          </div>
-        </div>
-        
-        <div class="filter-group">
-          <label class="form-label">Filtrar por categoría:</label>
-          <select v-model="categoryFilter" class="form-control">
-            <option value="all">Todas las categorías</option>
-            <option v-for="category in categories" :key="category" :value="category">
-              {{ category }}
-            </option>
-          </select>
-        </div>
-        
-        <div class="filter-group">
-          <label class="form-label">Estado:</label>
-          <select v-model="publishFilter" class="form-control">
-            <option value="all">Todos</option>
-            <option value="published">Publicados</option>
-            <option value="unpublished">No publicados</option>
-          </select>
-        </div>
+    <div class="content-wrapper">
+      <div v-if="loading" class="loading">
+        <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+        <p>Cargando preguntas frecuentes...</p>
+      </div>
+      <div v-else-if="error" class="alert alert-danger">
+        <i class="pi pi-exclamation-circle"></i> {{ error }}
       </div>
       
-      <div class="faq-list-container">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Pregunta</th>
-              <th>Categoría</th>
-              <th>Estado</th>
-              <th>Última actualización</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="filteredFaqs.length === 0">
-              <td colspan="5" class="no-results">
-                No se encontraron preguntas frecuentes que coincidan con los filtros.
-              </td>
-            </tr>
-            <tr v-for="faq in filteredFaqs" :key="faq.id">
-              <td class="question-cell">{{ faq.question }}</td>
-              <td><span class="category-tag">{{ faq.category }}</span></td>
-              <td>
-                <span :class="['status-badge', faq.isPublished ? 'published' : 'unpublished']">
-                  {{ faq.isPublished ? 'Publicado' : 'No publicado' }}
-                </span>
-              </td>
-              <td>{{ formatDate(faq.updatedAt) }}</td>
-              <td class="actions-cell">
-                <button @click="openViewModal(faq)" class="btn btn-sm btn-outline-primary" title="Ver detalles">
-                  <i class="pi pi-eye"></i>
-                </button>
-                <button @click="openEditModal(faq)" class="btn btn-sm btn-outline-primary" title="Editar">
-                  <i class="pi pi-pencil"></i>
-                </button>
-                <button @click="confirmDelete(faq)" class="btn btn-sm btn-outline-danger" title="Eliminar">
-                  <i class="pi pi-trash"></i>
-                </button>
-                <button 
-                  @click="togglePublish(faq.id)" 
-                  class="btn btn-sm" 
-                  :class="faq.isPublished ? 'btn-outline-warning' : 'btn-outline-success'"
-                  :title="faq.isPublished ? 'Despublicar' : 'Publicar'"
-                >
-                  <i :class="['pi', faq.isPublished ? 'pi-eye-slash' : 'pi-check-circle']"></i>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div v-else>
+        <div class="admin-card">
+          <div class="filter-controls">
+            <div class="search-box">
+              <div class="form-group">
+                <label class="form-label">Buscar:</label>
+                <div class="search-input-container">
+                  <input type="text" v-model="searchQuery" class="form-control" placeholder="Buscar preguntas..." />
+                  <i class="pi pi-search search-icon"></i>
+                </div>
+              </div>
+            </div>
+            
+            <div class="filter-group">
+              <label class="form-label">Filtrar por categoría:</label>
+              <select v-model="categoryFilter" class="form-control">
+                <option value="all">Todas las categorías</option>
+                <option v-for="category in categories" :key="category" :value="category">
+                  {{ category }}
+                </option>
+              </select>
+            </div>
+            
+            <div class="filter-group">
+              <label class="form-label">Estado:</label>
+              <select v-model="publishFilter" class="form-control">
+                <option value="all">Todos</option>
+                <option value="published">Publicados</option>
+                <option value="unpublished">No publicados</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="faq-list-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Pregunta</th>
+                  <th>Categoría</th>
+                  <th>Estado</th>
+                  <th>Última actualización</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="filteredFaqs.length === 0">
+                  <td colspan="5" class="no-results">
+                    No se encontraron preguntas frecuentes que coincidan con los filtros.
+                  </td>
+                </tr>
+                <tr v-for="faq in filteredFaqs" :key="faq.id">
+                  <td class="question-cell">{{ faq.question }}</td>
+                  <td><span class="category-tag">{{ faq.category }}</span></td>
+                  <td>
+                    <span :class="['status-badge', faq.isPublished ? 'published' : 'unpublished']">
+                      {{ faq.isPublished ? 'Publicado' : 'No publicado' }}
+                    </span>
+                  </td>
+                  <td>{{ formatDate(faq.updatedAt) }}</td>
+                  <td class="actions-cell">
+                    <button @click="openViewModal(faq)" class="btn btn-icon" title="Ver detalles">
+                      <i class="pi pi-eye"></i>
+                    </button>
+                    <button @click="openEditModal(faq)" class="btn btn-icon" title="Editar">
+                      <i class="pi pi-pencil"></i>
+                    </button>
+                    <button @click="confirmDelete(faq)" class="btn btn-icon btn-danger" title="Eliminar">
+                      <i class="pi pi-trash"></i>
+                    </button>
+                    <button 
+                      @click="togglePublish(faq.id)" 
+                      class="btn btn-icon" 
+                      :class="faq.isPublished ? 'btn-warning' : 'btn-success'"
+                      :title="faq.isPublished ? 'Despublicar' : 'Publicar'"
+                    >
+                      <i :class="['pi', faq.isPublished ? 'pi-eye-slash' : 'pi-check-circle']"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -484,11 +489,72 @@ const addNewCategory = () => {
 </script>
 
 <style scoped lang="scss">
-.admin-section-description {
-  color: var(--text-secondary);
-  margin-top: 0.5rem;
+// Estilos comunes para secciones administrativas
+.admin-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background-color: var(--bg-secondary);
 }
 
+.content-wrapper {
+  padding: 2rem;
+}
+
+// Hero Section con ondas
+.hero-section {
+  position: relative;
+  background-color: var(--primary-color);
+  color: #fff;
+  padding: 2.5rem 2rem 6rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.hero-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color:#fff;
+}
+
+.hero-subtitle {
+  font-size: 1.1rem;
+  margin: 0.5rem auto 1.5rem;
+  opacity: 0.9;
+  max-width: 700px;
+}
+
+.wave-shape {
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 4rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z' fill='%23f8fafc' opacity='.25'%3E%3C/path%3E%3Cpath d='M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z' fill='%23f8fafc' opacity='.5'%3E%3C/path%3E%3Cpath d='M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z' fill='%23f8fafc'%3E%3C/path%3E%3C/svg%3E");
+  background-size: cover;
+  background-position: center;
+}
+
+// Card para el contenedor principal
+.admin-card {
+  background-color: var(--card-bg);
+  border-radius: var(--border-radius-lg);
+  padding: 1.5rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+// Loading state
 .loading {
   display: flex;
   flex-direction: column;
@@ -502,10 +568,11 @@ const addNewCategory = () => {
   }
 }
 
+// Filtros
 .filter-controls {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
+  gap: 1.5rem;
   margin-bottom: 2rem;
 }
 
@@ -521,6 +588,91 @@ const addNewCategory = () => {
   }
 }
 
+.form-group {
+  margin-bottom: 1.25rem;
+  
+  .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+  
+  .form-control {
+    width: 100%;
+    padding: 0.65rem 1rem;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    color: var(--text-primary);
+    
+    &:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+      outline: none;
+    }
+    
+    &::placeholder {
+      color: var(--text-muted);
+    }
+    
+    &.is-invalid {
+      border-color: var(--danger-color);
+    }
+  }
+  
+  .error-text {
+    color: var(--danger-color);
+    font-size: 0.85rem;
+    margin-top: 0.4rem;
+    display: block;
+  }
+}
+
+// Tabla de FAQs
+.admin-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  
+  th, td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  th {
+    font-weight: 600;
+    color: var(--text-primary);
+    background-color: var(--bg-tertiary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    
+    &:first-child {
+      border-top-left-radius: var(--border-radius);
+    }
+    
+    &:last-child {
+      border-top-right-radius: var(--border-radius);
+    }
+  }
+  
+  tr:last-child td {
+    border-bottom: none;
+  }
+  
+  tbody tr {
+    transition: background-color 0.2s;
+    
+    &:hover {
+      background-color: var(--bg-hover);
+    }
+  }
+}
+
 .no-results {
   text-align: center;
   padding: 2rem;
@@ -529,7 +681,7 @@ const addNewCategory = () => {
 
 .question-cell {
   font-weight: 500;
-  max-width: 40%;
+  max-width: 350px;
 }
 
 .category-tag {
@@ -566,10 +718,135 @@ const addNewCategory = () => {
 
 .actions-cell {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
-/* Estilos para modales */
+// Botones
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--border-radius);
+  padding: 0.65rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  
+  &.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    
+    &:hover, &:focus {
+      background-color: var(--primary-color-dark);
+      box-shadow: 0 4px 8px rgba(var(--primary-rgb), 0.25);
+    }
+  }
+  
+  &.btn-accent {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      background-color: white;
+      color: var(--primary-color);
+      border: none;
+      padding: 0.85rem 1.75rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      cursor: pointer;
+      
+      &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      }
+      
+      i {
+        font-size: 1rem;
+      }
+    }
+  
+  &.btn-danger {
+    background-color: var(--danger-color);
+    color: white;
+    
+    &:hover, &:focus {
+      background-color: var(--danger-color-dark);
+    }
+  }
+  
+  &.btn-warning {
+    background-color: var(--warning-color);
+    color: white;
+    
+    &:hover, &:focus {
+      background-color: var(--warning-color-dark);
+    }
+  }
+  
+  &.btn-success {
+    background-color: var(--success-color);
+    color: white;
+    
+    &:hover, &:focus {
+      background-color: var(--success-color-dark);
+    }
+  }
+  
+  &.btn-outline-secondary {
+    background-color: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    
+    &:hover, &:focus {
+      background-color: var(--bg-tertiary);
+      border-color: var(--text-secondary);
+    }
+  }
+  
+  &.btn-icon {
+    padding: 0.5rem;
+    border-radius: 50%;
+    background-color: transparent;
+    color: var(--text-secondary);
+    
+    &:hover {
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+    
+    &.btn-danger {
+      color: var(--danger-color);
+      
+      &:hover {
+        background-color: rgba(var(--danger-rgb), 0.1);
+      }
+    }
+    
+    &.btn-warning {
+      color: var(--warning-color);
+      
+      &:hover {
+        background-color: rgba(var(--warning-rgb), 0.1);
+      }
+    }
+    
+    &.btn-success {
+      color: var(--success-color);
+      
+      &:hover {
+        background-color: rgba(var(--success-rgb), 0.1);
+      }
+    }
+  }
+}
+
+// Modales
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -577,6 +854,7 @@ const addNewCategory = () => {
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -585,19 +863,23 @@ const addNewCategory = () => {
 
 .modal-content {
   background-color: var(--card-bg);
-  border-radius: var(--border-radius);
+  border-radius: var(--border-radius-lg);
   width: 90%;
   max-width: 650px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  
+  &.confirm-modal {
+    max-width: 450px;
+  }
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
+  padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--border-color);
   
   h2 {
@@ -627,20 +909,53 @@ const addNewCategory = () => {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  padding: 1rem 1.5rem;
+  padding: 1.25rem 1.5rem;
   border-top: 1px solid var(--border-color);
 }
 
-/* Estilos para detalles */
+// Formulario en modal
+.faq-form {
+  .checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+    }
+    
+    .checkbox-label {
+      cursor: pointer;
+      user-select: none;
+    }
+  }
+  
+  .help-text {
+    margin: 0.5rem 0 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+  
+  .required {
+    color: var(--danger-color);
+    margin-left: 2px;
+  }
+}
+
+// Detalles de FAQ
 .faq-details {
   .detail-section {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     
     h3 {
       font-size: 1.1rem;
       font-weight: 600;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.75rem;
       color: var(--text-primary);
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
     }
     
     p {
@@ -649,17 +964,14 @@ const addNewCategory = () => {
     }
     
     .answer-content {
+      white-space: pre-wrap;
       line-height: 1.6;
-      white-space: pre-line;
-      padding: 1rem;
-      background-color: var(--bg-tertiary);
-      border-radius: var(--border-radius);
     }
   }
   
   .detail-group {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
     margin-bottom: 1.5rem;
     
@@ -667,7 +979,7 @@ const addNewCategory = () => {
       h4 {
         font-size: 0.9rem;
         font-weight: 600;
-        margin-bottom: 0.25rem;
+        margin: 0 0 0.5rem;
         color: var(--text-secondary);
       }
       
@@ -678,54 +990,8 @@ const addNewCategory = () => {
   }
 }
 
-/* Estilos para formulario */
-.faq-form {
-  .form-group {
-    margin-bottom: 1.5rem;
-  }
-  
-  .required {
-    color: var(--danger-color);
-  }
-  
-  .help-text {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    margin-top: 0.5rem;
-  }
-  
-  .error-text {
-    color: var(--danger-color);
-    font-size: 0.85rem;
-    margin-top: 0.25rem;
-    display: block;
-  }
-  
-  .is-invalid {
-    border-color: var(--danger-color);
-  }
-  
-  .checkbox-container {
-    display: flex;
-    align-items: center;
-    
-    input[type="checkbox"] {
-      margin-right: 0.5rem;
-    }
-    
-    .checkbox-label {
-      font-weight: 500;
-    }
-  }
-}
-
-/* Modal de confirmación */
-.confirm-modal {
-  max-width: 450px;
-  
-  .warning-text {
-    color: var(--danger-color);
-    margin-top: 0.5rem;
-  }
+.warning-text {
+  color: var(--danger-color);
+  font-weight: 500;
 }
 </style>

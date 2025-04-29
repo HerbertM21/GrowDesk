@@ -5,7 +5,7 @@
       <div class="nav-items">
         <router-link to="/dashboard" class="nav-item" :class="{ 'active': isActive('/dashboard') }">
           <i class="pi pi-chart-bar"></i>
-          <span>Dashboard</span>
+          <span>Panel de control</span>
         </router-link>
         
         <router-link to="/tickets" class="nav-item" :class="{ 'active': isActive('/tickets') }">
@@ -20,7 +20,7 @@
       <div class="nav-items">
         <router-link to="/admin/dashboard" class="nav-item" :class="{ 'active': isActive('/admin/dashboard') }">
           <i class="pi pi-cog"></i>
-          <span>Panel Admin</span>
+          <span>Administración</span>
         </router-link>
         
         <router-link v-if="isAdmin" to="/admin/users" class="nav-item" :class="{ 'active': isActive('/admin/users') }">

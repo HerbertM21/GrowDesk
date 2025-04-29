@@ -1,91 +1,148 @@
 <template>
   <div class="employee-support">
-    <section class="hero">
-      <h1>Portal de Soporte para Empleados</h1>
-      <p class="subtitle">Recursos y asistencia exclusiva para el personal de GlassWorks</p>
-      <div class="search-container">
-        <div class="search-box">
-          <input 
-            v-model="searchQuery" 
-            type="text" 
-            placeholder="Buscar recursos de ayuda..." 
-          />
-          <button @click="search" class="search-button">
-            <i class="pi pi-search"></i>
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <section class="quick-links">
-      <h2>Enlaces Rápidos</h2>
-      <div class="feature-grid">
-        <div class="feature-card" v-for="(link, index) in quickLinks" :key="index">
-          <i :class="link.icon"></i>
-          <h3>{{ link.title }}</h3>
-          <p>{{ link.description }}</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="support-categories">
-      <h2>Categorías de Soporte</h2>
-      <div class="category-grid">
-        <div class="category-card" v-for="(category, index) in categories" :key="index">
-          <h3>
-            <i :class="category.icon"></i>
-            {{ category.title }}
-          </h3>
-          <ul class="category-items">
-            <li v-for="(item, i) in category.items" :key="i">
-              <a href="#">
-                <i class="pi pi-chevron-right"></i>
-                {{ item }}
-              </a>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <section class="faq-section">
-      <h2>Preguntas Frecuentes</h2>
-      <div class="faq-container">
-        <div 
-          v-for="(faq, index) in faqs" 
-          :key="index" 
-          class="faq-item"
-          :class="{ 'active': openFaq === index }"
-        >
-          <div class="faq-question" @click="toggleFaq(index)">
-            <span>{{ faq.question }}</span>
-            <i class="pi" :class="openFaq === index ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
-          </div>
-          <div class="faq-answer" v-show="openFaq === index">
-            <p>{{ faq.answer }}</p>
+    <!-- Sección del encabezado con fondo de gradiente y forma ondulada -->
+    <div class="hero-section">
+      <div class="hero-content">
+        <h1 class="hero-title">¡Bienvenido al Portal de Soporte!</h1>
+        <p class="hero-subtitle">Tu espacio para encontrar ayuda y recursos</p>
+        
+        <!-- Buscador con diseño mejorado -->
+        <div class="search-container">
+          <div class="search-box">
+            <input 
+              v-model="searchQuery" 
+              type="text" 
+              placeholder="¿En qué podemos ayudarte hoy?" 
+            />
+            <button @click="search" class="search-button">
+              <i class="pi pi-search"></i>
+            </button>
           </div>
         </div>
       </div>
-    </section>
+      <div class="wave-shape"></div>
+    </div>
 
-    <section class="contact-support">
-      <h2>¿Necesitas Más Ayuda?</h2>
-      <div class="support-contact-card">
-        <div class="support-icon">
-          <i class="pi pi-phone"></i>
-        </div>
-        <div class="support-details">
-          <h3>Equipo de Soporte TI</h3>
-          <p>Disponible de Lunes a Viernes, 8am-5pm</p>
-          <div class="contact-methods">
-            <p><i class="pi pi-phone"></i> (555) 123-4567</p>
-            <p><i class="pi pi-envelope"></i> soporte@glassworks.ejemplo</p>
-            <p><i class="pi pi-phone-fill"></i> Extensión: 4321</p>
+    <div class="content-wrapper">
+      <!-- Enlaces rápidos con iconos más grandes y animaciones -->
+      <div class="quick-links-section">
+        <h2 class="section-title">
+          <span class="title-icon"><i class="pi pi-bolt"></i></span>
+          Accesos Rápidos
+        </h2>
+        <div class="quick-links-grid">
+          <div 
+            class="quick-link-card" 
+            v-for="(link, index) in quickLinks" 
+            :key="index"
+            :class="`card-${index + 1}`"
+          >
+            <div class="card-icon">
+              <i :class="link.icon"></i>
+            </div>
+            <h3>{{ link.title }}</h3>
+            <p>{{ link.description }}</p>
           </div>
-          <button class="btn btn-primary">Crear Ticket de Soporte</button>
         </div>
       </div>
-    </section>
+
+      <!-- Categorías de soporte con nuevo diseño más visual -->
+      <div class="categories-section">
+        <h2 class="section-title">
+          <span class="title-icon"><i class="pi pi-th-large"></i></span>
+          Recursos de Ayuda
+        </h2>
+        <div class="categories-grid">
+          <div class="category-card" v-for="(category, index) in categories" :key="index">
+            <div class="category-icon">
+              <i :class="category.icon"></i>
+            </div>
+            <h3>{{ category.title }}</h3>
+            <ul class="category-list">
+              <li v-for="(item, i) in category.items" :key="i">
+                <a href="#">
+                  <i class="pi pi-chevron-right"></i>
+                  <span>{{ item }}</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preguntas frecuentes con diseño moderno -->
+      <div class="faq-section">
+        <h2 class="section-title">
+          <span class="title-icon"><i class="pi pi-question-circle"></i></span>
+          Preguntas Frecuentes
+        </h2>
+        <div class="faq-container">
+          <div 
+            v-for="(faq, index) in faqs" 
+            :key="index" 
+            class="faq-item"
+            :class="{ 'active': openFaq === index }"
+          >
+            <div class="faq-question" @click="toggleFaq(index)">
+              <span>{{ faq.question }}</span>
+              <div class="faq-icon">
+                <i class="pi" :class="openFaq === index ? 'pi-minus' : 'pi-plus'"></i>
+              </div>
+            </div>
+            <div class="faq-answer" v-show="openFaq === index">
+              <p>{{ faq.answer }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contacto con diseño tipo tarjeta flotante -->
+      <div class="contact-section">
+        <h2 class="section-title">
+          <span class="title-icon"><i class="pi pi-comments"></i></span>
+          ¿Necesitas más ayuda?
+        </h2>
+        <div class="contact-card">
+          <div class="contact-graphics">
+            <div class="contact-image">
+              <i class="pi pi-users"></i>
+            </div>
+            <div class="contact-decoration"></div>
+          </div>
+          <div class="contact-content">
+            <h3>Equipo de Soporte</h3>
+            <p>Estamos aquí para ayudarte con cualquier problema que tengas.</p>
+            <div class="contact-info">
+              <div class="contact-item">
+                <i class="pi pi-clock"></i>
+                <span>Lunes a Viernes, 8am-5pm</span>
+              </div>
+              <div class="contact-item">
+                <i class="pi pi-phone"></i>
+                <span>(+569) 99313589 </span>
+              </div>
+              <div class="contact-item">
+                <i class="pi pi-envelope"></i>
+                <span>soporte@growdesk.com</span>
+              </div>
+            </div>
+            <router-link to="/tickets" class="create-ticket-btn">
+              <i class="pi pi-list"></i>
+              Listado de Tickets
+            </router-link>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer con mensaje motivacional -->
+    <div class="support-footer">
+      <div class="footer-wave"></div>
+      <div class="footer-content">
+        <p class="footer-tagline">"Avanzamos juntos hacia el éxito"</p>
+        <p class="footer-info">Portal de Soporte Growdesk &copy; 2025</p>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -238,306 +295,603 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .employee-support {
-  .hero {
-    text-align: center;
-    padding: 4rem 2rem;
-    background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+  --primary-gradient: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%);
+  --secondary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  --border-radius-lg: 1.25rem;
+  --transition-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+  background-color: var(--bg-secondary);
+  position: relative;
+  overflow-x: hidden;
+  
+  // Sección hero con fondo gradiente
+  .hero-section {
+    position: relative;
+    padding: 4rem 2rem 6rem;
+    background: var(--primary-gradient);
     color: white;
-    border-radius: 8px;
-    margin-bottom: 4rem;
-
-    h1 {
-      font-size: 3rem;
-      margin-bottom: 1rem;
+    text-align: center;
+    overflow: hidden;
+    
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+      margin: 0 auto;
     }
-
-    .subtitle {
+    
+    .hero-title {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      color: white;
+    }
+    
+    .hero-subtitle {
       font-size: 1.5rem;
-      margin-bottom: 2rem;
+      margin-bottom: 2.5rem;
       opacity: 0.9;
     }
-
+    
     .search-container {
       max-width: 600px;
       margin: 0 auto;
-    }
-
-    .search-box {
-      display: flex;
-      position: relative;
       
-      input {
-        width: 100%;
-        padding: 1rem 1.5rem;
-        border-radius: 50px;
-        border: none;
-        font-size: 1rem;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      .search-box {
+        display: flex;
+        position: relative;
+        
+        input {
+          width: 100%;
+          padding: 1.25rem 1.5rem;
+          border-radius: 99px;
+          border: none;
+          font-size: 1.1rem;
+          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+          transition: transform 0.3s ease;
+          
+          &:focus {
+            outline: none;
+            transform: scale(1.02);
+          }
+        }
+        
+        .search-button {
+          position: absolute;
+          right: 8px;
+          top: 8px;
+          background: var(--primary-color);
+          border: none;
+          color: white;
+          width: 45px;
+          height: 45px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          
+          &:hover {
+            transform: rotate(15deg) scale(1.1);
+          }
+          
+          i {
+            font-size: 1.2rem;
+          }
+        }
       }
-
-      .search-button {
+    }
+    
+    // Forma ondulada en la parte inferior
+    .wave-shape {
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 100%;
+      height: 4rem;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z' fill='%23f8fafc' opacity='.25'%3E%3C/path%3E%3Cpath d='M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z' fill='%23f8fafc' opacity='.5'%3E%3C/path%3E%3Cpath d='M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z' fill='%23f8fafc'%3E%3C/path%3E%3C/svg%3E");
+      background-size: cover;
+      background-position: center;
+    }
+  }
+  
+  .content-wrapper {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+  }
+  
+  // Títulos de sección con iconos
+  .section-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 3rem;
+    color: var(--text-primary);
+    font-size: 2rem;
+    font-weight: 600;
+    text-align: center;
+    
+    .title-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 50px;
+      height: 50px;
+      background: var(--primary-gradient);
+      border-radius: 50%;
+      margin-right: 1rem;
+      color: white;
+      font-size: 1.4rem;
+      
+      i {
+        font-size: 1.25rem;
+      }
+    }
+  }
+  
+  // Sección de enlaces rápidos
+  .quick-links-section {
+    margin-bottom: 5rem;
+    
+    .quick-links-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+      margin: 0 auto;
+    }
+    
+    .quick-link-card {
+      background-color: var(--card-bg);
+      border-radius: 24px; /* Aumentando el radio de las esquinas para que sean más redondeadas */
+      padding: 2rem 1.5rem;
+      text-align: center;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s var(--transition-bounce);
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+      display: flex; /* Agregando para centrar verticalmente el contenido */
+      flex-direction: column;
+      justify-content: center; /* Centrado vertical */
+      
+      &::before {
+        content: "";
         position: absolute;
-        right: 5px;
-        top: 5px;
-        background: #1565c0;
-        border: none;
-        color: white;
-        width: 40px;
-        height: 40px;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background: var(--secondary-gradient);
+        transition: height 0.3s ease;
+        z-index: -1;
+      }
+      
+      &:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+                    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                    
+        &::before {
+          height: 100%;
+          opacity: 0.1;
+        }
+        
+        .card-icon {
+          transform: scale(1.2);
+          
+          i {
+            color: var(--primary-color);
+          }
+        }
+      }
+      
+      &.card-1 .card-icon {
+        background-color: rgba(239, 68, 68, 0.1);
+      }
+      
+      &.card-2 .card-icon {
+        background-color: rgba(59, 130, 246, 0.1);
+      }
+      
+      &.card-3 .card-icon {
+        background-color: rgba(16, 185, 129, 0.1);
+      }
+      
+      &.card-4 .card-icon {
+        background-color: rgba(245, 158, 11, 0.1);
+      }
+      
+      .card-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1.5rem;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
+        transition: transform 0.3s var(--transition-bounce);
         
-        &:hover {
-          background: #0d47a1;
+        i {
+          font-size: 2.5rem;
+          color: var(--text-primary);
+          transition: color 0.3s ease;
         }
+      }
+      
+      h3 {
+        font-size: 1.25rem;
+        color: var(--text-primary);
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+      }
+      
+      p {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
       }
     }
   }
-
-  .quick-links, .support-categories, .faq-section, .contact-support {
-    padding: 4rem 2rem;
+  
+  // Sección de categorías
+  .categories-section {
+    margin-bottom: 5rem;
     
-    h2 {
-      text-align: center;
-      margin-bottom: 3rem;
-      color: #2c3e50;
-    }
-  }
-
-  .quick-links {
-    .feature-grid {
+    .categories-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 2rem;
-      max-width: 1200px;
-      margin: 0 auto;
     }
-
-    .feature-card {
-      text-align: center;
+    
+    .category-card {
+      border-radius: var(--border-radius-lg);
+      background-color: var(--card-bg);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+                  0 2px 4px -1px rgba(0, 0, 0, 0.06);
       padding: 2rem;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      transition: transform 0.2s;
-
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      
       &:hover {
         transform: translateY(-5px);
-      }
-
-      i {
-        font-size: 2.5rem;
-        color: #1976d2;
-        margin-bottom: 1rem;
-      }
-
-      h3 {
-        margin-bottom: 1rem;
-        color: #2c3e50;
-      }
-
-      p {
-        color: #666;
-        line-height: 1.6;
-      }
-    }
-  }
-
-  .support-categories {
-    background-color: #f5f5f5;
-
-    .category-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 2rem;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .category-card {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      padding: 2rem;
-
-      h3 {
-        display: flex;
-        align-items: center;
-        color: #2c3e50;
-        margin-bottom: 1.5rem;
-        font-size: 1.25rem;
-
-        i {
-          color: #1976d2;
-          margin-right: 0.75rem;
-          font-size: 1.5rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+                    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                    
+        .category-icon {
+          transform: rotate(15deg);
         }
       }
-
-      .category-items {
+      
+      .category-icon {
+        width: 60px;
+        height: 60px;
+        background: var(--primary-gradient);
+        border-radius: var(--border-radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        margin-bottom: 1.5rem;
+        transition: transform 0.3s var(--transition-bounce);
+        
+        i {
+          font-size: 1.75rem;
+        }
+      }
+      
+      h3 {
+        font-size: 1.35rem;
+        color: var(--text-primary);
+        margin-bottom: 1.25rem;
+        font-weight: 600;
+      }
+      
+      .category-list {
         list-style: none;
         padding: 0;
         margin: 0;
-
+        
         li {
-          margin-bottom: 0.75rem;
-
+          margin-bottom: 0.5rem;
+          
+          &:last-child {
+            margin-bottom: 0;
+          }
+          
           a {
             display: flex;
             align-items: center;
-            color: #1976d2;
+            color: var(--text-secondary);
             text-decoration: none;
-            transition: color 0.2s;
-
-            &:hover {
-              color: #0d47a1;
-              text-decoration: underline;
-            }
-
+            padding: 0.5rem 0;
+            transition: color 0.2s ease;
+            
             i {
               font-size: 0.75rem;
-              margin-right: 0.5rem;
+              margin-right: 0.75rem;
+              color: var(--primary-color);
+            }
+            
+            span {
+              flex: 1;
+            }
+            
+            &:hover {
+              color: var(--primary-color);
             }
           }
         }
       }
     }
   }
-
+  
+  // Sección de FAQ
   .faq-section {
+    margin-bottom: 5rem;
+    
     .faq-container {
       max-width: 800px;
       margin: 0 auto;
     }
-
+    
     .faq-item {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       margin-bottom: 1rem;
+      border-radius: var(--border-radius-lg);
       overflow: hidden;
-
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      
       &.active {
         .faq-question {
-          background-color: #f0f7ff;
+          background-color: var(--primary-color);
+          color: white;
+          font-weight: 600;
+        }
+        
+        .faq-icon {
+          background-color: white;
+          
+          i {
+            color: var(--primary-color);
+          }
         }
       }
-
+      
       .faq-question {
-        padding: 1.5rem;
+        padding: 1.25rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
         cursor: pointer;
         font-weight: 500;
-        color: #2c3e50;
-        transition: background-color 0.2s;
-
+        color: var(--text-primary);
+        background-color: var(--card-bg);
+        transition: all 0.3s ease;
+        
         &:hover {
-          background-color: #f0f7ff;
+          background-color: var(--bg-tertiary);
         }
-
-        i {
-          color: #1976d2;
+        
+        .faq-icon {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background-color: var(--bg-tertiary);
+          transition: all 0.3s ease;
+          
+          i {
+            font-size: 0.85rem;
+            color: var(--primary-color);
+          }
         }
       }
-
+      
       .faq-answer {
-        padding: 0 1.5rem 1.5rem;
-        color: #666;
+        padding: 1.5rem;
+        color: var(--text-secondary);
         line-height: 1.6;
+        background-color: var(--card-bg);
+        border-top: 1px solid var(--border-color);
       }
     }
   }
-
-  .contact-support {
-    background-color: #f5f5f5;
-
-    .support-contact-card {
-      max-width: 800px;
+  
+  // Sección de contacto
+  .contact-section {
+    margin-bottom: 5rem;
+    
+    .contact-card {
+      max-width: 900px;
       margin: 0 auto;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      padding: 2rem;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      text-align: center;
-
+      background-color: var(--card-bg);
+      border-radius: var(--border-radius-lg);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      
       @media (min-width: 768px) {
         flex-direction: row;
-        text-align: left;
       }
-
-      .support-icon {
-        width: 80px;
-        height: 80px;
-        background-color: #e3f2fd;
-        border-radius: 50%;
+      
+      .contact-graphics {
+        position: relative;
+        padding: 2rem;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 1.5rem;
-        margin-right: 0;
-
+        background: var(--secondary-gradient);
+        flex: none;
+        
         @media (min-width: 768px) {
-          margin-right: 2rem;
-          margin-bottom: 0;
+          width: 30%;
         }
-
-        i {
-          font-size: 2.5rem;
-          color: #1976d2;
+        
+        .contact-image {
+          width: 100px;
+          height: 100px;
+          background-color: rgba(255, 255, 255, 0.2);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 2;
+          
+          i {
+            font-size: 3rem;
+            color: white;
+          }
+        }
+        
+        .contact-decoration {
+          position: absolute;
+          width: 200px;
+          height: 200px;
+          border-radius: 50%;
+          background-color: rgba(255, 255, 255, 0.1);
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          z-index: 1;
         }
       }
-
-      .support-details {
+      
+      .contact-content {
+        padding: 2.5rem;
         flex: 1;
-
+        
         h3 {
-          color: #2c3e50;
-          margin-bottom: 0.5rem;
-          font-size: 1.5rem;
+          font-size: 1.75rem;
+          color: var(--text-primary);
+          margin-bottom: 0.75rem;
         }
-
+        
         p {
-          color: #666;
-          margin-bottom: 1.5rem;
+          color: var(--text-secondary);
+          margin-bottom: 2rem;
         }
-
-        .contact-methods {
-          margin-bottom: 1.5rem;
-
-          p {
+        
+        .contact-info {
+          margin-bottom: 2rem;
+          
+          .contact-item {
             display: flex;
             align-items: center;
-            margin-bottom: 0.5rem;
-
+            margin-bottom: 1rem;
+            
             i {
-              color: #1976d2;
-              margin-right: 0.75rem;
+              width: 40px;
+              height: 40px;
+              border-radius: 50%;
+              background-color: var(--bg-tertiary);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin-right: 1rem;
+              color: var(--primary-color);
+              font-size: 1.2rem;
+            }
+            
+            span {
+              color: var(--text-secondary);
             }
           }
         }
-
-        .btn-primary {
-          background-color: #1976d2;
+        
+        .create-ticket-btn {
+          background: var(--primary-gradient);
           color: white;
           border: none;
-          padding: 0.75rem 1.5rem;
-          border-radius: 4px;
-          font-weight: 500;
+          padding: 0.85rem 1.75rem;
+          border-radius: 99px;
+          display: inline-flex;
+          align-items: center;
+          font-weight: 600;
           cursor: pointer;
-          transition: background-color 0.2s;
-
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+          
+          i {
+            margin-right: 0.75rem;
+          }
+          
           &:hover {
-            background-color: #1565c0;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
           }
         }
+      }
+    }
+  }
+  
+  // Footer con estilo
+  .support-footer {
+    position: relative;
+    text-align: center;
+    color: white;
+    padding: 5rem 1rem 2rem;
+    background: var(--primary-gradient);
+    
+    .footer-wave {
+      position: absolute;
+      top: -2px;
+      left: 0;
+      width: 100%;
+      height: 3rem;
+      transform: rotate(180deg);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z' fill='%23f8fafc' opacity='.25'%3E%3C/path%3E%3Cpath d='M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z' fill='%23f8fafc' opacity='.5'%3E%3C/path%3E%3Cpath d='M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z' fill='%23f8fafc'%3E%3C/path%3E%3C/svg%3E");
+      background-size: cover;
+      background-position: center;
+    }
+    
+    .footer-content {
+      position: relative;
+      z-index: 2;
+      
+      .footer-tagline {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+      }
+      
+      .footer-info {
+        font-size: 0.9rem;
+        opacity: 0.8;
+      }
+    }
+  }
+  
+  // Responsive adjustments
+  @media (max-width: 768px) {
+    .hero-section {
+      padding: 3rem 1.5rem 5rem;
+      
+      .hero-title {
+        font-size: 2.5rem;
+      }
+      
+      .hero-subtitle {
+        font-size: 1.25rem;
+      }
+    }
+    
+    .section-title {
+      font-size: 1.75rem;
+      flex-direction: column;
+      
+      .title-icon {
+        margin-right: 0;
+        margin-bottom: 0.75rem;
+      }
+    }
+    
+    .contact-section .contact-card {
+      .contact-content {
+        padding: 1.5rem;
       }
     }
   }

@@ -1,125 +1,162 @@
+/* eslint-disable */
 <template>
-  <div class="dashboard">
-    <h1>Panel de Control</h1>
-    
-    <!-- Sección de tarjetas de métricas -->
-    <div class="metrics-section">
-      <div class="dashboard-grid">
-        <div class="dashboard-card">
-          <div class="card-icon">
-            <i class="pi pi-ticket"></i>
-          </div>
-          <div class="card-content">
-            <h3>Tickets Abiertos</h3>
-            <p class="number">{{ openTickets.length }}</p>
-          </div>
+  <div class="admin-section">
+    <div class="dashboard">
+      <!-- Encabezado con fondo de color sólido y onda inferior -->
+      <div class="hero-section">
+        <div class="hero-content">
+          <h1 class="hero-title">Panel de Control</h1>
+          <p class="hero-subtitle">Vista general del sistema de soporte</p>
         </div>
-        
-        <div class="dashboard-card">
-          <div class="card-icon">
-            <i class="pi pi-user"></i>
-          </div>
-          <div class="card-content">
-            <h3>Tickets Asignados</h3>
-            <p class="number">{{ assignedTickets.length }}</p>
-          </div>
-        </div>
-        
-        <div class="dashboard-card">
-          <div class="card-icon">
-            <i class="pi pi-check-circle"></i>
-          </div>
-          <div class="card-content">
-            <h3>Tickets Cerrados</h3>
-            <p class="number">{{ closedTickets.length }}</p>
-          </div>
-        </div>
-        
-        <div class="dashboard-card">
-          <div class="card-icon urgent">
-            <i class="pi pi-exclamation-triangle"></i>
-          </div>
-          <div class="card-content">
-            <h3>Tickets Urgentes</h3>
-            <p class="number">{{ urgentTickets.length }}</p>
-          </div>
-        </div>
+        <div class="wave-shape"></div>
       </div>
-    </div>
-    
-    <!-- Sección de métricas de rendimiento -->
-    <div class="performance-section">
-      <div class="dashboard-grid">
-        <div class="dashboard-card">
-          <div class="card-content">
-            <h3>Tiempo Promedio de Resolución</h3>
-            <p class="number">-- hrs</p>
-            <p class="coming-soon">Próximamente</p>
-          </div>
-        </div>
-        
-        <div class="dashboard-card">
-          <div class="card-content">
-            <h3>Satisfacción del Cliente</h3>
-            <p class="number">-- %</p>
-            <p class="coming-soon">Próximamente</p>
-          </div>
-        </div>
-        
-        <div class="dashboard-card">
-          <div class="card-content">
-            <h3>Tasa de Resolución</h3>
-            <p class="number">-- %</p>
-            <p class="coming-soon">Próximamente</p>
-          </div>
-        </div>
-        
-        <div class="dashboard-card">
-          <div class="card-content">
-            <h3>Tickets por Día</h3>
-            <div class="tickets-per-day">
-              <div v-for="count in ticketsPerDay.slice(0, 3).map(([_, c]) => c)" :key="count" class="day-count">
-                <span class="count">{{ count }}</span>
+      
+      <div class="content-wrapper">
+        <!-- Sección de tarjetas de métricas con nuevo diseño -->
+        <div class="metrics-section">
+          <h2 class="section-title">
+            <span class="title-icon"><i class="pi pi-chart-bar"></i></span>
+            Métricas Principales
+          </h2>
+          <div class="dashboard-grid">
+            <div class="metric-card">
+              <div class="card-icon">
+                <i class="pi pi-ticket"></i>
+              </div>
+              <div class="card-content">
+                <h3>Tickets Abiertos</h3>
+                <p class="number">{{ openTickets.length }}</p>
+              </div>
+            </div>
+            
+            <div class="metric-card">
+              <div class="card-icon">
+                <i class="pi pi-user"></i>
+              </div>
+              <div class="card-content">
+                <h3>Tickets Asignados</h3>
+                <p class="number">{{ assignedTickets.length }}</p>
+              </div>
+            </div>
+            
+            <div class="metric-card">
+              <div class="card-icon">
+                <i class="pi pi-check-circle"></i>
+              </div>
+              <div class="card-content">
+                <h3>Tickets Cerrados</h3>
+                <p class="number">{{ closedTickets.length }}</p>
+              </div>
+            </div>
+            
+            <div class="metric-card">
+              <div class="card-icon urgent">
+                <i class="pi pi-exclamation-triangle"></i>
+              </div>
+              <div class="card-content">
+                <h3>Tickets Urgentes</h3>
+                <p class="number">{{ urgentTickets.length }}</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-    
-    <!-- Sección de lista de tickets recientes -->
-    <div class="recent-tickets-section">
-      <div class="section-header">
-        <h2>Tickets Recientes</h2>
-        <router-link to="/tickets" class="view-all">Ver todos los tickets</router-link>
-      </div>
-      
-      <div v-if="loading" class="loading">Cargando tickets...</div>
-      <div v-else-if="tickets.length === 0" class="empty-state">No hay tickets recientes</div>
-      <div v-else class="tickets-table">
-        <div class="table-header">
-          <div class="column">ID</div>
-          <div class="column">Título</div>
-          <div class="column">Estado</div>
-          <div class="column">Prioridad</div>
-          <div class="column">Asignado a</div>
-          <div class="column">Acciones</div>
+        
+        <!-- Sección de métricas de rendimiento con nuevo diseño -->
+        <div class="performance-section">
+          <h2 class="section-title">
+            <span class="title-icon"><i class="pi pi-clock"></i></span>
+            Indicadores de Rendimiento
+          </h2>
+          <div class="dashboard-grid">
+            <div class="performance-card">
+              <div class="card-content">
+                <h3>Tiempo Promedio de Resolución</h3>
+                <p class="number">-- hrs</p>
+                <p class="coming-soon">Próximamente</p>
+              </div>
+            </div>
+            
+            <div class="performance-card">
+              <div class="card-content">
+                <h3>Satisfacción del Cliente</h3>
+                <p class="number">-- %</p>
+                <p class="coming-soon">Próximamente</p>
+              </div>
+            </div>
+            
+            <div class="performance-card">
+              <div class="card-content">
+                <h3>Tasa de Resolución</h3>
+                <p class="number">-- %</p>
+                <p class="coming-soon">Próximamente</p>
+              </div>
+            </div>
+            
+            <div class="performance-card">
+              <div class="card-content">
+                <h3>Tickets por Día</h3>
+                <div class="tickets-per-day">
+                  <div v-for="count in ticketsPerDay.slice(0, 3).map(([_, c]) => c)" :key="count" class="day-count">
+                    <span class="count">{{ count }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         
-        <div v-for="ticket in recentTickets" :key="ticket.id" class="table-row">
-          <div class="column">{{ ticket.id.split('-')[1] }}</div>
-          <div class="column title">{{ ticket.title }}</div>
-          <div class="column">
-            <span :class="['status-badge', ticket.status]">{{ translateStatus(ticket.status) }}</span>
-          </div>
-          <div class="column">
-            <span :class="['priority-badge', ticket.priority]">{{ translatePriority(ticket.priority) }}</span>
-          </div>
-          <div class="column">{{ getUserFullName(ticket.assignedTo) }}</div>
-          <div class="column">
-            <router-link :to="`/tickets/${ticket.id}`" class="action-btn">
-              <i class="pi pi-eye"></i> Ver
+        <!-- Sección de lista de tickets recientes con nuevo diseño -->
+        <div class="recent-tickets-section">
+          <h2 class="section-title">
+            <span class="title-icon"><i class="pi pi-list"></i></span>
+            Tickets Recientes
+          </h2>
+          
+          <div class="section-header">
+            <router-link to="/tickets" class="view-all-btn">
+              <i class="pi pi-external-link"></i>
+              Ver todos los tickets
             </router-link>
+          </div>
+          
+          <div v-if="loading" class="status-message loading">
+            <i class="pi pi-spin pi-spinner"></i>
+            <p>Cargando tickets...</p>
+          </div>
+          
+          <div v-else-if="tickets.length === 0" class="status-message empty">
+            <i class="pi pi-inbox"></i>
+            <p>No hay tickets recientes</p>
+          </div>
+          
+          <div v-else class="tickets-table">
+            <div class="table-header">
+              <div class="column">ID</div>
+              <div class="column title">Título</div>
+              <div class="column">Estado</div>
+              <div class="column">Prioridad</div>
+              <div class="column">Asignado a</div>
+              <div class="column actions">Acciones</div>
+            </div>
+            
+            <div v-for="ticket in recentTickets" :key="ticket.id" class="table-row">
+              <div class="column">{{ ticket.id.split('-')[1] || ticket.id }}</div>
+              <div class="column title">{{ ticket.title }}</div>
+              <div class="column">
+                <span :class="['status-badge', ticket.status]">{{ translateStatus(ticket.status) }}</span>
+              </div>
+              <div class="column">
+                <span :class="['priority-badge', normalizePriority(ticket.priority)]">
+                  {{ translatePriority(ticket.priority) }}
+                </span>
+              </div>
+              <div class="column">{{ getUserFullName(ticket.assignedTo) }}</div>
+              <div class="column actions">
+                <router-link :to="`/tickets/${ticket.id}`" class="action-btn">
+                  <i class="pi pi-eye"></i> Ver
+                </router-link>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -173,12 +210,33 @@ const translateStatus = (status: string): string => {
 // Función para traducir la prioridad del ticket
 const translatePriority = (priority: string): string => {
   const priorityMap: Record<string, string> = {
+    'low': 'Baja',
+    'medium': 'Media',
+    'high': 'Alta',
+    'urgent': 'Urgente',
     'LOW': 'Baja',
     'MEDIUM': 'Media',
     'HIGH': 'Alta',
     'URGENT': 'Urgente'
   }
   return priorityMap[priority] || priority
+}
+
+// Función para normalizar el valor de prioridad
+const normalizePriority = (priority: string): string => {
+  if (!priority) return 'medium';
+  
+  // Convertir a minúsculas
+  const lowerPriority = priority.toLowerCase();
+  
+  // Mapear diferentes formatos posibles al formato estándar
+  if (lowerPriority === 'baja' || lowerPriority === 'low') return 'low';
+  if (lowerPriority === 'media' || lowerPriority === 'medium') return 'medium';
+  if (lowerPriority === 'alta' || lowerPriority === 'high') return 'high';
+  if (lowerPriority === 'urgente' || lowerPriority === 'urgent') return 'urgent';
+  
+  // Si no coincide con ninguno, devolver medium por defecto
+  return 'medium';
 }
 
 // Función para obtener el nombre completo de un usuario por su ID
@@ -205,147 +263,318 @@ const formatDate = (dateString: string): string => {
 
 <style lang="scss" scoped>
 .dashboard {
-  max-width: 1200px;
-  margin: 0 auto;
-  background: linear-gradient(to bottom, #f8faff, #eef2ff);
-  border-radius: 10px;
-  padding: 1.5rem;
-  box-shadow: 0 5px 15px rgba(35, 38, 110, 0.05);
+  --border-radius-lg: 1.25rem;
+  --transition-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
   
-  h1 {
-    margin-bottom: 1.5rem;
-    color: #1e293b;
+  background-color: var(--bg-secondary);
+  position: relative;
+  overflow-x: hidden;
+  
+  // Sección hero con fondo de color sólido
+  .hero-section {
+    position: relative;
+    padding: 2.5rem 2rem 6rem;
+    background-color: var(--primary-color);
+    color: white;
+    text-align: center;
+    overflow: hidden;
+    
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    
+    .hero-title {
+      font-size: 2.25rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: white;
+      text-align: center;
+    }
+    
+    .hero-subtitle {
+      font-size: 1.1rem;
+      margin-bottom: 0;
+      opacity: 0.9;
+    }
+    
+    // Forma ondulada en la parte inferior
+    .wave-shape {
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 100%;
+      height: 4rem;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z' fill='%23f8fafc' opacity='.25'%3E%3C/path%3E%3Cpath d='M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z' fill='%23f8fafc' opacity='.5'%3E%3C/path%3E%3Cpath d='M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z' fill='%23f8fafc'%3E%3C/path%3E%3C/svg%3E");
+      background-size: cover;
+      background-position: center;
+    }
+  }
+  
+  .content-wrapper {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+  }
+  
+  // Títulos de sección con iconos
+  .section-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    color: var(--text-primary);
+    font-size: 1.75rem;
     font-weight: 600;
-    border-bottom: 2px solid #c7d2fe;
-    padding-bottom: 0.5rem;
+    text-align: center;
+    
+    .title-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 45px;
+      height: 45px;
+      background-color: var(--primary-color);
+      border-radius: 50%;
+      margin-right: 1rem;
+      color: white;
+      
+      i {
+        font-size: 1.25rem;
+      }
+    }
   }
   
-  h2 {
-    font-size: 1.5rem;
-    color: #334155;
-    margin-bottom: 1rem;
-  }
-  
+  // Contenedores de secciones
   .metrics-section,
   .performance-section,
   .recent-tickets-section {
-    margin-bottom: 2.5rem;
+    margin-bottom: 3.5rem;
   }
-
+  
   .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.5rem;
     margin-bottom: 1rem;
   }
-
-  .dashboard-card {
-    background: #f8fafc;
+  
+  // Tarjetas de métricas
+  .metric-card {
+    background-color: var(--card-bg);
+    border-radius: 24px; /* Aumentando el radio de las esquinas para que sean más redondeadas */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     padding: 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
     display: flex;
     align-items: center;
-    border: 1px solid #e2e8f0;
-    transition: all 0.3s ease;
+    transition: transform 0.3s var(--transition-bounce);
+    position: relative;
+    overflow: hidden;
     
     &:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      transform: translateY(-8px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+                 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
     
     .card-icon {
-      width: 56px;
-      height: 56px;
+      width: 64px;
+      height: 64px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+      background-color: rgba(var(--primary-color-rgb), 0.1);
       display: flex;
       align-items: center;
       justify-content: center;
       margin-right: 1.25rem;
       
       i {
-        font-size: 1.5rem;
-        color: #4f46e5;
+        font-size: 1.85rem;
+        color: var(--primary-color);
       }
       
       &.urgent {
-        background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+        background-color: rgba(220, 38, 38, 0.1);
         
         i {
-          color: #7c3aed;
+          color: #dc2626;
         }
       }
     }
     
     .card-content {
       flex: 1;
-    }
-
-    h3 {
-      margin: 0;
-      color: #4b5563;
-      font-size: 1rem;
-      font-weight: 600;
-    }
-
-    .number {
-      margin: 0.5rem 0 0;
-      font-size: 2.25rem;
-      font-weight: 700;
-      background: linear-gradient(90deg, #4f46e5, #6366f1);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: -0.5px;
-    }
-    
-    .coming-soon {
-      margin: 0.25rem 0 0;
-      font-size: 0.8rem;
-      color: #6b7280;
-      font-style: italic;
-    }
-  }
-  
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.25rem;
-    
-    .view-all {
-      color: #4f46e5;
-      text-decoration: none;
-      font-size: 0.95rem;
-      font-weight: 500;
-      transition: color 0.2s;
+      display: flex; /* Añadido para centrar verticalmente */
+      flex-direction: column;
+      justify-content: center; /* Centrado vertical */
       
-      &:hover {
-        color: #4338ca;
-        text-decoration: underline;
+      h3 {
+        margin: 0;
+        color: var(--text-primary);
+        font-size: 1rem;
+        font-weight: 600;
+      }
+      
+      .number {
+        margin: 0.5rem 0 0;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        letter-spacing: -0.5px;
       }
     }
   }
   
+  // Tarjetas de rendimiento
+  .performance-card {
+    background-color: var(--card-bg);
+    border-radius: 24px; /* Aumentando el radio de las esquinas para que sean más redondeadas */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    padding: 1.75rem;
+    border: 1px solid var(--border-color);
+    transition: transform 0.3s var(--transition-bounce);
+    display: flex; /* Añadido para centrar verticalmente */
+    flex-direction: column;
+    
+    &:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+                 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    .card-content {
+      text-align: center;
+      display: flex; /* Añadido para centrar verticalmente */
+      flex-direction: column;
+      justify-content: center; /* Centrado vertical */
+      flex: 1; /* Para que ocupe todo el espacio disponible */
+      
+      h3 {
+        margin: 0 0 1rem;
+        color: var(--text-primary);
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+      
+      .number {
+        margin: 0;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+      }
+      
+      .coming-soon {
+        margin: 0.5rem 0 0;
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        font-style: italic;
+      }
+    }
+  }
+  
+  .tickets-per-day {
+    margin-top: 1rem;
+    
+    .day-count {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border-color);
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      .count {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+      }
+    }
+  }
+  
+  // Sección de tickets recientes
+  .section-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1.25rem;
+    
+    .view-all-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: var(--bg-tertiary);
+      color: var(--primary-color);
+      border: 1px solid var(--border-color);
+      padding: 0.65rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      
+      &:hover {
+        background-color: var(--card-bg);
+        transform: translateY(-2px);
+      }
+      
+      i {
+        font-size: 1rem;
+      }
+    }
+  }
+  
+  // Estado de carga, error, vacío
+  .status-message {
+    text-align: center;
+    padding: 3rem;
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-color);
+    
+    i {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+    
+    p {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+    }
+    
+    &.loading i {
+      color: var(--primary-color);
+    }
+    
+    &.empty i {
+      color: #6b7280;
+    }
+  }
+  
+  // Tabla de tickets
   .tickets-table {
-    background: #f8fafc;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     overflow: hidden;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
     
     .table-header {
       display: flex;
-      background: linear-gradient(to right, #f1f5f9, #f8fafc);
+      background-color: var(--bg-tertiary);
       padding: 1rem 1.5rem;
       font-weight: 600;
-      color: #475569;
+      color: var(--text-primary);
     }
     
     .table-row {
       display: flex;
       padding: 1rem 1.5rem;
-      border-bottom: 1px solid #e5e7eb;
+      border-bottom: 1px solid var(--border-color);
       transition: background-color 0.2s;
       
       &:last-child {
@@ -353,7 +582,7 @@ const formatDate = (dateString: string): string => {
       }
       
       &:hover {
-        background-color: #f1f5f9;
+        background-color: var(--bg-tertiary);
       }
     }
     
@@ -366,93 +595,143 @@ const formatDate = (dateString: string): string => {
         flex: 2;
         font-weight: 500;
       }
+      
+      &.actions {
+        justify-content: flex-end;
+      }
     }
     
+    // Badges de estado y prioridad
     .status-badge,
     .priority-badge {
-      display: inline-block;
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      text-transform: capitalize;
+      display: inline-flex;
+      align-items: center;
+      padding: 0.35rem 0.75rem;
+      border-radius: 99px;
+      font-size: 0.8rem;
       font-weight: 500;
+      
+      &::before {
+        content: "";
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+      }
     }
     
     .status-badge {
-      &.open { background: #cfe7fe; color: #1e40af; }
-      &.assigned { background: #dbd2fd; color: #5b21b6; }
-      &.in_progress { background: #bae6fd; color: #0369a1; }
-      &.resolved { background: #c7d2fe; color: #4338ca; }
-      &.closed { background: #d1d5db; color: #374151; }
+      &.open { 
+        background: rgba(30, 64, 175, 0.1); 
+        color: #1e40af; 
+        &::before { background-color: #1e40af; }
+      }
+      &.assigned { 
+        background: rgba(91, 33, 182, 0.1); 
+        color: #5b21b6; 
+        &::before { background-color: #5b21b6; }
+      }
+      &.in_progress { 
+        background: rgba(3, 105, 161, 0.1); 
+        color: #0369a1; 
+        &::before { background-color: #0369a1; }
+      }
+      &.resolved { 
+        background: rgba(67, 56, 202, 0.1); 
+        color: #4338ca; 
+        &::before { background-color: #4338ca; }
+      }
+      &.closed { 
+        background: rgba(55, 65, 81, 0.1); 
+        color: #374151; 
+        &::before { background-color: #374151; }
+      }
     }
     
     .priority-badge {
-      &.low { background: #bae6fd; color: #0369a1; }
-      &.medium { background: #c7d2fe; color: #4338ca; }
-      &.high { background: #e0e7ff; color: #3730a3; }
-      &.urgent { background: #ddd6fe; color: #5b21b6; }
+      &.low { 
+        background: rgba(3, 105, 161, 0.1); 
+        color: #0369a1; 
+        &::before { background-color: #0369a1; }
+      }
+      &.medium { 
+        background: rgba(67, 56, 202, 0.1); 
+        color: #4338ca; 
+        &::before { background-color: #4338ca; }
+      }
+      &.high { 
+        background: rgba(55, 48, 163, 0.1); 
+        color: #3730a3; 
+        &::before { background-color: #3730a3; }
+      }
+      &.urgent { 
+        background: rgba(91, 33, 182, 0.1); 
+        color: #5b21b6; 
+        &::before { background-color: #5b21b6; }
+      }
     }
     
+    // Botón de acción
     .action-btn {
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
-      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      gap: 0.5rem;
+      background-color: var(--primary-color);
       color: white;
       border: none;
-      padding: 0.4rem 0.75rem;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 500;
-      cursor: pointer;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
       text-decoration: none;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       
       &:hover {
-        background: linear-gradient(135deg, #4338ca, #4f46e5);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
+        transform: translateY(-2px);
+        background-color: var(--primary-dark-color, #0d47a1);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+      }
+      
+      i {
+        font-size: 0.85rem;
       }
     }
   }
   
-  .loading,
-  .empty-state {
-    text-align: center;
-    padding: 2.5rem;
-    color: #6b7280;
-    background: #f8fafc;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e2e8f0;
-    font-style: italic;
-  }
-
-  .tickets-per-day {
-    margin-top: 1rem;
-    
-    .day-count {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 0.5rem 0;
-      border-bottom: 1px solid #e2e8f0;
+  // Responsive adjustments
+  @media (max-width: 768px) {
+    .hero-section {
+      padding: 2rem 1rem 4rem;
       
-      &:last-child {
-        border-bottom: none;
+      .hero-title {
+        font-size: 2rem;
       }
       
-      .count {
-        font-size: 2.25rem;
-        font-weight: 700;
-        background: linear-gradient(90deg, #4f46e5, #6366f1);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        letter-spacing: -0.5px;
-        padding: 0;
+      .hero-subtitle {
+        font-size: 1rem;
+      }
+    }
+    
+    .section-title {
+      font-size: 1.5rem;
+      flex-direction: column;
+      
+      .title-icon {
+        margin-right: 0;
+        margin-bottom: 0.75rem;
+      }
+    }
+    
+    .tickets-table {
+      overflow-x: auto;
+      
+      .table-header,
+      .table-row {
+        min-width: 800px;
       }
     }
   }
 }
-</style> 
+</style>

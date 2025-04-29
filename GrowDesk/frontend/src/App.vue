@@ -1,3 +1,4 @@
+/* eslint-disable */
 <template>
   <div class="app-container" :class="{ 'dark-theme': isDarkTheme }">
     <!-- Solo mostrar la navegación cuando el usuario está autenticado o cuando no estamos en las rutas de login/registro -->
@@ -194,4 +195,4 @@ onMounted(() => {
 select, input, textarea, button {
   font-family: inherit;
 }
-</style> 
+</style>

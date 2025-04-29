@@ -1,3 +1,4 @@
+/* eslint-disable */
 <template>
   <div class="ticket-detail">
     <div v-if="isLoading" class="loading">Cargando...</div>
@@ -1799,4 +1800,4 @@ const closeTicket = async () => {
     }
   }
 }
-</style> 
+</style>

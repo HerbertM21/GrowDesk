@@ -1,257 +1,272 @@
 <template>
-  <div class="profile-management">
-    <div class="profile-header">
-      <h1 class="profile-title">Gestión de Perfiles de Usuarios</h1>
-      <p class="profile-subtitle">Administre los perfiles de los usuarios del sistema</p>
-    </div>
-    
-    <div class="profile-content">
-      <!-- Vista de selección de usuario -->
-      <div class="user-selection">
-        <label for="user-select">Seleccionar Usuario:</label>
-        <div class="select-container">
-          <select id="user-select" v-model="selectedUserId" class="form-control" @change="loadUserProfile">
-            <option value="" disabled>Seleccione un usuario</option>
-            <option v-for="user in users" :key="user.id" :value="user.id">
-              {{ user.firstName }} {{ user.lastName }} ({{ translateRole(user.role) }})
-            </option>
-          </select>
-          <i class="pi pi-chevron-down"></i>
+  <div class="admin-section">
+    <div class="profile-management">
+      <!-- Sección del encabezado con fondo de color primario y forma ondulada -->
+      <div class="hero-section">
+        <div class="hero-content">
+          <h1 class="hero-title">Gestión de Perfiles de Usuarios</h1>
+          <p class="hero-subtitle">Administre los perfiles de los usuarios del sistema</p>
         </div>
+        <div class="wave-shape"></div>
       </div>
       
-      <!-- Sección principal con tarjetas para diferentes aspectos del perfil del usuario seleccionado -->
-      <div class="profile-grid" v-if="selectedUserId">
-        <!-- Información personal -->
-        <div class="profile-card">
-          <div class="profile-card-header">
-            <i class="pi pi-user"></i>
-            <h2>Información Personal</h2>
-          </div>
-          <div class="profile-card-body">
-            <form @submit.prevent="updatePersonalInfo">
-              <div class="profile-form-group">
-                <label for="firstName">Nombre</label>
-                <input 
-                  id="firstName" 
-                  v-model="personalInfo.firstName" 
-                  type="text" 
-                  class="form-control"
-                  required
-                  :class="{ 'is-invalid': errors.firstName }"
-                />
-                <div v-if="errors.firstName" class="invalid-feedback">
-                  {{ errors.firstName }}
-                </div>
-              </div>
-              
-              <div class="profile-form-group">
-                <label for="lastName">Apellido</label>
-                <input 
-                  id="lastName" 
-                  v-model="personalInfo.lastName" 
-                  type="text" 
-                  class="form-control"
-                  required
-                  :class="{ 'is-invalid': errors.lastName }"
-                />
-                <div v-if="errors.lastName" class="invalid-feedback">
-                  {{ errors.lastName }}
-                </div>
-              </div>
-              
-              <div class="profile-form-group">
-                <label for="email">Email</label>
-                <input 
-                  id="email" 
-                  v-model="personalInfo.email" 
-                  type="email" 
-                  class="form-control"
-                  required
-                  :class="{ 'is-invalid': errors.email }"
-                  disabled
-                />
-                <div v-if="errors.email" class="invalid-feedback">
-                  {{ errors.email }}
-                </div>
-                <small class="form-text text-muted">
-                  El email no se puede cambiar por motivos de seguridad.
-                </small>
-              </div>
-              
-              <div class="profile-form-group">
-                <label for="department">Departamento</label>
-                <select 
-                  id="department" 
-                  v-model="personalInfo.department" 
-                  class="form-control"
-                  :class="{ 'is-invalid': errors.department }"
-                >
-                  <option value="" disabled>Seleccione un departamento</option>
-                  <option value="IT">IT</option>
-                  <option value="RRHH">RRHH</option>
-                  <option value="Ventas">Ventas</option>
-                  <option value="Marketing">Marketing</option>
-                  <option value="Soporte">Soporte</option>
+      <div class="content-wrapper">
+        <!-- Vista de selección de usuario -->
+        <div class="filters-section">
+          <h2 class="section-title">
+            <span class="title-icon"><i class="pi pi-user"></i></span>
+            Selección de Usuario
+          </h2>
+          
+          <div class="filters-container">
+            <div class="filter-group">
+              <label for="user-select">Seleccione un usuario para gestionar su perfil:</label>
+              <div class="select-container">
+                <select id="user-select" v-model="selectedUserId" class="form-control" @change="loadUserProfile">
+                  <option value="" disabled>Seleccione un usuario</option>
+                  <option v-for="user in users" :key="user.id" :value="user.id">
+                    {{ user.firstName }} {{ user.lastName }} ({{ translateRole(user.role) }})
+                  </option>
                 </select>
-                <div v-if="errors.department" class="invalid-feedback">
-                  {{ errors.department }}
-                </div>
+                <i class="pi pi-chevron-down"></i>
               </div>
-              
-              <div class="profile-card-actions">
-                <button 
-                  type="submit" 
-                  class="btn btn-primary"
-                  :disabled="isSubmitting"
-                >
-                  <i class="pi pi-save"></i> Guardar Cambios
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
         </div>
         
-        <!-- Cambio de rol y estado -->
-        <div class="profile-card">
-          <div class="profile-card-header">
-            <i class="pi pi-users"></i>
-            <h2>Rol y Estado</h2>
-          </div>
-          <div class="profile-card-body">
-            <form @submit.prevent="updateUserRole">
-              <div class="profile-form-group">
-                <label for="role">Rol</label>
-                <select 
-                  id="role" 
-                  v-model="userRole.role" 
-                  class="form-control"
-                  :class="{ 'is-invalid': errors.role }"
-                >
-                  <option value="" disabled>Seleccione un rol</option>
-                  <option value="admin">Administrador</option>
-                  <option value="assistant">Asistente</option>
-                  <option value="employee">Empleado</option>
-                </select>
-                <div v-if="errors.role" class="invalid-feedback">
-                  {{ errors.role }}
-                </div>
-              </div>
-              
-              <div class="profile-form-group">
-                <label>Estado de la cuenta</label>
-                <div class="toggle-switch-container">
-                  <label class="toggle-switch">
-                    <input 
-                      type="checkbox" 
-                      v-model="userRole.active"
-                    >
-                    <span class="slider round"></span>
-                  </label>
-                  <span class="toggle-label">
-                    {{ userRole.active ? 'Activo' : 'Inactivo' }}
-                  </span>
-                </div>
-              </div>
-              
-              <div class="profile-card-actions">
-                <button 
-                  type="submit" 
-                  class="btn btn-primary"
-                  :disabled="isSubmitting"
-                >
-                  <i class="pi pi-users"></i> Actualizar Rol
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-        
-        <!-- Resetear contraseña -->
-        <div class="profile-card">
-          <div class="profile-card-header">
-            <i class="pi pi-lock"></i>
-            <h2>Resetear Contraseña</h2>
-          </div>
-          <div class="profile-card-body">
-            <form @submit.prevent="resetPassword">
-              <div class="profile-form-group">
-                <label for="newPassword">Nueva Contraseña</label>
-                <div class="password-input-container">
+        <!-- Sección principal con tarjetas para diferentes aspectos del perfil del usuario seleccionado -->
+        <div class="profile-grid" v-if="selectedUserId">
+          <!-- Información personal -->
+          <div class="profile-card">
+            <div class="profile-card-header">
+              <i class="pi pi-user"></i>
+              <h2>Información Personal</h2>
+            </div>
+            <div class="profile-card-body">
+              <form @submit.prevent="updatePersonalInfo">
+                <div class="profile-form-group">
+                  <label for="firstName">Nombre</label>
                   <input 
-                    id="newPassword" 
-                    v-model="passwordData.newPassword" 
-                    :type="showNewPassword ? 'text' : 'password'" 
+                    id="firstName" 
+                    v-model="personalInfo.firstName" 
+                    type="text" 
                     class="form-control"
                     required
-                    :class="{ 'is-invalid': errors.newPassword }"
+                    :class="{ 'is-invalid': errors.firstName }"
                   />
-                  <button 
-                    type="button" 
-                    class="password-toggle" 
-                    @click="showNewPassword = !showNewPassword"
-                  >
-                    <i :class="showNewPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
-                  </button>
-                </div>
-                <div v-if="errors.newPassword" class="invalid-feedback">
-                  {{ errors.newPassword }}
-                </div>
-                <div class="password-strength" v-if="passwordData.newPassword">
-                  <div class="strength-meter">
-                    <div 
-                      class="strength-meter-fill" 
-                      :style="{ width: passwordStrength.percent + '%' }"
-                      :class="passwordStrength.class"
-                    ></div>
+                  <div v-if="errors.firstName" class="invalid-feedback">
+                    {{ errors.firstName }}
                   </div>
-                  <span class="strength-text" :class="passwordStrength.class">
-                    {{ passwordStrength.label }}
-                  </span>
                 </div>
-              </div>
-              
-              <div class="profile-form-group">
-                <label for="confirmPassword">Confirmar Contraseña</label>
-                <div class="password-input-container">
+                
+                <div class="profile-form-group">
+                  <label for="lastName">Apellido</label>
                   <input 
-                    id="confirmPassword" 
-                    v-model="passwordData.confirmPassword" 
-                    :type="showConfirmPassword ? 'text' : 'password'" 
+                    id="lastName" 
+                    v-model="personalInfo.lastName" 
+                    type="text" 
                     class="form-control"
                     required
-                    :class="{ 'is-invalid': errors.confirmPassword }"
+                    :class="{ 'is-invalid': errors.lastName }"
                   />
-                  <button 
-                    type="button" 
-                    class="password-toggle" 
-                    @click="showConfirmPassword = !showConfirmPassword"
+                  <div v-if="errors.lastName" class="invalid-feedback">
+                    {{ errors.lastName }}
+                  </div>
+                </div>
+                
+                <div class="profile-form-group">
+                  <label for="email">Email</label>
+                  <input 
+                    id="email" 
+                    v-model="personalInfo.email" 
+                    type="email" 
+                    class="form-control"
+                    required
+                    :class="{ 'is-invalid': errors.email }"
+                    disabled
+                  />
+                  <div v-if="errors.email" class="invalid-feedback">
+                    {{ errors.email }}
+                  </div>
+                  <small class="form-text text-muted">
+                    El email no se puede cambiar por motivos de seguridad.
+                  </small>
+                </div>
+                
+                <div class="profile-form-group">
+                  <label for="department">Departamento</label>
+                  <select 
+                    id="department" 
+                    v-model="personalInfo.department" 
+                    class="form-control"
+                    :class="{ 'is-invalid': errors.department }"
                   >
-                    <i :class="showConfirmPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+                    <option value="" disabled>Seleccione un departamento</option>
+                    <option value="IT">IT</option>
+                    <option value="RRHH">RRHH</option>
+                    <option value="Ventas">Ventas</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Soporte">Soporte</option>
+                  </select>
+                  <div v-if="errors.department" class="invalid-feedback">
+                    {{ errors.department }}
+                  </div>
+                </div>
+                
+                <div class="profile-card-actions">
+                  <button 
+                    type="submit" 
+                    class="btn btn-primary"
+                    :disabled="isSubmitting"
+                  >
+                    <i class="pi pi-save"></i> Guardar Cambios
                   </button>
                 </div>
-                <div v-if="errors.confirmPassword" class="invalid-feedback">
-                  {{ errors.confirmPassword }}
+              </form>
+            </div>
+          </div>
+          
+          <!-- Cambio de rol y estado -->
+          <div class="profile-card">
+            <div class="profile-card-header">
+              <i class="pi pi-users"></i>
+              <h2>Rol y Estado</h2>
+            </div>
+            <div class="profile-card-body">
+              <form @submit.prevent="updateUserRole">
+                <div class="profile-form-group">
+                  <label for="role">Rol</label>
+                  <select 
+                    id="role" 
+                    v-model="userRole.role" 
+                    class="form-control"
+                    :class="{ 'is-invalid': errors.role }"
+                  >
+                    <option value="" disabled>Seleccione un rol</option>
+                    <option value="admin">Administrador</option>
+                    <option value="assistant">Asistente</option>
+                    <option value="employee">Empleado</option>
+                  </select>
+                  <div v-if="errors.role" class="invalid-feedback">
+                    {{ errors.role }}
+                  </div>
                 </div>
-              </div>
-              
-              <div class="profile-card-actions">
-                <button 
-                  type="submit" 
-                  class="btn btn-primary"
-                  :disabled="isSubmitting"
-                >
-                  <i class="pi pi-lock"></i> Resetear Contraseña
-                </button>
-              </div>
-            </form>
+                
+                <div class="profile-form-group">
+                  <label>Estado de la cuenta</label>
+                  <div class="toggle-switch-container">
+                    <label class="toggle-switch">
+                      <input 
+                        type="checkbox" 
+                        v-model="userRole.active"
+                      >
+                      <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-label">
+                      {{ userRole.active ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </div>
+                </div>
+                
+                <div class="profile-card-actions">
+                  <button 
+                    type="submit" 
+                    class="btn btn-primary"
+                    :disabled="isSubmitting"
+                  >
+                    <i class="pi pi-users"></i> Actualizar Rol
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+          
+          <!-- Resetear contraseña -->
+          <div class="profile-card">
+            <div class="profile-card-header">
+              <i class="pi pi-lock"></i>
+              <h2>Resetear Contraseña</h2>
+            </div>
+            <div class="profile-card-body">
+              <form @submit.prevent="resetPassword">
+                <div class="profile-form-group">
+                  <label for="newPassword">Nueva Contraseña</label>
+                  <div class="password-input-container">
+                    <input 
+                      id="newPassword" 
+                      v-model="passwordData.newPassword" 
+                      :type="showNewPassword ? 'text' : 'password'" 
+                      class="form-control"
+                      required
+                      :class="{ 'is-invalid': errors.newPassword }"
+                    />
+                    <button 
+                      type="button" 
+                      class="password-toggle" 
+                      @click="showNewPassword = !showNewPassword"
+                    >
+                      <i :class="showNewPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+                    </button>
+                  </div>
+                  <div v-if="errors.newPassword" class="invalid-feedback">
+                    {{ errors.newPassword }}
+                  </div>
+                  <div class="password-strength" v-if="passwordData.newPassword">
+                    <div class="strength-meter">
+                      <div 
+                        class="strength-meter-fill" 
+                        :style="{ width: passwordStrength.percent + '%' }"
+                        :class="passwordStrength.class"
+                      ></div>
+                    </div>
+                    <span class="strength-text" :class="passwordStrength.class">
+                      {{ passwordStrength.label }}
+                    </span>
+                  </div>
+                </div>
+                
+                <div class="profile-form-group">
+                  <label for="confirmPassword">Confirmar Contraseña</label>
+                  <div class="password-input-container">
+                    <input 
+                      id="confirmPassword" 
+                      v-model="passwordData.confirmPassword" 
+                      :type="showConfirmPassword ? 'text' : 'password'" 
+                      class="form-control"
+                      required
+                      :class="{ 'is-invalid': errors.confirmPassword }"
+                    />
+                    <button 
+                      type="button" 
+                      class="password-toggle" 
+                      @click="showConfirmPassword = !showConfirmPassword"
+                    >
+                      <i :class="showConfirmPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+                    </button>
+                  </div>
+                  <div v-if="errors.confirmPassword" class="invalid-feedback">
+                    {{ errors.confirmPassword }}
+                  </div>
+                </div>
+                
+                <div class="profile-card-actions">
+                  <button 
+                    type="submit" 
+                    class="btn btn-primary"
+                    :disabled="isSubmitting"
+                  >
+                    <i class="pi pi-lock"></i> Resetear Contraseña
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
-      </div>
-      
-      <div v-else class="empty-state">
-        <i class="pi pi-user-edit" style="font-size: 3rem"></i>
-        <p>Seleccione un usuario para gestionar su perfil</p>
+        
+        <div v-else class="empty-state">
+          <i class="pi pi-user-edit" style="font-size: 3rem"></i>
+          <p>Seleccione un usuario para gestionar su perfil</p>
+        </div>
       </div>
     </div>
   </div>
@@ -568,246 +583,445 @@ const translateRole = (role: string) => {
 
 <style scoped lang="scss">
 .profile-management {
-  padding: 1.5rem;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.profile-header {
-  margin-bottom: 1.5rem;
-  padding: 1.5rem;
+  --primary-gradient: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%);
+  --secondary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  --border-radius-lg: 1.25rem;
+  --transition-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  
   background-color: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
-  border: 1px solid var(--border-color);
+  position: relative;
+  overflow-x: hidden;
   
-  .profile-title {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.75rem;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-  
-  .profile-subtitle {
-    margin: 0;
-    color: var(--text-secondary);
-  }
-}
-
-.profile-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.user-selection {
-  margin-bottom: 1.5rem;
-  padding: 1.5rem;
-  background-color: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
-  border: 1px solid var(--border-color);
-  
-  label {
-    display: block;
-    margin-bottom: 0.75rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    font-size: 1rem;
-    font-family: inherit;
-  }
-  
-  .select-container {
+  // Sección hero con fondo primario
+  .hero-section {
     position: relative;
+    padding: 2.5rem 2rem 4.5rem;
+    background-color: var(--primary-color);
+    color: white;
+    text-align: center;
+    overflow: hidden;
     
-    select {
-      width: 100%;
-      padding: 0.75rem;
-      padding-right: 2.5rem;
-      background-color: var(--bg-tertiary);
-      border: 1px solid var(--border-color);
-      border-radius: var(--border-radius);
-      color: var(--text-primary);
-      appearance: none;
-      font-size: 0.95rem;
-      font-family: inherit;
-      
-      &:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
-      }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+      margin: 0 auto;
     }
     
-    i {
+    .hero-title {
+      font-size: 2.25rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      color: white;
+    }
+    
+    .hero-subtitle {
+      font-size: 1.1rem;
+      margin-bottom: 1.75rem;
+      opacity: 0.9;
+      color: white;
+    }
+    
+    // Forma ondulada en la parte inferior
+    .wave-shape {
       position: absolute;
-      right: 0.75rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-secondary);
-      pointer-events: none;
+      bottom: -2px;
+      left: 0;
+      width: 100%;
+      height: 4rem;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z' fill='%23f8fafc' opacity='.25'%3E%3C/path%3E%3Cpath d='M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z' fill='%23f8fafc' opacity='.5'%3E%3C/path%3E%3Cpath d='M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z' fill='%23f8fafc'%3E%3C/path%3E%3C/svg%3E");
+      background-size: cover;
+      background-position: center;
     }
   }
-}
-
-.profile-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.profile-card {
-  background-color: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
-  border: 1px solid var(--border-color);
-  overflow: hidden;
   
-  .profile-card-header {
+  .content-wrapper {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+  }
+  
+  // Títulos de sección con iconos
+  .section-title {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 1.25rem 1.5rem;
-    background-color: var(--bg-tertiary);
-    border-bottom: 1px solid var(--border-color);
+    justify-content: center;
+    margin-bottom: 2rem;
+    color: var(--text-primary);
+    font-size: 1.75rem;
+    font-weight: 600;
+    text-align: center;
     
-    i {
-      font-size: 1.2rem;
-      color: var(--primary-color);
-    }
-    
-    h2 {
-      margin: 0;
-      font-size: 1.2rem;
-      color: var(--text-primary);
-    }
-  }
-  
-  .profile-card-body {
-    padding: 1.5rem;
-  }
-  
-  .profile-card-actions {
-    margin-top: 1.5rem;
-    display: flex;
-    justify-content: flex-end;
-    
-    .btn {
-      padding: 0.75rem 1.5rem;
-      border-radius: var(--border-radius);
-      font-weight: 500;
-      cursor: pointer;
-      border: none;
+    .title-icon {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
+      justify-content: center;
+      width: 45px;
+      height: 45px;
+      background-color: var(--primary-color);
+      border-radius: 50%;
+      margin-right: 1rem;
+      color: white;
       
-      &.btn-primary {
-        background-color: var(--primary-color);
-        color: white;
+      i {
+        font-size: 1.25rem;
+      }
+    }
+  }
+  
+  // Sección de filtros (adaptada del estilo de TicketList)
+  .filters-section {
+    margin-bottom: 3rem;
+    
+    .filters-container {
+      background-color: var(--card-bg);
+      border-radius: var(--border-radius-lg);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      padding: 1.75rem;
+      border: 1px solid var(--border-color);
+      
+      .filter-group {
+        margin-bottom: 1.5rem;
         
-        &:hover {
-          background-color: var(--primary-hover);
+        &:last-child {
+          margin-bottom: 0;
         }
         
-        &:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
+        label {
+          display: block;
+          margin-bottom: 0.75rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          font-size: 1rem;
+        }
+        
+        .select-container {
+          position: relative;
+          
+          select {
+            width: 100%;
+            padding: 0.85rem;
+            padding-right: 2.5rem;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            appearance: none;
+            font-size: 0.95rem;
+            font-family: inherit;
+            
+            &:focus {
+              outline: none;
+              border-color: var(--primary-color);
+              box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
+            }
+          }
+          
+          i {
+            position: absolute;
+            right: 0.85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            pointer-events: none;
+          }
         }
       }
     }
   }
-}
 
-.profile-form-group {
-  margin-bottom: 1.25rem;
-  
-  &:last-child {
-    margin-bottom: 0;
+  .profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
   }
-  
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    font-size: 0.95rem;
-    font-family: inherit;
-  }
-  
-  input, select, textarea {
-    width: 100%;
-    padding: 0.75rem;
-    background-color: var(--bg-tertiary);
+
+  .profile-card {
+    background-color: var(--card-bg);
+    border-radius: 24px; /* Aumentando el radio de bordes como en TicketList */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    color: var(--text-primary);
-    font-size: 0.95rem;
-    font-family: inherit;
+    overflow: hidden;
+    transition: all 0.3s var(--transition-bounce);
     
-    &:focus {
-      outline: none;
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
+    &:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+                  0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
     
-    &.is-invalid {
-      border-color: var(--danger-color);
-    }
-
-    &::placeholder {
-      color: var(--text-tertiary);
-      opacity: 0.7;
-    }
-
-    &:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-    }
-  }
-  
-  .invalid-feedback {
-    display: block;
-    margin-top: 0.25rem;
-    color: var(--danger-color);
-    font-size: 0.85rem;
-    font-family: inherit;
-  }
-  
-  .password-input-container {
-    position: relative;
-    
-    input {
-      padding-right: 3rem;
-    }
-    
-    .password-toggle {
-      position: absolute;
-      right: 0.75rem;
-      top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--text-secondary);
+    .profile-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1.25rem 1.5rem;
+      background-color: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
       
-      &:hover {
+      i {
+        font-size: 1.2rem;
+        color: var(--primary-color);
+      }
+      
+      h2 {
+        margin: 0;
+        font-size: 1.2rem;
         color: var(--text-primary);
       }
     }
+    
+    .profile-card-body {
+      padding: 1.5rem;
+    }
   }
   
+  // Estado vacío cuando no hay usuario seleccionado
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+    
+    i {
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+    
+    p {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+    }
+  }
+
+  // Botones de acción mejorados con márgenes apropiados
+  .profile-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    
+    button {
+      min-width: 160px;
+      margin-left: 0.75rem;
+      
+      &:first-child {
+        margin-left: 0;
+      }
+      
+      i {
+        margin-right: 0.5rem;
+      }
+    }
+  }
+  
+  // Estilos mejorados para botones
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.65rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+    
+    &.btn-primary {
+      background: var(--primary-color); // Color sólido en lugar de gradiente
+      color: white;
+      
+      &:hover, &:focus {
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.3);
+        transform: translateY(-2px);
+      }
+      
+      &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none !important;
+      }
+    }
+  }
+  
+  // Grupos de formulario con espaciado apropiado
+  .profile-form-group {
+    margin-bottom: 1.5rem;
+    
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      font-size: 0.95rem;
+      color: var(--text-primary);
+      background-color: var(--bg-tertiary);
+      transition: all 0.2s ease;
+      
+      &:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
+        outline: none;
+      }
+      
+      &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+      
+      &.is-invalid {
+        border-color: var(--danger-color);
+        
+        &:focus {
+          box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+        }
+      }
+    }
+    
+    .invalid-feedback {
+      display: block;
+      margin-top: 0.5rem;
+      color: var(--danger-color);
+      font-size: 0.85rem;
+    }
+    
+    .form-text {
+      display: block;
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+  }
+  
+  // Contenedor de entrada de contraseña mejorado
+  .password-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    
+    .form-control {
+      padding-right: 3rem;
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      flex: 1;
+    }
+    
+    // Botón de visibilidad de contraseña mejorado
+    .password-toggle {
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 90%;
+      width: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-left: none;
+      border-top-right-radius: 0.5rem;
+      border-bottom-right-radius: 0.5rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+      padding: 0;
+      
+      &:hover, &:focus {
+        background-color: rgba(var(--primary-rgb), 0.1);
+        color: var(--primary-color);
+      }
+      
+      i {
+        font-size: 1rem;
+      }
+    }
+  }
+  
+  // Medidor de fortaleza de contraseña
+  .password-strength {
+    margin-top: 0.75rem;
+    
+    .strength-meter {
+      height: 6px;
+      background-color: var(--border-color);
+      border-radius: 3px;
+      overflow: hidden;
+      
+      .strength-meter-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.3s ease;
+        
+        &.weak {
+          background-color: #ef4444;
+        }
+        
+        &.medium {
+          background-color: #f59e0b;
+        }
+        
+        &.good {
+          background-color: #10b981;
+        }
+        
+        &.strong {
+          background-color: #0ea5e9;
+        }
+      }
+    }
+    
+    .strength-text {
+      display: block;
+      margin-top: 0.35rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      
+      &.weak {
+        color: #ef4444;
+      }
+      
+      &.medium {
+        color: #f59e0b;
+      }
+      
+      &.good {
+        color: #10b981;
+      }
+      
+      &.strong {
+        color: #0ea5e9;
+      }
+    }
+  }
+  
+  // Interruptor de toggle mejorado para estado activo/inactivo
   .toggle-switch-container {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    
+    .toggle-label {
+      font-weight: 500;
+    }
     
     .toggle-switch {
       position: relative;
       display: inline-block;
-      width: 3.5rem;
-      height: 1.75rem;
+      width: 50px;
+      height: 26px;
       
       input {
         opacity: 0;
@@ -816,10 +1030,14 @@ const translateRole = (role: string) => {
         
         &:checked + .slider {
           background-color: var(--primary-color);
+          
+          &:before {
+            transform: translateX(24px);
+          }
         }
         
-        &:checked + .slider:before {
-          transform: translateX(1.75rem);
+        &:focus + .slider {
+          box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.25);
         }
       }
       
@@ -830,16 +1048,16 @@ const translateRole = (role: string) => {
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: var(--text-muted);
+        background-color: var(--text-tertiary);
         transition: .4s;
         
         &:before {
           position: absolute;
           content: "";
-          height: 1.25rem;
-          width: 1.25rem;
-          left: 0.25rem;
-          bottom: 0.25rem;
+          height: 18px;
+          width: 18px;
+          left: 4px;
+          bottom: 4px;
           background-color: white;
           transition: .4s;
         }
@@ -853,52 +1071,51 @@ const translateRole = (role: string) => {
         }
       }
     }
+  }
+
+  // Responsive adjustments
+  @media (max-width: 768px) {
+    .hero-section {
+      padding: 2rem 1rem 4rem;
+      
+      .hero-title {
+        font-size: 2rem;
+      }
+      
+      .hero-subtitle {
+        font-size: 1rem;
+      }
+    }
     
-    .toggle-label {
-      font-weight: 500;
-      color: var(--text-primary);
-      font-size: 0.95rem;
-      font-family: inherit;
+    .section-title {
+      font-size: 1.5rem;
+      flex-direction: column;
+      
+      .title-icon {
+        margin-right: 0;
+        margin-bottom: 0.75rem;
+      }
+    }
+    
+    .profile-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    // Ajustes adicionales para dispositivos móviles
+    .profile-card-actions {
+      flex-direction: column;
+      align-items: stretch;
+      
+      button {
+        width: 100%;
+        margin-left: 0;
+        margin-top: 0.75rem;
+        
+        &:first-child {
+          margin-top: 0;
+        }
+      }
     }
   }
 }
-
-.toast-notification {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  padding: 1rem 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  border-radius: var(--border-radius);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: translateY(150%);
-  transition: transform 0.3s ease-in-out;
-  z-index: 1000;
-  
-  &.show {
-    transform: translateY(0);
-  }
-  
-  &.success {
-    background-color: rgba(46, 213, 115, 0.95);
-    color: white;
-  }
-  
-  &.error {
-    background-color: rgba(255, 71, 87, 0.95);
-    color: white;
-  }
-  
-  i {
-    font-size: 1.2rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .profile-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style> 
+</style>
