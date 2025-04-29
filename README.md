@@ -109,8 +109,8 @@ Para acceder al sistema de administración, usa las siguientes credenciales:
 
 - **Administrador**:
 
-  - Email: admin@growdesk.com
-  - Contraseña: password123
+  - Email: admin@example.com
+  - Contraseña: password
 
 ## Configuración de Puertos
 
