@@ -400,18 +400,68 @@ const connectWebSocket = (ticketId: string) => {
       try {
         const data = JSON.parse(event.data);
         
-        if (data.type === 'new_message' && data.message) {
-          // Agregar mensaje recibido por WebSocket
+        // Log completo para depuración
+        console.log('Datos WebSocket procesados:', {
+          type: data.type,
+          hasData: !!data.data,
+          hasMessage: !!data.message,
+          dataContent: data.data?.content,
+          messageContent: data.message?.content,
+          dataIsClient: data.data?.isClient,
+          messageIsClient: data.message?.isClient
+        });
+        
+        // MEJORA: Extraer el contenido del mensaje independientemente de la estructura
+        let messageContent = '';
+        let isClientMessage = false;
+        let messageObj = null;
+        
+        // Verificar diferentes estructuras posibles del mensaje
+        if (data.type === 'new_message') {
+          // Puede tener 'message' o 'data'
+          if (data.message && data.message.content) {
+            messageContent = data.message.content;
+            isClientMessage = data.message.isClient === true;
+            messageObj = data.message;
+          } else if (data.data && data.data.content) {
+            messageContent = data.data.content;
+            isClientMessage = data.data.isClient === true;
+            messageObj = data.data;
+          }
+        } else if (data.type === 'message_received') {
+          // Este formato viene del servidor para confirmar mensajes
+          if (data.data && data.data.content) {
+            messageContent = data.data.content;
+            isClientMessage = data.data.isClient === true;
+            messageObj = data.data;
+          }
+        } else if (data.content) {
+          // Formato directo sin type
+          messageContent = data.content;
+          isClientMessage = data.isClient === true;
+          messageObj = data;
+        }
+        
+        // Solo procesar si se encontró contenido
+        if (messageContent) {
+          console.log('Mensaje extraído para mostrar:', {
+            content: messageContent,
+            isClientMessage: isClientMessage,
+            messageId: messageObj?.id || 'no-id'
+          });
+          
           // Verificar que no sea un mensaje duplicado
           const isDuplicate = messages.value.some(
-            msg => msg.text === data.message.content && 
-                  msg.isUser === data.message.isClient
+            msg => msg.text === messageContent && 
+                  msg.isUser === isClientMessage
           );
           
           if (!isDuplicate) {
+            // Importante: isUser=true significa que es un mensaje enviado por el usuario del widget
+            // Los mensajes con isClient=false son de agentes de soporte, que deben mostrarse como isUser=false
             messages.value.push({
-              text: data.message.content,
-              isUser: data.message.isClient
+              text: messageContent,
+              isUser: isClientMessage // isUser=true para mensajes del cliente, false para mensajes del agente
             });
             
             // Hacer scroll al final
@@ -419,6 +469,12 @@ const connectWebSocket = (ticketId: string) => {
           } else {
             console.log('Mensaje duplicado detectado y omitido');
           }
+        } else if (data.type === 'error') {
+          console.error('Error del servidor WebSocket:', data.message || data.data || 'Error desconocido');
+        } else if (data.type === 'connection_established' || data.type === 'identify_success') {
+          console.log('Conexión WebSocket confirmada:', data.type);
+        } else {
+          console.warn('Formato de mensaje WebSocket no reconocido:', data);
         }
       } catch (error) {
         console.error('Error al procesar mensaje WebSocket:', error);
@@ -561,11 +617,22 @@ const loadPreviousMessages = async (ticketId: string) => {
     const response = await api.getMessageHistory(ticketId);
     
     if (response && response.messages && response.messages.length > 0) {
+      console.log('Histórico de mensajes recibido:', response.messages);
+      
       // Convertir y agregar mensajes al chat
-      const formattedMessages = response.messages.map((msg: any) => ({
-        text: msg.text || msg.content,
-        isUser: msg.isUser === true || msg.isClient === true
-      }));
+      const formattedMessages = response.messages.map((msg: any) => {
+        // Usamos la propiedad isClient para determinar si es un mensaje del cliente o del agente
+        // IMPORTANTE: Asegurar que isClient siempre se interpreta como booleano y no como string
+        const isClientMessage = msg.isClient === true || 
+                               (typeof msg.isClient === 'string' && msg.isClient.toLowerCase() === 'true');
+        
+        console.log(`Mensaje procesado - contenido: "${msg.text || msg.content}", isClient: ${isClientMessage}`);
+        
+        return {
+          text: msg.text || msg.content,
+          isUser: isClientMessage // Los mensajes del cliente (isClient=true) son los del usuario
+        };
+      });
       
       messages.value = formattedMessages;
       scrollToBottom();
@@ -694,4 +761,4 @@ const sendMessage = async () => {
 .pi {
   font-size: 1.25rem;
 }
-</style> 
+</style>

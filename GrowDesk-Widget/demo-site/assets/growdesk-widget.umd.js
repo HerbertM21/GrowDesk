@@ -3416,7 +3416,7 @@ Only state can be modified.`);
   const SESSION_EXPIRY_DAYS = 7;
   const LOCAL_STORAGE_KEY = "growdesk_session_data";
   let apiConfig = {
-    apiUrl: "http://localhost:8082/widget",
+    apiUrl: "http://localhost:8000/widget",
     widgetId: "demo-widget",
     widgetToken: "demo-token"
   };
@@ -3643,6 +3643,51 @@ Only state can be modified.`);
         throw error;
       }
     };
+    const getFaqs = async () => {
+      try {
+        const baseUrl = apiConfig.apiUrl.endsWith("/") ? apiConfig.apiUrl : `${apiConfig.apiUrl}/`;
+        const faqsUrl = `${baseUrl}faqs`;
+        console.log("Intentando obtener FAQs de URL:", faqsUrl);
+        console.log("Headers utilizados:", {
+          "X-Widget-ID": apiConfig.widgetId,
+          "X-Widget-Token": apiConfig.widgetToken
+        });
+        let response;
+        try {
+          console.log("Usando axios.get para obtener FAQs");
+          response = await apiClient.get("/faqs");
+          console.log("Respuesta recibida de axios:", response.status);
+        } catch (axiosError) {
+          console.warn("Error al usar Axios estándar para obtener FAQs:", axiosError);
+          console.log("Intentando fetch a:", faqsUrl);
+          const fetchResponse = await fetch(faqsUrl, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Widget-ID": apiConfig.widgetId,
+              "X-Widget-Token": apiConfig.widgetToken
+            }
+          });
+          if (!fetchResponse.ok) {
+            const statusText = fetchResponse.statusText || "Error desconocido";
+            console.error(`Error en fetch: ${fetchResponse.status} ${statusText}`);
+            throw new Error(`Error ${fetchResponse.status}: ${statusText}`);
+          }
+          const responseData = await fetchResponse.json();
+          console.log("Datos recibidos con fetch:", responseData);
+          response = { data: responseData };
+        }
+        console.log("FAQs obtenidas correctamente:", response.data);
+        return response.data;
+      } catch (error) {
+        console.error("Error obteniendo FAQs:", error);
+        console.error("Configuración actual:", {
+          apiUrl: apiConfig.apiUrl,
+          widgetId: apiConfig.widgetId
+        });
+        return [];
+      }
+    };
     const logout = () => {
       clearSession();
     };
@@ -3652,7 +3697,8 @@ Only state can be modified.`);
       createTicket,
       sendMessage,
       getMessageHistory,
-      logout
+      logout,
+      getFaqs
     };
   };
   const _hoisted_1 = {
@@ -3682,17 +3728,51 @@ Only state can be modified.`);
   const _hoisted_13 = { key: 1 };
   const _hoisted_14 = {
     key: 1,
-    class: "flex-1 p-4 overflow-y-auto bg-gray-50 chat-messages"
+    class: "flex-1 overflow-y-auto bg-gray-50"
   };
   const _hoisted_15 = {
     key: 0,
-    class: "text-center text-gray-500 mt-20"
+    class: "p-4 chat-messages"
   };
   const _hoisted_16 = {
+    key: 0,
+    class: "text-center text-gray-500 mt-20"
+  };
+  const _hoisted_17 = {
+    key: 1,
+    class: "p-4"
+  };
+  const _hoisted_18 = { class: "text-center mb-4" };
+  const _hoisted_19 = {
+    key: 0,
+    class: "text-center py-4"
+  };
+  const _hoisted_20 = {
+    key: 1,
+    class: "text-center py-4 text-gray-500"
+  };
+  const _hoisted_21 = { key: 2 };
+  const _hoisted_22 = { class: "font-medium text-gray-700 mb-2" };
+  const _hoisted_23 = { class: "space-y-2" };
+  const _hoisted_24 = ["onClick"];
+  const _hoisted_25 = { class: "font-medium text-gray-800" };
+  const _hoisted_26 = {
+    key: 0,
+    class: "p-3 bg-white"
+  };
+  const _hoisted_27 = { class: "text-gray-700" };
+  const _hoisted_28 = { class: "mt-2 flex justify-end" };
+  const _hoisted_29 = ["onClick"];
+  const _hoisted_30 = {
     key: 2,
     class: "p-3 border-t border-gray-200 bg-white"
   };
-  const _hoisted_17 = { class: "flex items-center" };
+  const _hoisted_31 = { class: "flex items-center" };
+  const _hoisted_32 = {
+    key: 3,
+    class: "p-3 border-t border-gray-200 bg-white"
+  };
+  const _hoisted_33 = { class: "flex justify-between items-center" };
   const _sfc_main = /* @__PURE__ */ vue.defineComponent({
     __name: "ChatWidget",
     props: {
@@ -3721,6 +3801,10 @@ Only state can be modified.`);
       const messages = vue.ref([]);
       const newMessage = vue.ref("");
       const webSocket = vue.ref(null);
+      const showChatView = vue.ref(false);
+      const faqs = vue.ref([]);
+      const loadingFaqs = vue.ref(false);
+      const expandedFaqs = vue.ref([]);
       const userData = vue.ref({
         name: "",
         email: "",
@@ -3730,6 +3814,77 @@ Only state can be modified.`);
       const hasSession = vue.computed(() => {
         return api2.hasActiveSession();
       });
+      const faqCategories = vue.computed(() => {
+        const categories = /* @__PURE__ */ new Set();
+        faqs.value.forEach((faq) => categories.add(faq.category));
+        return Array.from(categories);
+      });
+      const getFaqsByCategory = (category) => {
+        return faqs.value.filter((faq) => faq.category === category);
+      };
+      const toggleFaq = (id) => {
+        const index = expandedFaqs.value.indexOf(id);
+        if (index === -1) {
+          expandedFaqs.value.push(id);
+        } else {
+          expandedFaqs.value.splice(index, 1);
+        }
+      };
+      const loadFaqs = async () => {
+        loadingFaqs.value = true;
+        console.log("Iniciando carga de FAQs desde el servidor...");
+        try {
+          console.log("Llamando a api.getFaqs()...");
+          const response = await api2.getFaqs();
+          console.log("Respuesta de API para FAQs:", response);
+          if (response && Array.isArray(response)) {
+            const publishedFaqs = response.filter((faq) => faq.isPublished);
+            console.log(`FAQs publicadas encontradas: ${publishedFaqs.length}`);
+            faqs.value = publishedFaqs;
+            if (publishedFaqs.length === 0) {
+              console.warn("No se encontraron FAQs publicadas para mostrar");
+            } else {
+              const categories = /* @__PURE__ */ new Set();
+              const firstFaqsIds = [];
+              faqs.value.forEach((faq) => {
+                if (!categories.has(faq.category)) {
+                  categories.add(faq.category);
+                  firstFaqsIds.push(faq.id);
+                }
+              });
+              expandedFaqs.value = firstFaqsIds;
+              console.log("Categorías de FAQs encontradas:", Array.from(categories));
+            }
+          } else {
+            console.error("Formato inesperado en la respuesta de FAQs:", response);
+            faqs.value = [];
+          }
+        } catch (error) {
+          console.error("Error al cargar FAQs:", error);
+          faqs.value = [];
+          if (isRegistered.value) {
+            showChatView.value = true;
+            console.log("Cambiando a vista de chat debido a error en FAQs");
+          }
+        } finally {
+          loadingFaqs.value = false;
+          console.log("Carga de FAQs finalizada. Estado:", {
+            faqsCount: faqs.value.length,
+            expandedFaqsCount: expandedFaqs.value.length,
+            showingChat: showChatView.value
+          });
+        }
+      };
+      const refreshFaqs = () => {
+        loadFaqs();
+      };
+      const setInitialQuestion = (question) => {
+        newMessage.value = question;
+        showChatView.value = true;
+        setTimeout(() => {
+          sendMessage();
+        }, 100);
+      };
       const connectWebSocket = (ticketId) => {
         if (!ticketId) {
           console.error("No se puede conectar al WebSocket sin un ID de ticket");
@@ -3759,22 +3914,68 @@ Only state can be modified.`);
             console.log("Conexión WebSocket establecida correctamente");
           };
           webSocket.value.onmessage = (event) => {
+            var _a, _b, _c, _d;
             console.log("Mensaje WebSocket recibido:", event.data);
             try {
               const data = JSON.parse(event.data);
-              if (data.type === "new_message" && data.message) {
+              console.log("Datos WebSocket procesados:", {
+                type: data.type,
+                hasData: !!data.data,
+                hasMessage: !!data.message,
+                dataContent: (_a = data.data) == null ? void 0 : _a.content,
+                messageContent: (_b = data.message) == null ? void 0 : _b.content,
+                dataIsClient: (_c = data.data) == null ? void 0 : _c.isClient,
+                messageIsClient: (_d = data.message) == null ? void 0 : _d.isClient
+              });
+              let messageContent = "";
+              let isClientMessage = false;
+              let messageObj = null;
+              if (data.type === "new_message") {
+                if (data.message && data.message.content) {
+                  messageContent = data.message.content;
+                  isClientMessage = data.message.isClient === true;
+                  messageObj = data.message;
+                } else if (data.data && data.data.content) {
+                  messageContent = data.data.content;
+                  isClientMessage = data.data.isClient === true;
+                  messageObj = data.data;
+                }
+              } else if (data.type === "message_received") {
+                if (data.data && data.data.content) {
+                  messageContent = data.data.content;
+                  isClientMessage = data.data.isClient === true;
+                  messageObj = data.data;
+                }
+              } else if (data.content) {
+                messageContent = data.content;
+                isClientMessage = data.isClient === true;
+                messageObj = data;
+              }
+              if (messageContent) {
+                console.log("Mensaje extraído para mostrar:", {
+                  content: messageContent,
+                  isClientMessage,
+                  messageId: (messageObj == null ? void 0 : messageObj.id) || "no-id"
+                });
                 const isDuplicate = messages.value.some(
-                  (msg) => msg.text === data.message.content && msg.isUser === data.message.isClient
+                  (msg) => msg.text === messageContent && msg.isUser === isClientMessage
                 );
                 if (!isDuplicate) {
                   messages.value.push({
-                    text: data.message.content,
-                    isUser: data.message.isClient
+                    text: messageContent,
+                    isUser: isClientMessage
+                    // isUser=true para mensajes del cliente, false para mensajes del agente
                   });
                   scrollToBottom();
                 } else {
                   console.log("Mensaje duplicado detectado y omitido");
                 }
+              } else if (data.type === "error") {
+                console.error("Error del servidor WebSocket:", data.message || data.data || "Error desconocido");
+              } else if (data.type === "connection_established" || data.type === "identify_success") {
+                console.log("Conexión WebSocket confirmada:", data.type);
+              } else {
+                console.warn("Formato de mensaje WebSocket no reconocido:", data);
               }
             } catch (error) {
               console.error("Error al procesar mensaje WebSocket:", error);
@@ -3812,6 +4013,8 @@ Only state can be modified.`);
             userData.value.email = session.email;
             currentTicketId.value = session.ticketId;
             isRegistered.value = true;
+            showChatView.value = false;
+            loadFaqs();
             loadPreviousMessages(session.ticketId);
             connectWebSocket(session.ticketId);
           }
@@ -3845,12 +4048,15 @@ Only state can be modified.`);
           const response = await api2.createTicket(ticketData);
           currentTicketId.value = response.ticketId;
           isRegistered.value = true;
+          showChatView.value = false;
+          await loadFaqs();
+          console.log("FAQs cargadas después del registro:", faqs.value);
           messages.value.push({
             text: userData.value.initialMessage,
             isUser: true
           });
           messages.value.push({
-            text: `Hola ${userData.value.name}, gracias por contactarnos. Hemos recibido tu mensaje y un representante te responderá pronto.`,
+            text: `Hola ${userData.value.name}, gracias por contactarnos. Puedes consultar nuestras preguntas frecuentes o iniciar un chat con nosotros.`,
             isUser: false
           });
           connectWebSocket(response.ticketId);
@@ -3862,23 +4068,21 @@ Only state can be modified.`);
           loading.value = false;
         }
       };
-      const scrollToBottom = () => {
-        setTimeout(() => {
-          const messagesContainer = document.querySelector(".chat-messages");
-          if (messagesContainer) {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-          }
-        }, 100);
-      };
       const loadPreviousMessages = async (ticketId) => {
         try {
           loading.value = true;
           const response = await api2.getMessageHistory(ticketId);
           if (response && response.messages && response.messages.length > 0) {
-            const formattedMessages = response.messages.map((msg) => ({
-              text: msg.text || msg.content,
-              isUser: msg.isUser === true || msg.isClient === true
-            }));
+            console.log("Histórico de mensajes recibido:", response.messages);
+            const formattedMessages = response.messages.map((msg) => {
+              const isClientMessage = msg.isClient === true || typeof msg.isClient === "string" && msg.isClient.toLowerCase() === "true";
+              console.log(`Mensaje procesado - contenido: "${msg.text || msg.content}", isClient: ${isClientMessage}`);
+              return {
+                text: msg.text || msg.content,
+                isUser: isClientMessage
+                // Los mensajes del cliente (isClient=true) son los del usuario
+              };
+            });
             messages.value = formattedMessages;
             scrollToBottom();
           } else {
@@ -3897,11 +4101,21 @@ Only state can be modified.`);
           loading.value = false;
         }
       };
+      const scrollToBottom = () => {
+        setTimeout(() => {
+          const messagesContainer = document.querySelector(".chat-messages");
+          if (messagesContainer) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          }
+        }, 100);
+      };
       const logout = () => {
         api2.logout();
         isRegistered.value = false;
         currentTicketId.value = "";
         messages.value = [];
+        faqs.value = [];
+        expandedFaqs.value = [];
         userData.value = {
           name: "",
           email: "",
@@ -3988,7 +4202,7 @@ Only state can be modified.`);
                 class: "flex flex-col gap-4"
               }, [
                 vue.createElementVNode("div", _hoisted_8, [
-                  _cache[4] || (_cache[4] = vue.createElementVNode("label", {
+                  _cache[6] || (_cache[6] = vue.createElementVNode("label", {
                     for: "name",
                     class: "text-sm text-gray-600 mb-1"
                   }, "Nombre", -1)),
@@ -4004,7 +4218,7 @@ Only state can be modified.`);
                   ])
                 ]),
                 vue.createElementVNode("div", _hoisted_9, [
-                  _cache[5] || (_cache[5] = vue.createElementVNode("label", {
+                  _cache[7] || (_cache[7] = vue.createElementVNode("label", {
                     for: "email",
                     class: "text-sm text-gray-600 mb-1"
                   }, "Email", -1)),
@@ -4020,7 +4234,7 @@ Only state can be modified.`);
                   ])
                 ]),
                 vue.createElementVNode("div", _hoisted_10, [
-                  _cache[6] || (_cache[6] = vue.createElementVNode("label", {
+                  _cache[8] || (_cache[8] = vue.createElementVNode("label", {
                     for: "firstMessage",
                     class: "text-sm text-gray-600 mb-1"
                   }, "¿En qué podemos ayudarte?", -1)),
@@ -4042,33 +4256,88 @@ Only state can be modified.`);
                   style: vue.normalizeStyle({ backgroundColor: __props.primaryColor }),
                   disabled: loading.value
                 }, [
-                  !loading.value ? (vue.openBlock(), vue.createElementBlock("span", _hoisted_12, "Iniciar chat")) : (vue.openBlock(), vue.createElementBlock("span", _hoisted_13, _cache[7] || (_cache[7] = [
+                  !loading.value ? (vue.openBlock(), vue.createElementBlock("span", _hoisted_12, "Iniciar chat")) : (vue.openBlock(), vue.createElementBlock("span", _hoisted_13, _cache[9] || (_cache[9] = [
                     vue.createElementVNode("i", { class: "pi pi-spin pi-spinner" }, null, -1),
                     vue.createTextVNode(" Procesando... ")
                   ])))
                 ], 12, _hoisted_11)
               ], 32)
             ])) : (vue.openBlock(), vue.createElementBlock("div", _hoisted_14, [
-              messages.value.length === 0 ? (vue.openBlock(), vue.createElementBlock("div", _hoisted_15, " Inicia una conversación escribiendo un mensaje. ")) : vue.createCommentVNode("", true),
-              (vue.openBlock(true), vue.createElementBlock(vue.Fragment, null, vue.renderList(messages.value, (message, index) => {
-                return vue.openBlock(), vue.createElementBlock("div", {
-                  key: index,
-                  class: "mb-3"
-                }, [
-                  vue.createElementVNode("div", {
-                    class: vue.normalizeClass([
-                      "max-w-[80%] p-3 rounded-lg",
-                      message.isUser ? "text-white ml-auto rounded-br-none" : "bg-gray-200 text-gray-800 rounded-bl-none"
-                    ]),
-                    style: vue.normalizeStyle(message.isUser ? { backgroundColor: __props.primaryColor } : {})
-                  }, vue.toDisplayString(message.text), 7)
-                ]);
-              }), 128))
+              showChatView.value ? (vue.openBlock(), vue.createElementBlock("div", _hoisted_15, [
+                messages.value.length === 0 ? (vue.openBlock(), vue.createElementBlock("div", _hoisted_16, " Inicia una conversación escribiendo un mensaje. ")) : vue.createCommentVNode("", true),
+                (vue.openBlock(true), vue.createElementBlock(vue.Fragment, null, vue.renderList(messages.value, (message, index) => {
+                  return vue.openBlock(), vue.createElementBlock("div", {
+                    key: index,
+                    class: "mb-3"
+                  }, [
+                    vue.createElementVNode("div", {
+                      class: vue.normalizeClass([
+                        "max-w-[80%] p-3 rounded-lg",
+                        message.isUser ? "text-white ml-auto rounded-br-none" : "bg-gray-200 text-gray-800 rounded-bl-none"
+                      ]),
+                      style: vue.normalizeStyle(message.isUser ? { backgroundColor: __props.primaryColor } : {})
+                    }, vue.toDisplayString(message.text), 7)
+                  ]);
+                }), 128))
+              ])) : (vue.openBlock(), vue.createElementBlock("div", _hoisted_17, [
+                vue.createElementVNode("div", _hoisted_18, [
+                  vue.createElementVNode("button", {
+                    onClick: _cache[3] || (_cache[3] = ($event) => showChatView.value = true),
+                    class: "text-white rounded-md py-2 px-4 font-medium focus:outline-none w-full",
+                    style: vue.normalizeStyle({ backgroundColor: __props.primaryColor })
+                  }, _cache[10] || (_cache[10] = [
+                    vue.createElementVNode("i", { class: "pi pi-comments mr-2" }, null, -1),
+                    vue.createTextVNode("Iniciar chat ")
+                  ]), 4)
+                ]),
+                _cache[12] || (_cache[12] = vue.createElementVNode("h3", { class: "text-lg font-semibold mb-3 text-gray-700" }, "Preguntas Frecuentes", -1)),
+                loadingFaqs.value ? (vue.openBlock(), vue.createElementBlock("div", _hoisted_19, _cache[11] || (_cache[11] = [
+                  vue.createElementVNode("i", { class: "pi pi-spin pi-spinner text-gray-500" }, null, -1),
+                  vue.createElementVNode("p", { class: "text-sm text-gray-500 mt-2" }, "Cargando preguntas frecuentes...", -1)
+                ]))) : faqs.value.length === 0 ? (vue.openBlock(), vue.createElementBlock("div", _hoisted_20, " No hay preguntas frecuentes disponibles. ")) : (vue.openBlock(), vue.createElementBlock("div", _hoisted_21, [
+                  (vue.openBlock(true), vue.createElementBlock(vue.Fragment, null, vue.renderList(faqCategories.value, (category, index) => {
+                    return vue.openBlock(), vue.createElementBlock("div", {
+                      key: index,
+                      class: "mb-4"
+                    }, [
+                      vue.createElementVNode("h4", _hoisted_22, vue.toDisplayString(category), 1),
+                      vue.createElementVNode("div", _hoisted_23, [
+                        (vue.openBlock(true), vue.createElementBlock(vue.Fragment, null, vue.renderList(getFaqsByCategory(category), (faq) => {
+                          return vue.openBlock(), vue.createElementBlock("div", {
+                            key: faq.id,
+                            class: "border border-gray-200 rounded-lg overflow-hidden"
+                          }, [
+                            vue.createElementVNode("div", {
+                              class: "p-3 bg-gray-100 cursor-pointer flex justify-between items-center",
+                              onClick: ($event) => toggleFaq(faq.id)
+                            }, [
+                              vue.createElementVNode("span", _hoisted_25, vue.toDisplayString(faq.question), 1),
+                              vue.createElementVNode("i", {
+                                class: vue.normalizeClass(["pi", expandedFaqs.value.includes(faq.id) ? "pi-chevron-up" : "pi-chevron-down"])
+                              }, null, 2)
+                            ], 8, _hoisted_24),
+                            expandedFaqs.value.includes(faq.id) ? (vue.openBlock(), vue.createElementBlock("div", _hoisted_26, [
+                              vue.createElementVNode("p", _hoisted_27, vue.toDisplayString(faq.answer), 1),
+                              vue.createElementVNode("div", _hoisted_28, [
+                                vue.createElementVNode("button", {
+                                  onClick: ($event) => setInitialQuestion(faq.question),
+                                  class: "text-xs text-white rounded-md py-1 px-2 focus:outline-none",
+                                  style: vue.normalizeStyle({ backgroundColor: __props.primaryColor })
+                                }, " Consultar más ", 12, _hoisted_29)
+                              ])
+                            ])) : vue.createCommentVNode("", true)
+                          ]);
+                        }), 128))
+                      ])
+                    ]);
+                  }), 128))
+                ]))
+              ]))
             ])),
-            isRegistered.value ? (vue.openBlock(), vue.createElementBlock("div", _hoisted_16, [
-              vue.createElementVNode("div", _hoisted_17, [
+            isRegistered.value && showChatView.value ? (vue.openBlock(), vue.createElementBlock("div", _hoisted_30, [
+              vue.createElementVNode("div", _hoisted_31, [
                 vue.withDirectives(vue.createElementVNode("input", {
-                  "onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => newMessage.value = $event),
+                  "onUpdate:modelValue": _cache[4] || (_cache[4] = ($event) => newMessage.value = $event),
                   type: "text",
                   placeholder: "Escribe un mensaje...",
                   class: "flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2",
@@ -4081,8 +4350,27 @@ Only state can be modified.`);
                   onClick: sendMessage,
                   class: "ml-2 text-white rounded-full p-2 focus:outline-none",
                   style: vue.normalizeStyle({ backgroundColor: __props.primaryColor })
-                }, _cache[8] || (_cache[8] = [
+                }, _cache[13] || (_cache[13] = [
                   vue.createElementVNode("i", { class: "pi pi-send" }, null, -1)
+                ]), 4)
+              ])
+            ])) : vue.createCommentVNode("", true),
+            isRegistered.value && !showChatView.value ? (vue.openBlock(), vue.createElementBlock("div", _hoisted_32, [
+              vue.createElementVNode("div", _hoisted_33, [
+                vue.createElementVNode("button", {
+                  onClick: refreshFaqs,
+                  class: "text-xs text-gray-600 focus:outline-none flex items-center"
+                }, _cache[14] || (_cache[14] = [
+                  vue.createElementVNode("i", { class: "pi pi-refresh mr-1" }, null, -1),
+                  vue.createTextVNode(" Actualizar ")
+                ])),
+                vue.createElementVNode("button", {
+                  onClick: _cache[5] || (_cache[5] = ($event) => showChatView.value = true),
+                  class: "text-white rounded-md py-1 px-4 text-sm focus:outline-none",
+                  style: vue.normalizeStyle({ backgroundColor: __props.primaryColor })
+                }, _cache[15] || (_cache[15] = [
+                  vue.createElementVNode("i", { class: "pi pi-comments mr-1" }, null, -1),
+                  vue.createTextVNode(" Chat ")
                 ]), 4)
               ])
             ])) : vue.createCommentVNode("", true)

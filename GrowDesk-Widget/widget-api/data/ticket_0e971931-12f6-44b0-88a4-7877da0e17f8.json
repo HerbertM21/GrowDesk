@@ -1,0 +1,84 @@
+{
+  "id": "0e971931-12f6-44b0-88a4-7877da0e17f8",
+  "title": "Support request from Herbert Mayorga",
+  "description": "Hola, tengo un problema.",
+  "status": "new",
+  "createdBy": "herbert.mayorga.jbs@gmail.com",
+  "createdAt": "2025-04-29T13:47:54.175071555-04:00",
+  "updatedAt": "2025-04-29T14:46:14.740843591-04:00",
+  "messages": [
+    {
+      "id": "3c7d543b-c1b0-42a9-aa5a-5c9151909d92",
+      "content": "Hola, tengo un problema.",
+      "isClient": true,
+      "createdAt": "2025-04-29T13:47:54.175070123-04:00",
+      "userName": "Herbert Mayorga",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    },
+    {
+      "id": "MSG-1745949292833430081",
+      "content": "a",
+      "isClient": true,
+      "createdAt": "2025-04-29T13:54:52.833438199-04:00",
+      "userName": "Herbert Mayorga",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    },
+    {
+      "id": "MSG-1745950220694228384",
+      "content": "asdasd",
+      "isClient": true,
+      "createdAt": "2025-04-29T14:10:20.694264789-04:00",
+      "userName": "Herbert Mayorga",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    },
+    {
+      "id": "MSG-1745950233246632907",
+      "content": "test1",
+      "isClient": true,
+      "createdAt": "2025-04-29T14:10:33.246657787-04:00",
+      "userName": "Herbert Mayorga",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    },
+    {
+      "id": "MSG-1745950937635650623",
+      "content": "aw",
+      "isClient": true,
+      "createdAt": "2025-04-29T14:22:17.635773453-04:00",
+      "userName": "Herbert Mayorga",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    },
+    {
+      "id": "MSG-1745951378863293415",
+      "content": "test2",
+      "isClient": true,
+      "createdAt": "2025-04-29T14:29:38.8633503-04:00",
+      "userName": "Herbert Mayorga",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    },
+    {
+      "id": "MSG-1745952188017660716",
+      "content": "k",
+      "isClient": true,
+      "createdAt": "2025-04-29T14:43:08.017862695-04:00",
+      "userName": "Herbert Mayorga",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    },
+    {
+      "id": "MSG-1745952374740813006",
+      "content": "a",
+      "isClient": true,
+      "createdAt": "2025-04-29T14:46:14.740843141-04:00",
+      "userName": "Herbert Mayorga",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    }
+  ],
+  "userEmail": "herbert.mayorga.jbs@gmail.com",
+  "userName": "Herbert Mayorga",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+    "screenSize": "1920x914",
+    "externalId": "TICKET-20250429174754"
+  }
+}

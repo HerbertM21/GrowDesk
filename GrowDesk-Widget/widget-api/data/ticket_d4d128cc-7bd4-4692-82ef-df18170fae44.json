@@ -1,0 +1,52 @@
+{
+  "id": "d4d128cc-7bd4-4692-82ef-df18170fae44",
+  "title": "Support request from Andrés Mayorga",
+  "description": "Hola hola, como están?",
+  "status": "new",
+  "createdBy": "andres@gmail.com",
+  "createdAt": "2025-04-29T14:51:56.097873153-04:00",
+  "updatedAt": "2025-04-29T16:24:07.528613277-04:00",
+  "messages": [
+    {
+      "id": "6d61cf78-5a27-475f-a106-c7f6c2b8471c",
+      "content": "Hola hola, como están?",
+      "isClient": true,
+      "createdAt": "2025-04-29T14:51:56.097872328-04:00",
+      "userName": "Andrés Mayorga",
+      "userEmail": "andres@gmail.com"
+    },
+    {
+      "id": "MSG-1745952754670933330",
+      "content": "ae",
+      "isClient": true,
+      "createdAt": "2025-04-29T14:52:34.670947822-04:00",
+      "userName": "Andr�s Mayorga",
+      "userEmail": "andres@gmail.com"
+    },
+    {
+      "id": "MSG-1745953654390380611",
+      "content": "zd",
+      "isClient": true,
+      "createdAt": "2025-04-29T15:07:34.390467431-04:00",
+      "userName": "Andr�s Mayorga",
+      "userEmail": "andres@gmail.com"
+    },
+    {
+      "id": "MSG-1745958247528604042",
+      "content": "asd",
+      "isClient": true,
+      "createdAt": "2025-04-29T16:24:07.528613028-04:00",
+      "userName": "Andr\ufffds Mayorga",
+      "userEmail": "andres@gmail.com"
+    }
+  ],
+  "userEmail": "andres@gmail.com",
+  "userName": "Andrés Mayorga",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+    "screenSize": "1920x452",
+    "externalId": "TICKET-20250429185156"
+  }
+}

@@ -308,6 +308,82 @@ const ticketConnections = {};
 // Mapa de conexiones alternativas para compatibilidad
 const alternateConnectionMap = {};
 
+// Función para enviar mensaje a las conexiones
+function sendToConnections(connections, ticketId, message) {
+  console.log(`Enviando mensaje a ${connections.length} conexiones para ticket ${ticketId}`);
+  
+  // Crear mensaje WebSocket con formato correcto
+  const wsMessage = {
+    type: 'new_message',
+    ticketId: ticketId,
+    data: {
+      id: message.id,
+      content: message.content,
+      isClient: message.isClient, // IMPORTANTE: Mantener el valor original de isClient
+      timestamp: message.timestamp || message.createdAt || new Date().toISOString(),
+      userName: message.userName || (message.isClient ? 'Cliente' : 'Agente')
+    }
+  };
+  
+  // Serializar para envío
+  const messageString = JSON.stringify(wsMessage);
+  console.log(`Preparando mensaje WebSocket: ${messageString}`);
+  console.log(`IMPORTANTE - Valor final de isClient: ${wsMessage.data.isClient}`);
+  
+  // Contador para mensajes enviados exitosamente
+  let enviadoCount = 0;
+  
+  // Enviar a todas las conexiones
+  for (const connection of connections) {
+    // Verificar que la conexión tenga un socket válido
+    if (connection && connection.socket && connection.socket.readyState === WebSocket.OPEN) {
+      connection.socket.send(messageString);
+      enviadoCount++;
+    }
+  }
+  
+  console.log(`Mensaje enviado a ${enviadoCount}/${connections.length} conexiones`);
+}
+
+// Función para difundir mensajes a todos los clientes WebSocket
+function broadcastMessage(ticketId, message) {
+  console.log('======== BROADCAST MENSAJE ========');
+  console.log(`Ticket ID: ${ticketId}`);
+  console.log(`Mensaje: ${JSON.stringify(message)}`);
+  console.log(`isClient: ${message.isClient}`); // Registrar valor de isClient explícitamente
+  
+  // Buscar conexiones directas para este ticket
+  console.log(`Buscando conexiones para ticket ${ticketId}...`);
+  
+  let connectionFound = false;
+  
+  // Verificar si hay clientes para este ticket
+  if (ticketConnections[ticketId] && ticketConnections[ticketId].length > 0) {
+    console.log(`✓ Encontradas ${ticketConnections[ticketId].length} conexiones directas para ticket ${ticketId}`);
+    sendToConnections(ticketConnections[ticketId], ticketId, message);
+    connectionFound = true;
+  } else {
+    console.log(`✗ No hay conexiones directas para ticket ${ticketId}`);
+  }
+  
+  // Verificar conexiones alternativas (si está configurada la conexión)
+  if (alternateConnectionMap[ticketId]) {
+    const altTicketId = alternateConnectionMap[ticketId];
+    
+    if (ticketConnections[altTicketId] && ticketConnections[altTicketId].length > 0) {
+      console.log(`✓ Encontradas ${ticketConnections[altTicketId].length} conexiones alternativas (${altTicketId}) para ticket ${ticketId}`);
+      sendToConnections(ticketConnections[altTicketId], ticketId, message);
+      connectionFound = true;
+    } else {
+      console.log(`✗ No hay conexiones alternativas para ticket ${ticketId}`);
+    }
+  }
+  
+  if (!connectionFound) {
+    console.log('⚠️ No se encontraron conexiones activas para enviar el mensaje');
+  }
+}
+
 // Crear el servidor
 const server = http.createServer(async (req, res) => {
   // Log de la URL y método para depuración
@@ -1298,59 +1374,100 @@ server.on('upgrade', (request, socket, head) => {
       // Manejar mensajes del cliente
       ws.on('message', async (msg) => {
         try {
-          console.log(`Mensaje WebSocket recibido para ticket ${ticketId}:`, msg.toString());
-          const data = JSON.parse(msg.toString());
+          console.log(`Mensaje WebSocket recibido del cliente para ticket ${ticketId}: ${msg.toString()}`);
           
-          // Verificar tipo de mensaje
-          if (data.type === 'message' && data.content) {
-            // Crear nuevo mensaje
-            const message = {
-              id: `MSG-${Date.now()}`,
-              ticketId,
-              content: data.content,
-              // El valor de isClient depende de dónde viene el mensaje:
-              // - Si viene de la administración (data.source === 'admin'), debe ser false
-              // - Si viene del widget (data.source === 'widget' o no hay source), debe ser true
-              isClient: data.source === 'admin' ? false : true,
-              userId: data.userId || 'anonymous',
-              createdAt: new Date().toISOString(),
-              userName: data.userName || (data.source === 'admin' ? 'Agente de Soporte' : 'Cliente'),
-              userEmail: data.userEmail || 'user@example.com'
-            };
+          // Intentar parsear el mensaje como JSON
+          const message = JSON.parse(msg.toString());
+          
+          // Comprobar el tipo de mensaje
+          if (message.type === 'identify') {
+            // Mensaje de identificación del cliente
+            console.log(`Cliente identificado: ticketId=${message.ticketId}, userId=${message.userId}`);
             
-            console.log('Mensaje WebSocket procesado:', JSON.stringify(message));
-            console.log(`Fuente del mensaje: ${data.source || 'widget'}, isClient: ${message.isClient}`);
-            
-            // Buscar el ticket
-            const ticket = tickets.find(t => t.id === ticketId);
-            if (ticket) {
-              // Añadir a la lista de mensajes del ticket
-              if (!ticket.messages) {
-                ticket.messages = [];
+            // Confirmar al cliente que la identificación fue exitosa
+            ws.send(JSON.stringify({
+              type: 'identify_success',
+              ticketId: ticketId,
+              data: {
+                message: 'Identificación exitosa',
+                userId: message.userId || 'anónimo'
               }
-              ticket.messages.push(message);
-              
-              // Actualizar estado del ticket
-              ticket.updatedAt = new Date().toISOString();
-              
-              // Guardar tickets en archivo
-              saveTickets();
+            }));
+            
+            return; // No necesitamos procesar más este mensaje
+          }
+          
+          // Procesar mensaje normal (new_message)
+          if (message.type === 'new_message') {
+            console.log(`Mensaje de chat recibido: ${JSON.stringify(message)}`);
+            
+            // Extraer datos del mensaje
+            let content, isClient;
+            
+            if (message.data) {
+              content = message.data.content;
+              isClient = message.data.isClient === true;
+            } else {
+              content = message.content || (message.message ? message.message.content : '');
+              isClient = message.isClient === true || (message.message ? message.message.isClient === true : false);
             }
             
-            // Enviar a todos los clientes conectados, incluido el remitente
-            broadcastMessage(ticketId, message);
-          } else {
-            console.error(`Formato de mensaje no reconocido: ${JSON.stringify(data)}`);
+            // Solo procesamos si hay contenido
+            if (content) {
+              const ticket = tickets.find(t => t.id === ticketId);
+              if (ticket) {
+                // Crear nuevo mensaje
+                const newMessage = {
+                  id: 'MSG-' + Date.now(),
+                  content: content,
+                  isClient: isClient,
+                  timestamp: new Date().toISOString(),
+                  userName: message.userName || (isClient ? ticket.customer.name : 'Agente')
+                };
+                
+                // Añadir a la lista de mensajes del ticket
+                if (!ticket.messages) {
+                  ticket.messages = [];
+                }
+                ticket.messages.push(newMessage);
+                
+                // Guardar tickets en archivo
+                saveTickets();
+                
+                // Enviar confirmación al cliente
+                ws.send(JSON.stringify({
+                  type: 'message_received',
+                  ticketId: ticketId,
+                  data: newMessage
+                }));
+                
+                // Broadcastear a todos los clientes conectados
+                broadcastMessage(ticketId, newMessage);
+              } else {
+                ws.send(JSON.stringify({
+                  type: 'error',
+                  message: 'Ticket no encontrado'
+                }));
+              }
+            } else {
+              ws.send(JSON.stringify({
+                type: 'error',
+                message: 'Mensaje sin contenido'
+              }));
+            }
+          } else if (message.type !== 'identify') {
+            // Si no es un mensaje de tipo identify o new_message
+            console.log(`Tipo de mensaje no reconocido: ${message.type}`);
             ws.send(JSON.stringify({
               type: 'error',
-              message: 'Formato de mensaje no reconocido'
+              message: 'Tipo de mensaje no reconocido'
             }));
           }
         } catch (error) {
-          console.error(`Error al procesar mensaje de WebSocket: ${error}`);
+          console.error('Error al procesar mensaje WebSocket:', error);
           ws.send(JSON.stringify({
             type: 'error',
-            message: 'Error al procesar el mensaje'
+            message: 'Error al procesar mensaje: ' + error.message
           }));
         }
       });
@@ -1388,75 +1505,6 @@ server.on('upgrade', (request, socket, head) => {
     socket.destroy();
   }
 });
-
-// Función para difundir mensajes a todos los clientes WebSocket
-function broadcastMessage(ticketId, message) {
-  console.log('======== BROADCAST MENSAJE ========');
-  console.log(`Ticket ID: ${ticketId}`);
-  console.log(`Mensaje: ${JSON.stringify(message)}`);
-  console.log(`isClient: ${message.isClient}`); // Registrar valor de isClient explícitamente
-  
-  // Buscar conexiones directas para este ticket
-  console.log(`Buscando conexiones para ticket ${ticketId}...`);
-  
-  let connectionFound = false;
-  
-  // Verificar si hay clientes para este ticket
-  if (ticketConnections[ticketId] && ticketConnections[ticketId].length > 0) {
-    console.log(`✓ Encontradas ${ticketConnections[ticketId].length} conexiones directas para ticket ${ticketId}`);
-    sendToConnections(ticketConnections[ticketId], ticketId, message);
-    connectionFound = true;
-  } else {
-    console.log(`✗ No hay conexiones directas para ticket ${ticketId}`);
-  }
-  
-  // Verificar conexiones alternativas (si está configurada la conexión)
-  if (alternateConnectionMap[ticketId]) {
-    const altTicketId = alternateConnectionMap[ticketId];
-    
-    if (ticketConnections[altTicketId] && ticketConnections[altTicketId].length > 0) {
-      console.log(`✓ Encontradas ${ticketConnections[altTicketId].length} conexiones alternativas (${altTicketId}) para ticket ${ticketId}`);
-      sendToConnections(ticketConnections[altTicketId], ticketId, message);
-      connectionFound = true;
-    } else {
-      console.log(`✗ No hay conexiones alternativas para ticket ${ticketId}`);
-    }
-  }
-  
-  if (!connectionFound) {
-  const wsMessage = {
-    type: 'new_message', // Cambiar a minúsculas para coincidencia
-    ticketId: ticketId,
-    message: {
-      id: message.id,
-      content: message.content,
-      isClient: message.isClient, // MANTENER el valor original de isClient
-      timestamp: message.created_at || message.createdAt || message.timestamp || new Date().toISOString(),
-      userName: message.userName || (message.isClient ? 'Cliente' : 'Agente de Soporte'),
-      userEmail: message.userEmail || 'user@example.com'
-    }
-  }};
-  
-  // Serializar para envío
-  const messageString = JSON.stringify(wsMessage);
-  console.log(`Enviando mensaje WebSocket: ${messageString}`);
-  console.log(`IMPORTANTE - Valor final de isClient: ${wsMessage.message.isClient}`);
-  
-  // Enviar a todas las conexiones
-  let enviadoCount = 0;
-  connections.forEach(client => {
-    // Verificar que client sea un objeto WebSocket válido
-    if (client && client.socket && client.socket.readyState === WebSocket.OPEN) {
-      client.socket.send(messageString);
-      enviadoCount++;
-    } else if (client && client.readyState === WebSocket.OPEN) {
-      client.send(messageString);
-      enviadoCount++;
-    }
-  });
-  
-  console.log(`Mensaje enviado a ${enviadoCount}/${connections.length} conexiones activas`);
-}
 
 // Función para manejar peticiones HTTP
 const handleRequest = (req, res) => {
@@ -2030,227 +2078,6 @@ const handleRequest = (req, res) => {
   // Si ninguna ruta coincide
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'Ruta no encontrada' }));
-};
-
-// Función para manejar login
-const handleLogin = async (req, res) => {
-  try {
-    const data = await readBody(req);
-    
-    if (data.email && data.password) {
-      const user = users.find(u => u.email === data.email && u.password === data.password);
-      
-      if (user) {
-        // En un sistema real, generaríamos un JWT aquí
-        const { password, ...userWithoutPassword } = user;
-        const token = `mock-token-${user.id}`;
-        
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          token,
-          user: userWithoutPassword
-        }));
-      } else {
-        res.writeHead(401, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Credenciales inválidas' }));
-      }
-    } else {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Email y contraseña requeridos' }));
-    }
-  } catch (err) {
-    console.error('Error en login:', err);
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Datos de solicitud inválidos' }));
-  }
-};
-
-// Función para manejar creación de usuario
-const handleCreateUser = async (req, res) => {
-  try {
-    const userData = await readBody(req);
-    
-    // Verificar si el email ya existe
-    if (users.some(u => u.email === userData.email)) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'El email ya está registrado' }));
-      return;
-    }
-    
-    // Generar ID para el nuevo usuario
-    const newId = (users.length > 0) 
-      ? String(Math.max(...users.map(u => parseInt(u.id))) + 1) 
-      : '1';
-    
-    // Crear nuevo usuario
-    const newUser = {
-      id: newId,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      email: userData.email,
-      password: userData.password, // En un sistema real, esto se hashearía
-      role: userData.role || 'employee',
-      department: userData.department || null,
-      active: userData.active !== undefined ? userData.active : true
-    };
-    
-    users.push(newUser);
-    saveUsers();
-    
-    // Retornar el usuario sin la contraseña
-    const { password, ...safeUser } = newUser;
-    
-    res.writeHead(201, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(safeUser));
-  } catch (err) {
-    console.error('Error al crear usuario:', err);
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Datos de solicitud inválidos' }));
-  }
-};
-
-// Función para manejar actualización de usuario
-const handleUpdateUser = async (req, res) => {
-  try {
-    const id = req.url.split('/').pop();
-    const userData = await readBody(req);
-    const userIndex = users.findIndex(u => u.id === id);
-    
-    if (userIndex === -1) {
-      res.writeHead(404, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Usuario no encontrado' }));
-      return;
-    }
-    
-    // Verificar si está intentando actualizar el email a uno que ya existe
-    if (userData.email && userData.email !== users[userIndex].email && 
-        users.some(u => u.email === userData.email)) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'El email ya está registrado por otro usuario' }));
-      return;
-    }
-    
-    // Verificar permisos - solo administradores y asistentes pueden modificar otros usuarios
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
-    const decodedToken = validateToken(token);
-    
-    if (!decodedToken) {
-      res.writeHead(401, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Token inválido o expirado' }));
-      return;
-    }
-    
-    const currentUser = users.find(u => u.id === decodedToken.userId);
-    
-    // Si no es admin ni asistente y está intentando modificar a otro usuario
-    if (currentUser.role !== 'admin' && currentUser.role !== 'assistant' && id !== currentUser.id) {
-      res.writeHead(403, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'No tienes permisos para modificar este usuario' }));
-      return;
-    }
-    
-    // Solo los administradores pueden cambiar roles
-    if (userData.role && userData.role !== users[userIndex].role && currentUser.role !== 'admin') {
-      res.writeHead(403, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Solo los administradores pueden cambiar roles' }));
-      return;
-    }
-    
-    // Actualizar campos del usuario
-    const updatedUser = {
-      ...users[userIndex],
-      firstName: userData.firstName || users[userIndex].firstName,
-      lastName: userData.lastName || users[userIndex].lastName,
-      email: userData.email || users[userIndex].email,
-      department: userData.department !== undefined ? userData.department : users[userIndex].department,
-      active: userData.active !== undefined ? userData.active : users[userIndex].active,
-      // Campos adicionales del perfil
-      position: userData.position !== undefined ? userData.position : users[userIndex].position,
-      phone: userData.phone !== undefined ? userData.phone : users[userIndex].phone,
-      language: userData.language || users[userIndex].language || 'es',
-    };
-    
-    // Actualizar rol si viene en la solicitud y el usuario tiene permisos
-    if (userData.role && currentUser.role === 'admin') {
-      updatedUser.role = userData.role;
-    }
-    
-    // Actualizar contraseña solo si viene en la solicitud
-    if (userData.password) {
-      updatedUser.password = userData.password;
-    }
-    
-    users[userIndex] = updatedUser;
-    saveUsers();
-    
-    // Retornar el usuario actualizado sin la contraseña
-    const { password, ...safeUser } = updatedUser;
-    
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(safeUser));
-  } catch (err) {
-    console.error('Error al actualizar usuario:', err);
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Datos de solicitud inválidos' }));
-  }
-};
-
-// Función para manejar cambio de rol de usuario
-const handleChangeUserRole = async (req, res) => {
-  try {
-    const id = req.url.split('/')[3]; // Extrae el ID de la URL /api/users/{id}/role
-    const data = await readBody(req);
-    const { role } = data;
-    
-    const userIndex = users.findIndex(u => u.id === id);
-    
-    if (userIndex === -1) {
-      res.writeHead(404, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Usuario no encontrado' }));
-      return;
-    }
-    
-    // Validar rol
-    if (!['admin', 'assistant', 'employee'].includes(role)) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Rol no válido' }));
-      return;
-    }
-    
-    // Actualizar rol del usuario
-    users[userIndex].role = role;
-    saveUsers();
-    
-    // Retornar el usuario actualizado sin la contraseña
-    const { password, ...safeUser } = users[userIndex];
-    
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(safeUser));
-  } catch (err) {
-    console.error('Error al cambiar rol de usuario:', err);
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Datos de solicitud inválidos' }));
-  }
-};
-
-// Función para manejar eliminación de usuario
-const handleDeleteUser = (req, res) => {
-  const id = req.url.split('/').pop();
-  const userIndex = users.findIndex(u => u.id === id);
-  
-  if (userIndex === -1) {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Usuario no encontrado' }));
-    return;
-  }
-  
-  // Eliminar usuario
-  users.splice(userIndex, 1);
-  saveUsers();
-  
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ message: 'Usuario eliminado correctamente' }));
 };
 
 // Controlador para obtener todos los usuarios

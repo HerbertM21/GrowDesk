@@ -1,4 +1,4 @@
-import { effectScope, ref, markRaw, toRaw, watch, unref, defineComponent, onMounted, createElementBlock, openBlock, createElementVNode, createCommentVNode, normalizeStyle, toDisplayString, Fragment, renderList, normalizeClass, withDirectives, withKeys, vModelText, createApp } from "vue";
+import { effectScope, ref, markRaw, toRaw, watch, unref, defineComponent, computed, onMounted, onBeforeUnmount, createElementBlock, openBlock, createElementVNode, createCommentVNode, normalizeStyle, toDisplayString, withModifiers, withDirectives, vModelText, createTextVNode, Fragment, renderList, normalizeClass, withKeys, createApp } from "vue";
 function getDevtoolsGlobalHook() {
   return getTarget().__VUE_DEVTOOLS_GLOBAL_HOOK__;
 }
@@ -155,7 +155,7 @@ var MutationType;
   MutationType2["patchFunction"] = "patch function";
 })(MutationType || (MutationType = {}));
 const IS_CLIENT = typeof window !== "undefined";
-const _global = /* @__PURE__ */ (() => typeof window === "object" && window.window === window ? window : typeof self === "object" && self.self === self ? self : typeof global === "object" && global.global === global ? global : typeof globalThis === "object" ? globalThis : { HTMLElement: null })();
+const _global$1 = /* @__PURE__ */ (() => typeof window === "object" && window.window === window ? window : typeof self === "object" && self.self === self ? self : typeof global === "object" && global.global === global ? global : typeof globalThis === "object" ? globalThis : { HTMLElement: null })();
 function bom(blob, { autoBom = false } = {}) {
   if (autoBom && /^\s*(?:text\/\S*|application\/xml|\S*\/\S*\+xml)\s*;.*charset\s*=\s*utf-8/i.test(blob.type)) {
     return new Blob([String.fromCharCode(65279), blob], { type: blob.type });
@@ -192,14 +192,14 @@ function click(node) {
     node.dispatchEvent(evt);
   }
 }
-const _navigator = typeof navigator === "object" ? navigator : { userAgent: "" };
-const isMacOSWebView = /* @__PURE__ */ (() => /Macintosh/.test(_navigator.userAgent) && /AppleWebKit/.test(_navigator.userAgent) && !/Safari/.test(_navigator.userAgent))();
+const _navigator$1 = typeof navigator === "object" ? navigator : { userAgent: "" };
+const isMacOSWebView = /* @__PURE__ */ (() => /Macintosh/.test(_navigator$1.userAgent) && /AppleWebKit/.test(_navigator$1.userAgent) && !/Safari/.test(_navigator$1.userAgent))();
 const saveAs = !IS_CLIENT ? () => {
 } : (
   // Use download attribute first if possible (#193 Lumia mobile) unless this is a macOS WebView or mini program
   typeof HTMLAnchorElement !== "undefined" && "download" in HTMLAnchorElement.prototype && !isMacOSWebView ? downloadSaveAs : (
     // Use msSaveOrOpenBlob as a second approach
-    "msSaveOrOpenBlob" in _navigator ? msSaveAs : (
+    "msSaveOrOpenBlob" in _navigator$1 ? msSaveAs : (
       // Fallback to using FileReader and a popup
       fileSaverSaveAs
     )
@@ -255,7 +255,7 @@ function fileSaverSaveAs(blob, name, opts, popup) {
   if (typeof blob === "string")
     return download(blob, name, opts);
   const force = blob.type === "application/octet-stream";
-  const isSafari = /constructor/i.test(String(_global.HTMLElement)) || "safari" in _global;
+  const isSafari = /constructor/i.test(String(_global$1.HTMLElement)) || "safari" in _global$1;
   const isChromeIOS = /CriOS\/[\d]+/.test(navigator.userAgent);
   if ((isChromeIOS || force && isSafari || isMacOSWebView) && typeof FileReader !== "undefined") {
     const reader = new FileReader();
@@ -516,16 +516,16 @@ function registerPiniaDevtools(app, pinia) {
     homepage: "https://pinia.vuejs.org",
     componentStateTypes,
     app
-  }, (api) => {
-    if (typeof api.now !== "function") {
+  }, (api2) => {
+    if (typeof api2.now !== "function") {
       toastMessage("You seem to be using an outdated version of Vue Devtools. Are you still using the Beta release instead of the stable one? You can find the links at https://devtools.vuejs.org/guide/installation.html.");
     }
-    api.addTimelineLayer({
+    api2.addTimelineLayer({
       id: MUTATIONS_LAYER_ID,
       label: `Pinia 🍍`,
       color: 15064968
     });
-    api.addInspector({
+    api2.addInspector({
       id: INSPECTOR_ID,
       label: "Pinia 🍍",
       icon: "storage",
@@ -542,8 +542,8 @@ function registerPiniaDevtools(app, pinia) {
           icon: "content_paste",
           action: async () => {
             await actionGlobalPasteState(pinia);
-            api.sendInspectorTree(INSPECTOR_ID);
-            api.sendInspectorState(INSPECTOR_ID);
+            api2.sendInspectorTree(INSPECTOR_ID);
+            api2.sendInspectorState(INSPECTOR_ID);
           },
           tooltip: "Replace the state with the content of your clipboard"
         },
@@ -558,8 +558,8 @@ function registerPiniaDevtools(app, pinia) {
           icon: "folder_open",
           action: async () => {
             await actionGlobalOpenStateFile(pinia);
-            api.sendInspectorTree(INSPECTOR_ID);
-            api.sendInspectorState(INSPECTOR_ID);
+            api2.sendInspectorTree(INSPECTOR_ID);
+            api2.sendInspectorState(INSPECTOR_ID);
           },
           tooltip: "Import the state from a JSON file"
         }
@@ -582,7 +582,7 @@ function registerPiniaDevtools(app, pinia) {
         }
       ]
     });
-    api.on.inspectComponent((payload, ctx) => {
+    api2.on.inspectComponent((payload, ctx) => {
       const proxy = payload.componentInstance && payload.componentInstance.proxy;
       if (proxy && proxy._pStores) {
         const piniaStores = payload.componentInstance.proxy._pStores;
@@ -628,7 +628,7 @@ function registerPiniaDevtools(app, pinia) {
         });
       }
     });
-    api.on.getInspectorTree((payload) => {
+    api2.on.getInspectorTree((payload) => {
       if (payload.app === app && payload.inspectorId === INSPECTOR_ID) {
         let stores = [pinia];
         stores = stores.concat(Array.from(pinia._s.values()));
@@ -636,7 +636,7 @@ function registerPiniaDevtools(app, pinia) {
       }
     });
     globalThis.$pinia = pinia;
-    api.on.getInspectorState((payload) => {
+    api2.on.getInspectorState((payload) => {
       if (payload.app === app && payload.inspectorId === INSPECTOR_ID) {
         const inspectedStore = payload.nodeId === PINIA_ROOT_ID ? pinia : pinia._s.get(payload.nodeId);
         if (!inspectedStore) {
@@ -649,7 +649,7 @@ function registerPiniaDevtools(app, pinia) {
         }
       }
     });
-    api.on.editInspectorState((payload, ctx) => {
+    api2.on.editInspectorState((payload, ctx) => {
       if (payload.app === app && payload.inspectorId === INSPECTOR_ID) {
         const inspectedStore = payload.nodeId === PINIA_ROOT_ID ? pinia : pinia._s.get(payload.nodeId);
         if (!inspectedStore) {
@@ -668,7 +668,7 @@ function registerPiniaDevtools(app, pinia) {
         isTimelineActive = true;
       }
     });
-    api.on.editComponentState((payload) => {
+    api2.on.editComponentState((payload) => {
       if (payload.type.startsWith("🍍")) {
         const storeId = payload.type.replace(/^🍍\s*/, "");
         const store = pinia._s.get(storeId);
@@ -713,11 +713,11 @@ function addStoreToDevtools(app, store) {
       //   defaultValue: true,
       // },
     }
-  }, (api) => {
-    const now2 = typeof api.now === "function" ? api.now.bind(api) : Date.now;
+  }, (api2) => {
+    const now2 = typeof api2.now === "function" ? api2.now.bind(api2) : Date.now;
     store.$onAction(({ after, onError, name, args }) => {
       const groupId = runningActionId++;
-      api.addTimelineEvent({
+      api2.addTimelineEvent({
         layerId: MUTATIONS_LAYER_ID,
         event: {
           time: now2(),
@@ -733,7 +733,7 @@ function addStoreToDevtools(app, store) {
       });
       after((result) => {
         activeAction = void 0;
-        api.addTimelineEvent({
+        api2.addTimelineEvent({
           layerId: MUTATIONS_LAYER_ID,
           event: {
             time: now2(),
@@ -751,7 +751,7 @@ function addStoreToDevtools(app, store) {
       });
       onError((error) => {
         activeAction = void 0;
-        api.addTimelineEvent({
+        api2.addTimelineEvent({
           layerId: MUTATIONS_LAYER_ID,
           event: {
             time: now2(),
@@ -771,10 +771,10 @@ function addStoreToDevtools(app, store) {
     }, true);
     store._customProperties.forEach((name) => {
       watch(() => unref(store[name]), (newValue, oldValue) => {
-        api.notifyComponentUpdate();
-        api.sendInspectorState(INSPECTOR_ID);
+        api2.notifyComponentUpdate();
+        api2.sendInspectorState(INSPECTOR_ID);
         if (isTimelineActive) {
-          api.addTimelineEvent({
+          api2.addTimelineEvent({
             layerId: MUTATIONS_LAYER_ID,
             event: {
               time: now2(),
@@ -791,8 +791,8 @@ function addStoreToDevtools(app, store) {
       }, { deep: true });
     });
     store.$subscribe(({ events, type }, state) => {
-      api.notifyComponentUpdate();
-      api.sendInspectorState(INSPECTOR_ID);
+      api2.notifyComponentUpdate();
+      api2.sendInspectorState(INSPECTOR_ID);
       if (!isTimelineActive)
         return;
       const eventData = {
@@ -818,7 +818,7 @@ function addStoreToDevtools(app, store) {
           }
         };
       }
-      api.addTimelineEvent({
+      api2.addTimelineEvent({
         layerId: MUTATIONS_LAYER_ID,
         event: eventData
       });
@@ -826,7 +826,7 @@ function addStoreToDevtools(app, store) {
     const hotUpdate = store._hotUpdate;
     store._hotUpdate = markRaw((newStore) => {
       hotUpdate(newStore);
-      api.addTimelineEvent({
+      api2.addTimelineEvent({
         layerId: MUTATIONS_LAYER_ID,
         event: {
           time: now2(),
@@ -838,22 +838,22 @@ function addStoreToDevtools(app, store) {
           }
         }
       });
-      api.notifyComponentUpdate();
-      api.sendInspectorTree(INSPECTOR_ID);
-      api.sendInspectorState(INSPECTOR_ID);
+      api2.notifyComponentUpdate();
+      api2.sendInspectorTree(INSPECTOR_ID);
+      api2.sendInspectorState(INSPECTOR_ID);
     });
     const { $dispose } = store;
     store.$dispose = () => {
       $dispose();
-      api.notifyComponentUpdate();
-      api.sendInspectorTree(INSPECTOR_ID);
-      api.sendInspectorState(INSPECTOR_ID);
-      api.getSettings().logStoreChanges && toastMessage(`Disposed "${store.$id}" store 🗑`);
+      api2.notifyComponentUpdate();
+      api2.sendInspectorTree(INSPECTOR_ID);
+      api2.sendInspectorState(INSPECTOR_ID);
+      api2.getSettings().logStoreChanges && toastMessage(`Disposed "${store.$id}" store 🗑`);
     };
-    api.notifyComponentUpdate();
-    api.sendInspectorTree(INSPECTOR_ID);
-    api.sendInspectorState(INSPECTOR_ID);
-    api.getSettings().logStoreChanges && toastMessage(`"${store.$id}" store installed 🆕`);
+    api2.notifyComponentUpdate();
+    api2.sendInspectorTree(INSPECTOR_ID);
+    api2.sendInspectorState(INSPECTOR_ID);
+    api2.getSettings().logStoreChanges && toastMessage(`"${store.$id}" store installed 🆕`);
   });
 }
 let runningActionId = 0;
@@ -941,6 +941,2763 @@ function createPinia() {
   }
   return pinia;
 }
+function bind(fn, thisArg) {
+  return function wrap() {
+    return fn.apply(thisArg, arguments);
+  };
+}
+const { toString } = Object.prototype;
+const { getPrototypeOf } = Object;
+const kindOf = /* @__PURE__ */ ((cache) => (thing) => {
+  const str = toString.call(thing);
+  return cache[str] || (cache[str] = str.slice(8, -1).toLowerCase());
+})(/* @__PURE__ */ Object.create(null));
+const kindOfTest = (type) => {
+  type = type.toLowerCase();
+  return (thing) => kindOf(thing) === type;
+};
+const typeOfTest = (type) => (thing) => typeof thing === type;
+const { isArray } = Array;
+const isUndefined = typeOfTest("undefined");
+function isBuffer(val) {
+  return val !== null && !isUndefined(val) && val.constructor !== null && !isUndefined(val.constructor) && isFunction(val.constructor.isBuffer) && val.constructor.isBuffer(val);
+}
+const isArrayBuffer = kindOfTest("ArrayBuffer");
+function isArrayBufferView(val) {
+  let result;
+  if (typeof ArrayBuffer !== "undefined" && ArrayBuffer.isView) {
+    result = ArrayBuffer.isView(val);
+  } else {
+    result = val && val.buffer && isArrayBuffer(val.buffer);
+  }
+  return result;
+}
+const isString = typeOfTest("string");
+const isFunction = typeOfTest("function");
+const isNumber = typeOfTest("number");
+const isObject = (thing) => thing !== null && typeof thing === "object";
+const isBoolean = (thing) => thing === true || thing === false;
+const isPlainObject = (val) => {
+  if (kindOf(val) !== "object") {
+    return false;
+  }
+  const prototype2 = getPrototypeOf(val);
+  return (prototype2 === null || prototype2 === Object.prototype || Object.getPrototypeOf(prototype2) === null) && !(Symbol.toStringTag in val) && !(Symbol.iterator in val);
+};
+const isDate = kindOfTest("Date");
+const isFile = kindOfTest("File");
+const isBlob = kindOfTest("Blob");
+const isFileList = kindOfTest("FileList");
+const isStream = (val) => isObject(val) && isFunction(val.pipe);
+const isFormData = (thing) => {
+  let kind;
+  return thing && (typeof FormData === "function" && thing instanceof FormData || isFunction(thing.append) && ((kind = kindOf(thing)) === "formdata" || // detect form-data instance
+  kind === "object" && isFunction(thing.toString) && thing.toString() === "[object FormData]"));
+};
+const isURLSearchParams = kindOfTest("URLSearchParams");
+const [isReadableStream, isRequest, isResponse, isHeaders] = ["ReadableStream", "Request", "Response", "Headers"].map(kindOfTest);
+const trim = (str) => str.trim ? str.trim() : str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, "");
+function forEach(obj, fn, { allOwnKeys = false } = {}) {
+  if (obj === null || typeof obj === "undefined") {
+    return;
+  }
+  let i;
+  let l;
+  if (typeof obj !== "object") {
+    obj = [obj];
+  }
+  if (isArray(obj)) {
+    for (i = 0, l = obj.length; i < l; i++) {
+      fn.call(null, obj[i], i, obj);
+    }
+  } else {
+    const keys = allOwnKeys ? Object.getOwnPropertyNames(obj) : Object.keys(obj);
+    const len = keys.length;
+    let key;
+    for (i = 0; i < len; i++) {
+      key = keys[i];
+      fn.call(null, obj[key], key, obj);
+    }
+  }
+}
+function findKey(obj, key) {
+  key = key.toLowerCase();
+  const keys = Object.keys(obj);
+  let i = keys.length;
+  let _key;
+  while (i-- > 0) {
+    _key = keys[i];
+    if (key === _key.toLowerCase()) {
+      return _key;
+    }
+  }
+  return null;
+}
+const _global = (() => {
+  if (typeof globalThis !== "undefined") return globalThis;
+  return typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : global;
+})();
+const isContextDefined = (context) => !isUndefined(context) && context !== _global;
+function merge() {
+  const { caseless } = isContextDefined(this) && this || {};
+  const result = {};
+  const assignValue = (val, key) => {
+    const targetKey = caseless && findKey(result, key) || key;
+    if (isPlainObject(result[targetKey]) && isPlainObject(val)) {
+      result[targetKey] = merge(result[targetKey], val);
+    } else if (isPlainObject(val)) {
+      result[targetKey] = merge({}, val);
+    } else if (isArray(val)) {
+      result[targetKey] = val.slice();
+    } else {
+      result[targetKey] = val;
+    }
+  };
+  for (let i = 0, l = arguments.length; i < l; i++) {
+    arguments[i] && forEach(arguments[i], assignValue);
+  }
+  return result;
+}
+const extend = (a, b, thisArg, { allOwnKeys } = {}) => {
+  forEach(b, (val, key) => {
+    if (thisArg && isFunction(val)) {
+      a[key] = bind(val, thisArg);
+    } else {
+      a[key] = val;
+    }
+  }, { allOwnKeys });
+  return a;
+};
+const stripBOM = (content) => {
+  if (content.charCodeAt(0) === 65279) {
+    content = content.slice(1);
+  }
+  return content;
+};
+const inherits = (constructor, superConstructor, props, descriptors2) => {
+  constructor.prototype = Object.create(superConstructor.prototype, descriptors2);
+  constructor.prototype.constructor = constructor;
+  Object.defineProperty(constructor, "super", {
+    value: superConstructor.prototype
+  });
+  props && Object.assign(constructor.prototype, props);
+};
+const toFlatObject = (sourceObj, destObj, filter2, propFilter) => {
+  let props;
+  let i;
+  let prop;
+  const merged = {};
+  destObj = destObj || {};
+  if (sourceObj == null) return destObj;
+  do {
+    props = Object.getOwnPropertyNames(sourceObj);
+    i = props.length;
+    while (i-- > 0) {
+      prop = props[i];
+      if ((!propFilter || propFilter(prop, sourceObj, destObj)) && !merged[prop]) {
+        destObj[prop] = sourceObj[prop];
+        merged[prop] = true;
+      }
+    }
+    sourceObj = filter2 !== false && getPrototypeOf(sourceObj);
+  } while (sourceObj && (!filter2 || filter2(sourceObj, destObj)) && sourceObj !== Object.prototype);
+  return destObj;
+};
+const endsWith = (str, searchString, position) => {
+  str = String(str);
+  if (position === void 0 || position > str.length) {
+    position = str.length;
+  }
+  position -= searchString.length;
+  const lastIndex = str.indexOf(searchString, position);
+  return lastIndex !== -1 && lastIndex === position;
+};
+const toArray = (thing) => {
+  if (!thing) return null;
+  if (isArray(thing)) return thing;
+  let i = thing.length;
+  if (!isNumber(i)) return null;
+  const arr = new Array(i);
+  while (i-- > 0) {
+    arr[i] = thing[i];
+  }
+  return arr;
+};
+const isTypedArray = /* @__PURE__ */ ((TypedArray) => {
+  return (thing) => {
+    return TypedArray && thing instanceof TypedArray;
+  };
+})(typeof Uint8Array !== "undefined" && getPrototypeOf(Uint8Array));
+const forEachEntry = (obj, fn) => {
+  const generator = obj && obj[Symbol.iterator];
+  const iterator = generator.call(obj);
+  let result;
+  while ((result = iterator.next()) && !result.done) {
+    const pair = result.value;
+    fn.call(obj, pair[0], pair[1]);
+  }
+};
+const matchAll = (regExp, str) => {
+  let matches;
+  const arr = [];
+  while ((matches = regExp.exec(str)) !== null) {
+    arr.push(matches);
+  }
+  return arr;
+};
+const isHTMLForm = kindOfTest("HTMLFormElement");
+const toCamelCase = (str) => {
+  return str.toLowerCase().replace(
+    /[-_\s]([a-z\d])(\w*)/g,
+    function replacer(m, p1, p2) {
+      return p1.toUpperCase() + p2;
+    }
+  );
+};
+const hasOwnProperty = (({ hasOwnProperty: hasOwnProperty2 }) => (obj, prop) => hasOwnProperty2.call(obj, prop))(Object.prototype);
+const isRegExp = kindOfTest("RegExp");
+const reduceDescriptors = (obj, reducer) => {
+  const descriptors2 = Object.getOwnPropertyDescriptors(obj);
+  const reducedDescriptors = {};
+  forEach(descriptors2, (descriptor, name) => {
+    let ret;
+    if ((ret = reducer(descriptor, name, obj)) !== false) {
+      reducedDescriptors[name] = ret || descriptor;
+    }
+  });
+  Object.defineProperties(obj, reducedDescriptors);
+};
+const freezeMethods = (obj) => {
+  reduceDescriptors(obj, (descriptor, name) => {
+    if (isFunction(obj) && ["arguments", "caller", "callee"].indexOf(name) !== -1) {
+      return false;
+    }
+    const value = obj[name];
+    if (!isFunction(value)) return;
+    descriptor.enumerable = false;
+    if ("writable" in descriptor) {
+      descriptor.writable = false;
+      return;
+    }
+    if (!descriptor.set) {
+      descriptor.set = () => {
+        throw Error("Can not rewrite read-only method '" + name + "'");
+      };
+    }
+  });
+};
+const toObjectSet = (arrayOrString, delimiter) => {
+  const obj = {};
+  const define = (arr) => {
+    arr.forEach((value) => {
+      obj[value] = true;
+    });
+  };
+  isArray(arrayOrString) ? define(arrayOrString) : define(String(arrayOrString).split(delimiter));
+  return obj;
+};
+const noop = () => {
+};
+const toFiniteNumber = (value, defaultValue) => {
+  return value != null && Number.isFinite(value = +value) ? value : defaultValue;
+};
+function isSpecCompliantForm(thing) {
+  return !!(thing && isFunction(thing.append) && thing[Symbol.toStringTag] === "FormData" && thing[Symbol.iterator]);
+}
+const toJSONObject = (obj) => {
+  const stack = new Array(10);
+  const visit = (source, i) => {
+    if (isObject(source)) {
+      if (stack.indexOf(source) >= 0) {
+        return;
+      }
+      if (!("toJSON" in source)) {
+        stack[i] = source;
+        const target = isArray(source) ? [] : {};
+        forEach(source, (value, key) => {
+          const reducedValue = visit(value, i + 1);
+          !isUndefined(reducedValue) && (target[key] = reducedValue);
+        });
+        stack[i] = void 0;
+        return target;
+      }
+    }
+    return source;
+  };
+  return visit(obj, 0);
+};
+const isAsyncFn = kindOfTest("AsyncFunction");
+const isThenable = (thing) => thing && (isObject(thing) || isFunction(thing)) && isFunction(thing.then) && isFunction(thing.catch);
+const _setImmediate = ((setImmediateSupported, postMessageSupported) => {
+  if (setImmediateSupported) {
+    return setImmediate;
+  }
+  return postMessageSupported ? ((token, callbacks) => {
+    _global.addEventListener("message", ({ source, data }) => {
+      if (source === _global && data === token) {
+        callbacks.length && callbacks.shift()();
+      }
+    }, false);
+    return (cb) => {
+      callbacks.push(cb);
+      _global.postMessage(token, "*");
+    };
+  })(`axios@${Math.random()}`, []) : (cb) => setTimeout(cb);
+})(
+  typeof setImmediate === "function",
+  isFunction(_global.postMessage)
+);
+const asap = typeof queueMicrotask !== "undefined" ? queueMicrotask.bind(_global) : typeof process !== "undefined" && process.nextTick || _setImmediate;
+const utils$1 = {
+  isArray,
+  isArrayBuffer,
+  isBuffer,
+  isFormData,
+  isArrayBufferView,
+  isString,
+  isNumber,
+  isBoolean,
+  isObject,
+  isPlainObject,
+  isReadableStream,
+  isRequest,
+  isResponse,
+  isHeaders,
+  isUndefined,
+  isDate,
+  isFile,
+  isBlob,
+  isRegExp,
+  isFunction,
+  isStream,
+  isURLSearchParams,
+  isTypedArray,
+  isFileList,
+  forEach,
+  merge,
+  extend,
+  trim,
+  stripBOM,
+  inherits,
+  toFlatObject,
+  kindOf,
+  kindOfTest,
+  endsWith,
+  toArray,
+  forEachEntry,
+  matchAll,
+  isHTMLForm,
+  hasOwnProperty,
+  hasOwnProp: hasOwnProperty,
+  // an alias to avoid ESLint no-prototype-builtins detection
+  reduceDescriptors,
+  freezeMethods,
+  toObjectSet,
+  toCamelCase,
+  noop,
+  toFiniteNumber,
+  findKey,
+  global: _global,
+  isContextDefined,
+  isSpecCompliantForm,
+  toJSONObject,
+  isAsyncFn,
+  isThenable,
+  setImmediate: _setImmediate,
+  asap
+};
+function AxiosError$1(message, code, config, request, response) {
+  Error.call(this);
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(this, this.constructor);
+  } else {
+    this.stack = new Error().stack;
+  }
+  this.message = message;
+  this.name = "AxiosError";
+  code && (this.code = code);
+  config && (this.config = config);
+  request && (this.request = request);
+  if (response) {
+    this.response = response;
+    this.status = response.status ? response.status : null;
+  }
+}
+utils$1.inherits(AxiosError$1, Error, {
+  toJSON: function toJSON() {
+    return {
+      // Standard
+      message: this.message,
+      name: this.name,
+      // Microsoft
+      description: this.description,
+      number: this.number,
+      // Mozilla
+      fileName: this.fileName,
+      lineNumber: this.lineNumber,
+      columnNumber: this.columnNumber,
+      stack: this.stack,
+      // Axios
+      config: utils$1.toJSONObject(this.config),
+      code: this.code,
+      status: this.status
+    };
+  }
+});
+const prototype$1 = AxiosError$1.prototype;
+const descriptors = {};
+[
+  "ERR_BAD_OPTION_VALUE",
+  "ERR_BAD_OPTION",
+  "ECONNABORTED",
+  "ETIMEDOUT",
+  "ERR_NETWORK",
+  "ERR_FR_TOO_MANY_REDIRECTS",
+  "ERR_DEPRECATED",
+  "ERR_BAD_RESPONSE",
+  "ERR_BAD_REQUEST",
+  "ERR_CANCELED",
+  "ERR_NOT_SUPPORT",
+  "ERR_INVALID_URL"
+  // eslint-disable-next-line func-names
+].forEach((code) => {
+  descriptors[code] = { value: code };
+});
+Object.defineProperties(AxiosError$1, descriptors);
+Object.defineProperty(prototype$1, "isAxiosError", { value: true });
+AxiosError$1.from = (error, code, config, request, response, customProps) => {
+  const axiosError = Object.create(prototype$1);
+  utils$1.toFlatObject(error, axiosError, function filter2(obj) {
+    return obj !== Error.prototype;
+  }, (prop) => {
+    return prop !== "isAxiosError";
+  });
+  AxiosError$1.call(axiosError, error.message, code, config, request, response);
+  axiosError.cause = error;
+  axiosError.name = error.name;
+  customProps && Object.assign(axiosError, customProps);
+  return axiosError;
+};
+const httpAdapter = null;
+function isVisitable(thing) {
+  return utils$1.isPlainObject(thing) || utils$1.isArray(thing);
+}
+function removeBrackets(key) {
+  return utils$1.endsWith(key, "[]") ? key.slice(0, -2) : key;
+}
+function renderKey(path, key, dots) {
+  if (!path) return key;
+  return path.concat(key).map(function each(token, i) {
+    token = removeBrackets(token);
+    return !dots && i ? "[" + token + "]" : token;
+  }).join(dots ? "." : "");
+}
+function isFlatArray(arr) {
+  return utils$1.isArray(arr) && !arr.some(isVisitable);
+}
+const predicates = utils$1.toFlatObject(utils$1, {}, null, function filter(prop) {
+  return /^is[A-Z]/.test(prop);
+});
+function toFormData$1(obj, formData, options) {
+  if (!utils$1.isObject(obj)) {
+    throw new TypeError("target must be an object");
+  }
+  formData = formData || new FormData();
+  options = utils$1.toFlatObject(options, {
+    metaTokens: true,
+    dots: false,
+    indexes: false
+  }, false, function defined(option, source) {
+    return !utils$1.isUndefined(source[option]);
+  });
+  const metaTokens = options.metaTokens;
+  const visitor = options.visitor || defaultVisitor;
+  const dots = options.dots;
+  const indexes = options.indexes;
+  const _Blob = options.Blob || typeof Blob !== "undefined" && Blob;
+  const useBlob = _Blob && utils$1.isSpecCompliantForm(formData);
+  if (!utils$1.isFunction(visitor)) {
+    throw new TypeError("visitor must be a function");
+  }
+  function convertValue(value) {
+    if (value === null) return "";
+    if (utils$1.isDate(value)) {
+      return value.toISOString();
+    }
+    if (!useBlob && utils$1.isBlob(value)) {
+      throw new AxiosError$1("Blob is not supported. Use a Buffer instead.");
+    }
+    if (utils$1.isArrayBuffer(value) || utils$1.isTypedArray(value)) {
+      return useBlob && typeof Blob === "function" ? new Blob([value]) : Buffer.from(value);
+    }
+    return value;
+  }
+  function defaultVisitor(value, key, path) {
+    let arr = value;
+    if (value && !path && typeof value === "object") {
+      if (utils$1.endsWith(key, "{}")) {
+        key = metaTokens ? key : key.slice(0, -2);
+        value = JSON.stringify(value);
+      } else if (utils$1.isArray(value) && isFlatArray(value) || (utils$1.isFileList(value) || utils$1.endsWith(key, "[]")) && (arr = utils$1.toArray(value))) {
+        key = removeBrackets(key);
+        arr.forEach(function each(el, index) {
+          !(utils$1.isUndefined(el) || el === null) && formData.append(
+            // eslint-disable-next-line no-nested-ternary
+            indexes === true ? renderKey([key], index, dots) : indexes === null ? key : key + "[]",
+            convertValue(el)
+          );
+        });
+        return false;
+      }
+    }
+    if (isVisitable(value)) {
+      return true;
+    }
+    formData.append(renderKey(path, key, dots), convertValue(value));
+    return false;
+  }
+  const stack = [];
+  const exposedHelpers = Object.assign(predicates, {
+    defaultVisitor,
+    convertValue,
+    isVisitable
+  });
+  function build(value, path) {
+    if (utils$1.isUndefined(value)) return;
+    if (stack.indexOf(value) !== -1) {
+      throw Error("Circular reference detected in " + path.join("."));
+    }
+    stack.push(value);
+    utils$1.forEach(value, function each(el, key) {
+      const result = !(utils$1.isUndefined(el) || el === null) && visitor.call(
+        formData,
+        el,
+        utils$1.isString(key) ? key.trim() : key,
+        path,
+        exposedHelpers
+      );
+      if (result === true) {
+        build(el, path ? path.concat(key) : [key]);
+      }
+    });
+    stack.pop();
+  }
+  if (!utils$1.isObject(obj)) {
+    throw new TypeError("data must be an object");
+  }
+  build(obj);
+  return formData;
+}
+function encode$1(str) {
+  const charMap = {
+    "!": "%21",
+    "'": "%27",
+    "(": "%28",
+    ")": "%29",
+    "~": "%7E",
+    "%20": "+",
+    "%00": "\0"
+  };
+  return encodeURIComponent(str).replace(/[!'()~]|%20|%00/g, function replacer(match) {
+    return charMap[match];
+  });
+}
+function AxiosURLSearchParams(params, options) {
+  this._pairs = [];
+  params && toFormData$1(params, this, options);
+}
+const prototype = AxiosURLSearchParams.prototype;
+prototype.append = function append(name, value) {
+  this._pairs.push([name, value]);
+};
+prototype.toString = function toString2(encoder) {
+  const _encode = encoder ? function(value) {
+    return encoder.call(this, value, encode$1);
+  } : encode$1;
+  return this._pairs.map(function each(pair) {
+    return _encode(pair[0]) + "=" + _encode(pair[1]);
+  }, "").join("&");
+};
+function encode(val) {
+  return encodeURIComponent(val).replace(/%3A/gi, ":").replace(/%24/g, "$").replace(/%2C/gi, ",").replace(/%20/g, "+").replace(/%5B/gi, "[").replace(/%5D/gi, "]");
+}
+function buildURL(url, params, options) {
+  if (!params) {
+    return url;
+  }
+  const _encode = options && options.encode || encode;
+  if (utils$1.isFunction(options)) {
+    options = {
+      serialize: options
+    };
+  }
+  const serializeFn = options && options.serialize;
+  let serializedParams;
+  if (serializeFn) {
+    serializedParams = serializeFn(params, options);
+  } else {
+    serializedParams = utils$1.isURLSearchParams(params) ? params.toString() : new AxiosURLSearchParams(params, options).toString(_encode);
+  }
+  if (serializedParams) {
+    const hashmarkIndex = url.indexOf("#");
+    if (hashmarkIndex !== -1) {
+      url = url.slice(0, hashmarkIndex);
+    }
+    url += (url.indexOf("?") === -1 ? "?" : "&") + serializedParams;
+  }
+  return url;
+}
+class InterceptorManager {
+  constructor() {
+    this.handlers = [];
+  }
+  /**
+   * Add a new interceptor to the stack
+   *
+   * @param {Function} fulfilled The function to handle `then` for a `Promise`
+   * @param {Function} rejected The function to handle `reject` for a `Promise`
+   *
+   * @return {Number} An ID used to remove interceptor later
+   */
+  use(fulfilled, rejected, options) {
+    this.handlers.push({
+      fulfilled,
+      rejected,
+      synchronous: options ? options.synchronous : false,
+      runWhen: options ? options.runWhen : null
+    });
+    return this.handlers.length - 1;
+  }
+  /**
+   * Remove an interceptor from the stack
+   *
+   * @param {Number} id The ID that was returned by `use`
+   *
+   * @returns {Boolean} `true` if the interceptor was removed, `false` otherwise
+   */
+  eject(id) {
+    if (this.handlers[id]) {
+      this.handlers[id] = null;
+    }
+  }
+  /**
+   * Clear all interceptors from the stack
+   *
+   * @returns {void}
+   */
+  clear() {
+    if (this.handlers) {
+      this.handlers = [];
+    }
+  }
+  /**
+   * Iterate over all the registered interceptors
+   *
+   * This method is particularly useful for skipping over any
+   * interceptors that may have become `null` calling `eject`.
+   *
+   * @param {Function} fn The function to call for each interceptor
+   *
+   * @returns {void}
+   */
+  forEach(fn) {
+    utils$1.forEach(this.handlers, function forEachHandler(h) {
+      if (h !== null) {
+        fn(h);
+      }
+    });
+  }
+}
+const transitionalDefaults = {
+  silentJSONParsing: true,
+  forcedJSONParsing: true,
+  clarifyTimeoutError: false
+};
+const URLSearchParams$1 = typeof URLSearchParams !== "undefined" ? URLSearchParams : AxiosURLSearchParams;
+const FormData$1 = typeof FormData !== "undefined" ? FormData : null;
+const Blob$1 = typeof Blob !== "undefined" ? Blob : null;
+const platform$1 = {
+  isBrowser: true,
+  classes: {
+    URLSearchParams: URLSearchParams$1,
+    FormData: FormData$1,
+    Blob: Blob$1
+  },
+  protocols: ["http", "https", "file", "blob", "url", "data"]
+};
+const hasBrowserEnv = typeof window !== "undefined" && typeof document !== "undefined";
+const _navigator = typeof navigator === "object" && navigator || void 0;
+const hasStandardBrowserEnv = hasBrowserEnv && (!_navigator || ["ReactNative", "NativeScript", "NS"].indexOf(_navigator.product) < 0);
+const hasStandardBrowserWebWorkerEnv = (() => {
+  return typeof WorkerGlobalScope !== "undefined" && // eslint-disable-next-line no-undef
+  self instanceof WorkerGlobalScope && typeof self.importScripts === "function";
+})();
+const origin = hasBrowserEnv && window.location.href || "http://localhost";
+const utils = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  hasBrowserEnv,
+  hasStandardBrowserEnv,
+  hasStandardBrowserWebWorkerEnv,
+  navigator: _navigator,
+  origin
+}, Symbol.toStringTag, { value: "Module" }));
+const platform = {
+  ...utils,
+  ...platform$1
+};
+function toURLEncodedForm(data, options) {
+  return toFormData$1(data, new platform.classes.URLSearchParams(), Object.assign({
+    visitor: function(value, key, path, helpers) {
+      if (platform.isNode && utils$1.isBuffer(value)) {
+        this.append(key, value.toString("base64"));
+        return false;
+      }
+      return helpers.defaultVisitor.apply(this, arguments);
+    }
+  }, options));
+}
+function parsePropPath(name) {
+  return utils$1.matchAll(/\w+|\[(\w*)]/g, name).map((match) => {
+    return match[0] === "[]" ? "" : match[1] || match[0];
+  });
+}
+function arrayToObject(arr) {
+  const obj = {};
+  const keys = Object.keys(arr);
+  let i;
+  const len = keys.length;
+  let key;
+  for (i = 0; i < len; i++) {
+    key = keys[i];
+    obj[key] = arr[key];
+  }
+  return obj;
+}
+function formDataToJSON(formData) {
+  function buildPath(path, value, target, index) {
+    let name = path[index++];
+    if (name === "__proto__") return true;
+    const isNumericKey = Number.isFinite(+name);
+    const isLast = index >= path.length;
+    name = !name && utils$1.isArray(target) ? target.length : name;
+    if (isLast) {
+      if (utils$1.hasOwnProp(target, name)) {
+        target[name] = [target[name], value];
+      } else {
+        target[name] = value;
+      }
+      return !isNumericKey;
+    }
+    if (!target[name] || !utils$1.isObject(target[name])) {
+      target[name] = [];
+    }
+    const result = buildPath(path, value, target[name], index);
+    if (result && utils$1.isArray(target[name])) {
+      target[name] = arrayToObject(target[name]);
+    }
+    return !isNumericKey;
+  }
+  if (utils$1.isFormData(formData) && utils$1.isFunction(formData.entries)) {
+    const obj = {};
+    utils$1.forEachEntry(formData, (name, value) => {
+      buildPath(parsePropPath(name), value, obj, 0);
+    });
+    return obj;
+  }
+  return null;
+}
+function stringifySafely(rawValue, parser, encoder) {
+  if (utils$1.isString(rawValue)) {
+    try {
+      (parser || JSON.parse)(rawValue);
+      return utils$1.trim(rawValue);
+    } catch (e) {
+      if (e.name !== "SyntaxError") {
+        throw e;
+      }
+    }
+  }
+  return (encoder || JSON.stringify)(rawValue);
+}
+const defaults = {
+  transitional: transitionalDefaults,
+  adapter: ["xhr", "http", "fetch"],
+  transformRequest: [function transformRequest(data, headers) {
+    const contentType = headers.getContentType() || "";
+    const hasJSONContentType = contentType.indexOf("application/json") > -1;
+    const isObjectPayload = utils$1.isObject(data);
+    if (isObjectPayload && utils$1.isHTMLForm(data)) {
+      data = new FormData(data);
+    }
+    const isFormData2 = utils$1.isFormData(data);
+    if (isFormData2) {
+      return hasJSONContentType ? JSON.stringify(formDataToJSON(data)) : data;
+    }
+    if (utils$1.isArrayBuffer(data) || utils$1.isBuffer(data) || utils$1.isStream(data) || utils$1.isFile(data) || utils$1.isBlob(data) || utils$1.isReadableStream(data)) {
+      return data;
+    }
+    if (utils$1.isArrayBufferView(data)) {
+      return data.buffer;
+    }
+    if (utils$1.isURLSearchParams(data)) {
+      headers.setContentType("application/x-www-form-urlencoded;charset=utf-8", false);
+      return data.toString();
+    }
+    let isFileList2;
+    if (isObjectPayload) {
+      if (contentType.indexOf("application/x-www-form-urlencoded") > -1) {
+        return toURLEncodedForm(data, this.formSerializer).toString();
+      }
+      if ((isFileList2 = utils$1.isFileList(data)) || contentType.indexOf("multipart/form-data") > -1) {
+        const _FormData = this.env && this.env.FormData;
+        return toFormData$1(
+          isFileList2 ? { "files[]": data } : data,
+          _FormData && new _FormData(),
+          this.formSerializer
+        );
+      }
+    }
+    if (isObjectPayload || hasJSONContentType) {
+      headers.setContentType("application/json", false);
+      return stringifySafely(data);
+    }
+    return data;
+  }],
+  transformResponse: [function transformResponse(data) {
+    const transitional2 = this.transitional || defaults.transitional;
+    const forcedJSONParsing = transitional2 && transitional2.forcedJSONParsing;
+    const JSONRequested = this.responseType === "json";
+    if (utils$1.isResponse(data) || utils$1.isReadableStream(data)) {
+      return data;
+    }
+    if (data && utils$1.isString(data) && (forcedJSONParsing && !this.responseType || JSONRequested)) {
+      const silentJSONParsing = transitional2 && transitional2.silentJSONParsing;
+      const strictJSONParsing = !silentJSONParsing && JSONRequested;
+      try {
+        return JSON.parse(data);
+      } catch (e) {
+        if (strictJSONParsing) {
+          if (e.name === "SyntaxError") {
+            throw AxiosError$1.from(e, AxiosError$1.ERR_BAD_RESPONSE, this, null, this.response);
+          }
+          throw e;
+        }
+      }
+    }
+    return data;
+  }],
+  /**
+   * A timeout in milliseconds to abort a request. If set to 0 (default) a
+   * timeout is not created.
+   */
+  timeout: 0,
+  xsrfCookieName: "XSRF-TOKEN",
+  xsrfHeaderName: "X-XSRF-TOKEN",
+  maxContentLength: -1,
+  maxBodyLength: -1,
+  env: {
+    FormData: platform.classes.FormData,
+    Blob: platform.classes.Blob
+  },
+  validateStatus: function validateStatus(status) {
+    return status >= 200 && status < 300;
+  },
+  headers: {
+    common: {
+      "Accept": "application/json, text/plain, */*",
+      "Content-Type": void 0
+    }
+  }
+};
+utils$1.forEach(["delete", "get", "head", "post", "put", "patch"], (method) => {
+  defaults.headers[method] = {};
+});
+const ignoreDuplicateOf = utils$1.toObjectSet([
+  "age",
+  "authorization",
+  "content-length",
+  "content-type",
+  "etag",
+  "expires",
+  "from",
+  "host",
+  "if-modified-since",
+  "if-unmodified-since",
+  "last-modified",
+  "location",
+  "max-forwards",
+  "proxy-authorization",
+  "referer",
+  "retry-after",
+  "user-agent"
+]);
+const parseHeaders = (rawHeaders) => {
+  const parsed = {};
+  let key;
+  let val;
+  let i;
+  rawHeaders && rawHeaders.split("\n").forEach(function parser(line) {
+    i = line.indexOf(":");
+    key = line.substring(0, i).trim().toLowerCase();
+    val = line.substring(i + 1).trim();
+    if (!key || parsed[key] && ignoreDuplicateOf[key]) {
+      return;
+    }
+    if (key === "set-cookie") {
+      if (parsed[key]) {
+        parsed[key].push(val);
+      } else {
+        parsed[key] = [val];
+      }
+    } else {
+      parsed[key] = parsed[key] ? parsed[key] + ", " + val : val;
+    }
+  });
+  return parsed;
+};
+const $internals = Symbol("internals");
+function normalizeHeader(header) {
+  return header && String(header).trim().toLowerCase();
+}
+function normalizeValue(value) {
+  if (value === false || value == null) {
+    return value;
+  }
+  return utils$1.isArray(value) ? value.map(normalizeValue) : String(value);
+}
+function parseTokens(str) {
+  const tokens = /* @__PURE__ */ Object.create(null);
+  const tokensRE = /([^\s,;=]+)\s*(?:=\s*([^,;]+))?/g;
+  let match;
+  while (match = tokensRE.exec(str)) {
+    tokens[match[1]] = match[2];
+  }
+  return tokens;
+}
+const isValidHeaderName = (str) => /^[-_a-zA-Z0-9^`|~,!#$%&'*+.]+$/.test(str.trim());
+function matchHeaderValue(context, value, header, filter2, isHeaderNameFilter) {
+  if (utils$1.isFunction(filter2)) {
+    return filter2.call(this, value, header);
+  }
+  if (isHeaderNameFilter) {
+    value = header;
+  }
+  if (!utils$1.isString(value)) return;
+  if (utils$1.isString(filter2)) {
+    return value.indexOf(filter2) !== -1;
+  }
+  if (utils$1.isRegExp(filter2)) {
+    return filter2.test(value);
+  }
+}
+function formatHeader(header) {
+  return header.trim().toLowerCase().replace(/([a-z\d])(\w*)/g, (w, char, str) => {
+    return char.toUpperCase() + str;
+  });
+}
+function buildAccessors(obj, header) {
+  const accessorName = utils$1.toCamelCase(" " + header);
+  ["get", "set", "has"].forEach((methodName) => {
+    Object.defineProperty(obj, methodName + accessorName, {
+      value: function(arg1, arg2, arg3) {
+        return this[methodName].call(this, header, arg1, arg2, arg3);
+      },
+      configurable: true
+    });
+  });
+}
+let AxiosHeaders$1 = class AxiosHeaders {
+  constructor(headers) {
+    headers && this.set(headers);
+  }
+  set(header, valueOrRewrite, rewrite) {
+    const self2 = this;
+    function setHeader(_value, _header, _rewrite) {
+      const lHeader = normalizeHeader(_header);
+      if (!lHeader) {
+        throw new Error("header name must be a non-empty string");
+      }
+      const key = utils$1.findKey(self2, lHeader);
+      if (!key || self2[key] === void 0 || _rewrite === true || _rewrite === void 0 && self2[key] !== false) {
+        self2[key || _header] = normalizeValue(_value);
+      }
+    }
+    const setHeaders = (headers, _rewrite) => utils$1.forEach(headers, (_value, _header) => setHeader(_value, _header, _rewrite));
+    if (utils$1.isPlainObject(header) || header instanceof this.constructor) {
+      setHeaders(header, valueOrRewrite);
+    } else if (utils$1.isString(header) && (header = header.trim()) && !isValidHeaderName(header)) {
+      setHeaders(parseHeaders(header), valueOrRewrite);
+    } else if (utils$1.isHeaders(header)) {
+      for (const [key, value] of header.entries()) {
+        setHeader(value, key, rewrite);
+      }
+    } else {
+      header != null && setHeader(valueOrRewrite, header, rewrite);
+    }
+    return this;
+  }
+  get(header, parser) {
+    header = normalizeHeader(header);
+    if (header) {
+      const key = utils$1.findKey(this, header);
+      if (key) {
+        const value = this[key];
+        if (!parser) {
+          return value;
+        }
+        if (parser === true) {
+          return parseTokens(value);
+        }
+        if (utils$1.isFunction(parser)) {
+          return parser.call(this, value, key);
+        }
+        if (utils$1.isRegExp(parser)) {
+          return parser.exec(value);
+        }
+        throw new TypeError("parser must be boolean|regexp|function");
+      }
+    }
+  }
+  has(header, matcher) {
+    header = normalizeHeader(header);
+    if (header) {
+      const key = utils$1.findKey(this, header);
+      return !!(key && this[key] !== void 0 && (!matcher || matchHeaderValue(this, this[key], key, matcher)));
+    }
+    return false;
+  }
+  delete(header, matcher) {
+    const self2 = this;
+    let deleted = false;
+    function deleteHeader(_header) {
+      _header = normalizeHeader(_header);
+      if (_header) {
+        const key = utils$1.findKey(self2, _header);
+        if (key && (!matcher || matchHeaderValue(self2, self2[key], key, matcher))) {
+          delete self2[key];
+          deleted = true;
+        }
+      }
+    }
+    if (utils$1.isArray(header)) {
+      header.forEach(deleteHeader);
+    } else {
+      deleteHeader(header);
+    }
+    return deleted;
+  }
+  clear(matcher) {
+    const keys = Object.keys(this);
+    let i = keys.length;
+    let deleted = false;
+    while (i--) {
+      const key = keys[i];
+      if (!matcher || matchHeaderValue(this, this[key], key, matcher, true)) {
+        delete this[key];
+        deleted = true;
+      }
+    }
+    return deleted;
+  }
+  normalize(format) {
+    const self2 = this;
+    const headers = {};
+    utils$1.forEach(this, (value, header) => {
+      const key = utils$1.findKey(headers, header);
+      if (key) {
+        self2[key] = normalizeValue(value);
+        delete self2[header];
+        return;
+      }
+      const normalized = format ? formatHeader(header) : String(header).trim();
+      if (normalized !== header) {
+        delete self2[header];
+      }
+      self2[normalized] = normalizeValue(value);
+      headers[normalized] = true;
+    });
+    return this;
+  }
+  concat(...targets) {
+    return this.constructor.concat(this, ...targets);
+  }
+  toJSON(asStrings) {
+    const obj = /* @__PURE__ */ Object.create(null);
+    utils$1.forEach(this, (value, header) => {
+      value != null && value !== false && (obj[header] = asStrings && utils$1.isArray(value) ? value.join(", ") : value);
+    });
+    return obj;
+  }
+  [Symbol.iterator]() {
+    return Object.entries(this.toJSON())[Symbol.iterator]();
+  }
+  toString() {
+    return Object.entries(this.toJSON()).map(([header, value]) => header + ": " + value).join("\n");
+  }
+  get [Symbol.toStringTag]() {
+    return "AxiosHeaders";
+  }
+  static from(thing) {
+    return thing instanceof this ? thing : new this(thing);
+  }
+  static concat(first, ...targets) {
+    const computed2 = new this(first);
+    targets.forEach((target) => computed2.set(target));
+    return computed2;
+  }
+  static accessor(header) {
+    const internals = this[$internals] = this[$internals] = {
+      accessors: {}
+    };
+    const accessors = internals.accessors;
+    const prototype2 = this.prototype;
+    function defineAccessor(_header) {
+      const lHeader = normalizeHeader(_header);
+      if (!accessors[lHeader]) {
+        buildAccessors(prototype2, _header);
+        accessors[lHeader] = true;
+      }
+    }
+    utils$1.isArray(header) ? header.forEach(defineAccessor) : defineAccessor(header);
+    return this;
+  }
+};
+AxiosHeaders$1.accessor(["Content-Type", "Content-Length", "Accept", "Accept-Encoding", "User-Agent", "Authorization"]);
+utils$1.reduceDescriptors(AxiosHeaders$1.prototype, ({ value }, key) => {
+  let mapped = key[0].toUpperCase() + key.slice(1);
+  return {
+    get: () => value,
+    set(headerValue) {
+      this[mapped] = headerValue;
+    }
+  };
+});
+utils$1.freezeMethods(AxiosHeaders$1);
+function transformData(fns, response) {
+  const config = this || defaults;
+  const context = response || config;
+  const headers = AxiosHeaders$1.from(context.headers);
+  let data = context.data;
+  utils$1.forEach(fns, function transform(fn) {
+    data = fn.call(config, data, headers.normalize(), response ? response.status : void 0);
+  });
+  headers.normalize();
+  return data;
+}
+function isCancel$1(value) {
+  return !!(value && value.__CANCEL__);
+}
+function CanceledError$1(message, config, request) {
+  AxiosError$1.call(this, message == null ? "canceled" : message, AxiosError$1.ERR_CANCELED, config, request);
+  this.name = "CanceledError";
+}
+utils$1.inherits(CanceledError$1, AxiosError$1, {
+  __CANCEL__: true
+});
+function settle(resolve, reject, response) {
+  const validateStatus2 = response.config.validateStatus;
+  if (!response.status || !validateStatus2 || validateStatus2(response.status)) {
+    resolve(response);
+  } else {
+    reject(new AxiosError$1(
+      "Request failed with status code " + response.status,
+      [AxiosError$1.ERR_BAD_REQUEST, AxiosError$1.ERR_BAD_RESPONSE][Math.floor(response.status / 100) - 4],
+      response.config,
+      response.request,
+      response
+    ));
+  }
+}
+function parseProtocol(url) {
+  const match = /^([-+\w]{1,25})(:?\/\/|:)/.exec(url);
+  return match && match[1] || "";
+}
+function speedometer(samplesCount, min) {
+  samplesCount = samplesCount || 10;
+  const bytes = new Array(samplesCount);
+  const timestamps = new Array(samplesCount);
+  let head = 0;
+  let tail = 0;
+  let firstSampleTS;
+  min = min !== void 0 ? min : 1e3;
+  return function push(chunkLength) {
+    const now2 = Date.now();
+    const startedAt = timestamps[tail];
+    if (!firstSampleTS) {
+      firstSampleTS = now2;
+    }
+    bytes[head] = chunkLength;
+    timestamps[head] = now2;
+    let i = tail;
+    let bytesCount = 0;
+    while (i !== head) {
+      bytesCount += bytes[i++];
+      i = i % samplesCount;
+    }
+    head = (head + 1) % samplesCount;
+    if (head === tail) {
+      tail = (tail + 1) % samplesCount;
+    }
+    if (now2 - firstSampleTS < min) {
+      return;
+    }
+    const passed = startedAt && now2 - startedAt;
+    return passed ? Math.round(bytesCount * 1e3 / passed) : void 0;
+  };
+}
+function throttle(fn, freq) {
+  let timestamp = 0;
+  let threshold = 1e3 / freq;
+  let lastArgs;
+  let timer;
+  const invoke = (args, now2 = Date.now()) => {
+    timestamp = now2;
+    lastArgs = null;
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+    fn.apply(null, args);
+  };
+  const throttled = (...args) => {
+    const now2 = Date.now();
+    const passed = now2 - timestamp;
+    if (passed >= threshold) {
+      invoke(args, now2);
+    } else {
+      lastArgs = args;
+      if (!timer) {
+        timer = setTimeout(() => {
+          timer = null;
+          invoke(lastArgs);
+        }, threshold - passed);
+      }
+    }
+  };
+  const flush = () => lastArgs && invoke(lastArgs);
+  return [throttled, flush];
+}
+const progressEventReducer = (listener, isDownloadStream, freq = 3) => {
+  let bytesNotified = 0;
+  const _speedometer = speedometer(50, 250);
+  return throttle((e) => {
+    const loaded = e.loaded;
+    const total = e.lengthComputable ? e.total : void 0;
+    const progressBytes = loaded - bytesNotified;
+    const rate = _speedometer(progressBytes);
+    const inRange = loaded <= total;
+    bytesNotified = loaded;
+    const data = {
+      loaded,
+      total,
+      progress: total ? loaded / total : void 0,
+      bytes: progressBytes,
+      rate: rate ? rate : void 0,
+      estimated: rate && total && inRange ? (total - loaded) / rate : void 0,
+      event: e,
+      lengthComputable: total != null,
+      [isDownloadStream ? "download" : "upload"]: true
+    };
+    listener(data);
+  }, freq);
+};
+const progressEventDecorator = (total, throttled) => {
+  const lengthComputable = total != null;
+  return [(loaded) => throttled[0]({
+    lengthComputable,
+    total,
+    loaded
+  }), throttled[1]];
+};
+const asyncDecorator = (fn) => (...args) => utils$1.asap(() => fn(...args));
+const isURLSameOrigin = platform.hasStandardBrowserEnv ? /* @__PURE__ */ ((origin2, isMSIE) => (url) => {
+  url = new URL(url, platform.origin);
+  return origin2.protocol === url.protocol && origin2.host === url.host && (isMSIE || origin2.port === url.port);
+})(
+  new URL(platform.origin),
+  platform.navigator && /(msie|trident)/i.test(platform.navigator.userAgent)
+) : () => true;
+const cookies = platform.hasStandardBrowserEnv ? (
+  // Standard browser envs support document.cookie
+  {
+    write(name, value, expires, path, domain, secure) {
+      const cookie = [name + "=" + encodeURIComponent(value)];
+      utils$1.isNumber(expires) && cookie.push("expires=" + new Date(expires).toGMTString());
+      utils$1.isString(path) && cookie.push("path=" + path);
+      utils$1.isString(domain) && cookie.push("domain=" + domain);
+      secure === true && cookie.push("secure");
+      document.cookie = cookie.join("; ");
+    },
+    read(name) {
+      const match = document.cookie.match(new RegExp("(^|;\\s*)(" + name + ")=([^;]*)"));
+      return match ? decodeURIComponent(match[3]) : null;
+    },
+    remove(name) {
+      this.write(name, "", Date.now() - 864e5);
+    }
+  }
+) : (
+  // Non-standard browser env (web workers, react-native) lack needed support.
+  {
+    write() {
+    },
+    read() {
+      return null;
+    },
+    remove() {
+    }
+  }
+);
+function isAbsoluteURL(url) {
+  return /^([a-z][a-z\d+\-.]*:)?\/\//i.test(url);
+}
+function combineURLs(baseURL, relativeURL) {
+  return relativeURL ? baseURL.replace(/\/?\/$/, "") + "/" + relativeURL.replace(/^\/+/, "") : baseURL;
+}
+function buildFullPath(baseURL, requestedURL, allowAbsoluteUrls) {
+  let isRelativeUrl = !isAbsoluteURL(requestedURL);
+  if (baseURL && (isRelativeUrl || allowAbsoluteUrls == false)) {
+    return combineURLs(baseURL, requestedURL);
+  }
+  return requestedURL;
+}
+const headersToObject = (thing) => thing instanceof AxiosHeaders$1 ? { ...thing } : thing;
+function mergeConfig$1(config1, config2) {
+  config2 = config2 || {};
+  const config = {};
+  function getMergedValue(target, source, prop, caseless) {
+    if (utils$1.isPlainObject(target) && utils$1.isPlainObject(source)) {
+      return utils$1.merge.call({ caseless }, target, source);
+    } else if (utils$1.isPlainObject(source)) {
+      return utils$1.merge({}, source);
+    } else if (utils$1.isArray(source)) {
+      return source.slice();
+    }
+    return source;
+  }
+  function mergeDeepProperties(a, b, prop, caseless) {
+    if (!utils$1.isUndefined(b)) {
+      return getMergedValue(a, b, prop, caseless);
+    } else if (!utils$1.isUndefined(a)) {
+      return getMergedValue(void 0, a, prop, caseless);
+    }
+  }
+  function valueFromConfig2(a, b) {
+    if (!utils$1.isUndefined(b)) {
+      return getMergedValue(void 0, b);
+    }
+  }
+  function defaultToConfig2(a, b) {
+    if (!utils$1.isUndefined(b)) {
+      return getMergedValue(void 0, b);
+    } else if (!utils$1.isUndefined(a)) {
+      return getMergedValue(void 0, a);
+    }
+  }
+  function mergeDirectKeys(a, b, prop) {
+    if (prop in config2) {
+      return getMergedValue(a, b);
+    } else if (prop in config1) {
+      return getMergedValue(void 0, a);
+    }
+  }
+  const mergeMap = {
+    url: valueFromConfig2,
+    method: valueFromConfig2,
+    data: valueFromConfig2,
+    baseURL: defaultToConfig2,
+    transformRequest: defaultToConfig2,
+    transformResponse: defaultToConfig2,
+    paramsSerializer: defaultToConfig2,
+    timeout: defaultToConfig2,
+    timeoutMessage: defaultToConfig2,
+    withCredentials: defaultToConfig2,
+    withXSRFToken: defaultToConfig2,
+    adapter: defaultToConfig2,
+    responseType: defaultToConfig2,
+    xsrfCookieName: defaultToConfig2,
+    xsrfHeaderName: defaultToConfig2,
+    onUploadProgress: defaultToConfig2,
+    onDownloadProgress: defaultToConfig2,
+    decompress: defaultToConfig2,
+    maxContentLength: defaultToConfig2,
+    maxBodyLength: defaultToConfig2,
+    beforeRedirect: defaultToConfig2,
+    transport: defaultToConfig2,
+    httpAgent: defaultToConfig2,
+    httpsAgent: defaultToConfig2,
+    cancelToken: defaultToConfig2,
+    socketPath: defaultToConfig2,
+    responseEncoding: defaultToConfig2,
+    validateStatus: mergeDirectKeys,
+    headers: (a, b, prop) => mergeDeepProperties(headersToObject(a), headersToObject(b), prop, true)
+  };
+  utils$1.forEach(Object.keys(Object.assign({}, config1, config2)), function computeConfigValue(prop) {
+    const merge2 = mergeMap[prop] || mergeDeepProperties;
+    const configValue = merge2(config1[prop], config2[prop], prop);
+    utils$1.isUndefined(configValue) && merge2 !== mergeDirectKeys || (config[prop] = configValue);
+  });
+  return config;
+}
+const resolveConfig = (config) => {
+  const newConfig = mergeConfig$1({}, config);
+  let { data, withXSRFToken, xsrfHeaderName, xsrfCookieName, headers, auth } = newConfig;
+  newConfig.headers = headers = AxiosHeaders$1.from(headers);
+  newConfig.url = buildURL(buildFullPath(newConfig.baseURL, newConfig.url, newConfig.allowAbsoluteUrls), config.params, config.paramsSerializer);
+  if (auth) {
+    headers.set(
+      "Authorization",
+      "Basic " + btoa((auth.username || "") + ":" + (auth.password ? unescape(encodeURIComponent(auth.password)) : ""))
+    );
+  }
+  let contentType;
+  if (utils$1.isFormData(data)) {
+    if (platform.hasStandardBrowserEnv || platform.hasStandardBrowserWebWorkerEnv) {
+      headers.setContentType(void 0);
+    } else if ((contentType = headers.getContentType()) !== false) {
+      const [type, ...tokens] = contentType ? contentType.split(";").map((token) => token.trim()).filter(Boolean) : [];
+      headers.setContentType([type || "multipart/form-data", ...tokens].join("; "));
+    }
+  }
+  if (platform.hasStandardBrowserEnv) {
+    withXSRFToken && utils$1.isFunction(withXSRFToken) && (withXSRFToken = withXSRFToken(newConfig));
+    if (withXSRFToken || withXSRFToken !== false && isURLSameOrigin(newConfig.url)) {
+      const xsrfValue = xsrfHeaderName && xsrfCookieName && cookies.read(xsrfCookieName);
+      if (xsrfValue) {
+        headers.set(xsrfHeaderName, xsrfValue);
+      }
+    }
+  }
+  return newConfig;
+};
+const isXHRAdapterSupported = typeof XMLHttpRequest !== "undefined";
+const xhrAdapter = isXHRAdapterSupported && function(config) {
+  return new Promise(function dispatchXhrRequest(resolve, reject) {
+    const _config = resolveConfig(config);
+    let requestData = _config.data;
+    const requestHeaders = AxiosHeaders$1.from(_config.headers).normalize();
+    let { responseType, onUploadProgress, onDownloadProgress } = _config;
+    let onCanceled;
+    let uploadThrottled, downloadThrottled;
+    let flushUpload, flushDownload;
+    function done() {
+      flushUpload && flushUpload();
+      flushDownload && flushDownload();
+      _config.cancelToken && _config.cancelToken.unsubscribe(onCanceled);
+      _config.signal && _config.signal.removeEventListener("abort", onCanceled);
+    }
+    let request = new XMLHttpRequest();
+    request.open(_config.method.toUpperCase(), _config.url, true);
+    request.timeout = _config.timeout;
+    function onloadend() {
+      if (!request) {
+        return;
+      }
+      const responseHeaders = AxiosHeaders$1.from(
+        "getAllResponseHeaders" in request && request.getAllResponseHeaders()
+      );
+      const responseData = !responseType || responseType === "text" || responseType === "json" ? request.responseText : request.response;
+      const response = {
+        data: responseData,
+        status: request.status,
+        statusText: request.statusText,
+        headers: responseHeaders,
+        config,
+        request
+      };
+      settle(function _resolve(value) {
+        resolve(value);
+        done();
+      }, function _reject(err) {
+        reject(err);
+        done();
+      }, response);
+      request = null;
+    }
+    if ("onloadend" in request) {
+      request.onloadend = onloadend;
+    } else {
+      request.onreadystatechange = function handleLoad() {
+        if (!request || request.readyState !== 4) {
+          return;
+        }
+        if (request.status === 0 && !(request.responseURL && request.responseURL.indexOf("file:") === 0)) {
+          return;
+        }
+        setTimeout(onloadend);
+      };
+    }
+    request.onabort = function handleAbort() {
+      if (!request) {
+        return;
+      }
+      reject(new AxiosError$1("Request aborted", AxiosError$1.ECONNABORTED, config, request));
+      request = null;
+    };
+    request.onerror = function handleError() {
+      reject(new AxiosError$1("Network Error", AxiosError$1.ERR_NETWORK, config, request));
+      request = null;
+    };
+    request.ontimeout = function handleTimeout() {
+      let timeoutErrorMessage = _config.timeout ? "timeout of " + _config.timeout + "ms exceeded" : "timeout exceeded";
+      const transitional2 = _config.transitional || transitionalDefaults;
+      if (_config.timeoutErrorMessage) {
+        timeoutErrorMessage = _config.timeoutErrorMessage;
+      }
+      reject(new AxiosError$1(
+        timeoutErrorMessage,
+        transitional2.clarifyTimeoutError ? AxiosError$1.ETIMEDOUT : AxiosError$1.ECONNABORTED,
+        config,
+        request
+      ));
+      request = null;
+    };
+    requestData === void 0 && requestHeaders.setContentType(null);
+    if ("setRequestHeader" in request) {
+      utils$1.forEach(requestHeaders.toJSON(), function setRequestHeader(val, key) {
+        request.setRequestHeader(key, val);
+      });
+    }
+    if (!utils$1.isUndefined(_config.withCredentials)) {
+      request.withCredentials = !!_config.withCredentials;
+    }
+    if (responseType && responseType !== "json") {
+      request.responseType = _config.responseType;
+    }
+    if (onDownloadProgress) {
+      [downloadThrottled, flushDownload] = progressEventReducer(onDownloadProgress, true);
+      request.addEventListener("progress", downloadThrottled);
+    }
+    if (onUploadProgress && request.upload) {
+      [uploadThrottled, flushUpload] = progressEventReducer(onUploadProgress);
+      request.upload.addEventListener("progress", uploadThrottled);
+      request.upload.addEventListener("loadend", flushUpload);
+    }
+    if (_config.cancelToken || _config.signal) {
+      onCanceled = (cancel) => {
+        if (!request) {
+          return;
+        }
+        reject(!cancel || cancel.type ? new CanceledError$1(null, config, request) : cancel);
+        request.abort();
+        request = null;
+      };
+      _config.cancelToken && _config.cancelToken.subscribe(onCanceled);
+      if (_config.signal) {
+        _config.signal.aborted ? onCanceled() : _config.signal.addEventListener("abort", onCanceled);
+      }
+    }
+    const protocol = parseProtocol(_config.url);
+    if (protocol && platform.protocols.indexOf(protocol) === -1) {
+      reject(new AxiosError$1("Unsupported protocol " + protocol + ":", AxiosError$1.ERR_BAD_REQUEST, config));
+      return;
+    }
+    request.send(requestData || null);
+  });
+};
+const composeSignals = (signals, timeout) => {
+  const { length } = signals = signals ? signals.filter(Boolean) : [];
+  if (timeout || length) {
+    let controller = new AbortController();
+    let aborted;
+    const onabort = function(reason) {
+      if (!aborted) {
+        aborted = true;
+        unsubscribe();
+        const err = reason instanceof Error ? reason : this.reason;
+        controller.abort(err instanceof AxiosError$1 ? err : new CanceledError$1(err instanceof Error ? err.message : err));
+      }
+    };
+    let timer = timeout && setTimeout(() => {
+      timer = null;
+      onabort(new AxiosError$1(`timeout ${timeout} of ms exceeded`, AxiosError$1.ETIMEDOUT));
+    }, timeout);
+    const unsubscribe = () => {
+      if (signals) {
+        timer && clearTimeout(timer);
+        timer = null;
+        signals.forEach((signal2) => {
+          signal2.unsubscribe ? signal2.unsubscribe(onabort) : signal2.removeEventListener("abort", onabort);
+        });
+        signals = null;
+      }
+    };
+    signals.forEach((signal2) => signal2.addEventListener("abort", onabort));
+    const { signal } = controller;
+    signal.unsubscribe = () => utils$1.asap(unsubscribe);
+    return signal;
+  }
+};
+const streamChunk = function* (chunk, chunkSize) {
+  let len = chunk.byteLength;
+  if (len < chunkSize) {
+    yield chunk;
+    return;
+  }
+  let pos = 0;
+  let end;
+  while (pos < len) {
+    end = pos + chunkSize;
+    yield chunk.slice(pos, end);
+    pos = end;
+  }
+};
+const readBytes = async function* (iterable, chunkSize) {
+  for await (const chunk of readStream(iterable)) {
+    yield* streamChunk(chunk, chunkSize);
+  }
+};
+const readStream = async function* (stream) {
+  if (stream[Symbol.asyncIterator]) {
+    yield* stream;
+    return;
+  }
+  const reader = stream.getReader();
+  try {
+    for (; ; ) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      yield value;
+    }
+  } finally {
+    await reader.cancel();
+  }
+};
+const trackStream = (stream, chunkSize, onProgress, onFinish) => {
+  const iterator = readBytes(stream, chunkSize);
+  let bytes = 0;
+  let done;
+  let _onFinish = (e) => {
+    if (!done) {
+      done = true;
+      onFinish && onFinish(e);
+    }
+  };
+  return new ReadableStream({
+    async pull(controller) {
+      try {
+        const { done: done2, value } = await iterator.next();
+        if (done2) {
+          _onFinish();
+          controller.close();
+          return;
+        }
+        let len = value.byteLength;
+        if (onProgress) {
+          let loadedBytes = bytes += len;
+          onProgress(loadedBytes);
+        }
+        controller.enqueue(new Uint8Array(value));
+      } catch (err) {
+        _onFinish(err);
+        throw err;
+      }
+    },
+    cancel(reason) {
+      _onFinish(reason);
+      return iterator.return();
+    }
+  }, {
+    highWaterMark: 2
+  });
+};
+const isFetchSupported = typeof fetch === "function" && typeof Request === "function" && typeof Response === "function";
+const isReadableStreamSupported = isFetchSupported && typeof ReadableStream === "function";
+const encodeText = isFetchSupported && (typeof TextEncoder === "function" ? /* @__PURE__ */ ((encoder) => (str) => encoder.encode(str))(new TextEncoder()) : async (str) => new Uint8Array(await new Response(str).arrayBuffer()));
+const test = (fn, ...args) => {
+  try {
+    return !!fn(...args);
+  } catch (e) {
+    return false;
+  }
+};
+const supportsRequestStream = isReadableStreamSupported && test(() => {
+  let duplexAccessed = false;
+  const hasContentType = new Request(platform.origin, {
+    body: new ReadableStream(),
+    method: "POST",
+    get duplex() {
+      duplexAccessed = true;
+      return "half";
+    }
+  }).headers.has("Content-Type");
+  return duplexAccessed && !hasContentType;
+});
+const DEFAULT_CHUNK_SIZE = 64 * 1024;
+const supportsResponseStream = isReadableStreamSupported && test(() => utils$1.isReadableStream(new Response("").body));
+const resolvers = {
+  stream: supportsResponseStream && ((res) => res.body)
+};
+isFetchSupported && ((res) => {
+  ["text", "arrayBuffer", "blob", "formData", "stream"].forEach((type) => {
+    !resolvers[type] && (resolvers[type] = utils$1.isFunction(res[type]) ? (res2) => res2[type]() : (_, config) => {
+      throw new AxiosError$1(`Response type '${type}' is not supported`, AxiosError$1.ERR_NOT_SUPPORT, config);
+    });
+  });
+})(new Response());
+const getBodyLength = async (body) => {
+  if (body == null) {
+    return 0;
+  }
+  if (utils$1.isBlob(body)) {
+    return body.size;
+  }
+  if (utils$1.isSpecCompliantForm(body)) {
+    const _request = new Request(platform.origin, {
+      method: "POST",
+      body
+    });
+    return (await _request.arrayBuffer()).byteLength;
+  }
+  if (utils$1.isArrayBufferView(body) || utils$1.isArrayBuffer(body)) {
+    return body.byteLength;
+  }
+  if (utils$1.isURLSearchParams(body)) {
+    body = body + "";
+  }
+  if (utils$1.isString(body)) {
+    return (await encodeText(body)).byteLength;
+  }
+};
+const resolveBodyLength = async (headers, body) => {
+  const length = utils$1.toFiniteNumber(headers.getContentLength());
+  return length == null ? getBodyLength(body) : length;
+};
+const fetchAdapter = isFetchSupported && (async (config) => {
+  let {
+    url,
+    method,
+    data,
+    signal,
+    cancelToken,
+    timeout,
+    onDownloadProgress,
+    onUploadProgress,
+    responseType,
+    headers,
+    withCredentials = "same-origin",
+    fetchOptions
+  } = resolveConfig(config);
+  responseType = responseType ? (responseType + "").toLowerCase() : "text";
+  let composedSignal = composeSignals([signal, cancelToken && cancelToken.toAbortSignal()], timeout);
+  let request;
+  const unsubscribe = composedSignal && composedSignal.unsubscribe && (() => {
+    composedSignal.unsubscribe();
+  });
+  let requestContentLength;
+  try {
+    if (onUploadProgress && supportsRequestStream && method !== "get" && method !== "head" && (requestContentLength = await resolveBodyLength(headers, data)) !== 0) {
+      let _request = new Request(url, {
+        method: "POST",
+        body: data,
+        duplex: "half"
+      });
+      let contentTypeHeader;
+      if (utils$1.isFormData(data) && (contentTypeHeader = _request.headers.get("content-type"))) {
+        headers.setContentType(contentTypeHeader);
+      }
+      if (_request.body) {
+        const [onProgress, flush] = progressEventDecorator(
+          requestContentLength,
+          progressEventReducer(asyncDecorator(onUploadProgress))
+        );
+        data = trackStream(_request.body, DEFAULT_CHUNK_SIZE, onProgress, flush);
+      }
+    }
+    if (!utils$1.isString(withCredentials)) {
+      withCredentials = withCredentials ? "include" : "omit";
+    }
+    const isCredentialsSupported = "credentials" in Request.prototype;
+    request = new Request(url, {
+      ...fetchOptions,
+      signal: composedSignal,
+      method: method.toUpperCase(),
+      headers: headers.normalize().toJSON(),
+      body: data,
+      duplex: "half",
+      credentials: isCredentialsSupported ? withCredentials : void 0
+    });
+    let response = await fetch(request);
+    const isStreamResponse = supportsResponseStream && (responseType === "stream" || responseType === "response");
+    if (supportsResponseStream && (onDownloadProgress || isStreamResponse && unsubscribe)) {
+      const options = {};
+      ["status", "statusText", "headers"].forEach((prop) => {
+        options[prop] = response[prop];
+      });
+      const responseContentLength = utils$1.toFiniteNumber(response.headers.get("content-length"));
+      const [onProgress, flush] = onDownloadProgress && progressEventDecorator(
+        responseContentLength,
+        progressEventReducer(asyncDecorator(onDownloadProgress), true)
+      ) || [];
+      response = new Response(
+        trackStream(response.body, DEFAULT_CHUNK_SIZE, onProgress, () => {
+          flush && flush();
+          unsubscribe && unsubscribe();
+        }),
+        options
+      );
+    }
+    responseType = responseType || "text";
+    let responseData = await resolvers[utils$1.findKey(resolvers, responseType) || "text"](response, config);
+    !isStreamResponse && unsubscribe && unsubscribe();
+    return await new Promise((resolve, reject) => {
+      settle(resolve, reject, {
+        data: responseData,
+        headers: AxiosHeaders$1.from(response.headers),
+        status: response.status,
+        statusText: response.statusText,
+        config,
+        request
+      });
+    });
+  } catch (err) {
+    unsubscribe && unsubscribe();
+    if (err && err.name === "TypeError" && /fetch/i.test(err.message)) {
+      throw Object.assign(
+        new AxiosError$1("Network Error", AxiosError$1.ERR_NETWORK, config, request),
+        {
+          cause: err.cause || err
+        }
+      );
+    }
+    throw AxiosError$1.from(err, err && err.code, config, request);
+  }
+});
+const knownAdapters = {
+  http: httpAdapter,
+  xhr: xhrAdapter,
+  fetch: fetchAdapter
+};
+utils$1.forEach(knownAdapters, (fn, value) => {
+  if (fn) {
+    try {
+      Object.defineProperty(fn, "name", { value });
+    } catch (e) {
+    }
+    Object.defineProperty(fn, "adapterName", { value });
+  }
+});
+const renderReason = (reason) => `- ${reason}`;
+const isResolvedHandle = (adapter) => utils$1.isFunction(adapter) || adapter === null || adapter === false;
+const adapters = {
+  getAdapter: (adapters2) => {
+    adapters2 = utils$1.isArray(adapters2) ? adapters2 : [adapters2];
+    const { length } = adapters2;
+    let nameOrAdapter;
+    let adapter;
+    const rejectedReasons = {};
+    for (let i = 0; i < length; i++) {
+      nameOrAdapter = adapters2[i];
+      let id;
+      adapter = nameOrAdapter;
+      if (!isResolvedHandle(nameOrAdapter)) {
+        adapter = knownAdapters[(id = String(nameOrAdapter)).toLowerCase()];
+        if (adapter === void 0) {
+          throw new AxiosError$1(`Unknown adapter '${id}'`);
+        }
+      }
+      if (adapter) {
+        break;
+      }
+      rejectedReasons[id || "#" + i] = adapter;
+    }
+    if (!adapter) {
+      const reasons = Object.entries(rejectedReasons).map(
+        ([id, state]) => `adapter ${id} ` + (state === false ? "is not supported by the environment" : "is not available in the build")
+      );
+      let s = length ? reasons.length > 1 ? "since :\n" + reasons.map(renderReason).join("\n") : " " + renderReason(reasons[0]) : "as no adapter specified";
+      throw new AxiosError$1(
+        `There is no suitable adapter to dispatch the request ` + s,
+        "ERR_NOT_SUPPORT"
+      );
+    }
+    return adapter;
+  },
+  adapters: knownAdapters
+};
+function throwIfCancellationRequested(config) {
+  if (config.cancelToken) {
+    config.cancelToken.throwIfRequested();
+  }
+  if (config.signal && config.signal.aborted) {
+    throw new CanceledError$1(null, config);
+  }
+}
+function dispatchRequest(config) {
+  throwIfCancellationRequested(config);
+  config.headers = AxiosHeaders$1.from(config.headers);
+  config.data = transformData.call(
+    config,
+    config.transformRequest
+  );
+  if (["post", "put", "patch"].indexOf(config.method) !== -1) {
+    config.headers.setContentType("application/x-www-form-urlencoded", false);
+  }
+  const adapter = adapters.getAdapter(config.adapter || defaults.adapter);
+  return adapter(config).then(function onAdapterResolution(response) {
+    throwIfCancellationRequested(config);
+    response.data = transformData.call(
+      config,
+      config.transformResponse,
+      response
+    );
+    response.headers = AxiosHeaders$1.from(response.headers);
+    return response;
+  }, function onAdapterRejection(reason) {
+    if (!isCancel$1(reason)) {
+      throwIfCancellationRequested(config);
+      if (reason && reason.response) {
+        reason.response.data = transformData.call(
+          config,
+          config.transformResponse,
+          reason.response
+        );
+        reason.response.headers = AxiosHeaders$1.from(reason.response.headers);
+      }
+    }
+    return Promise.reject(reason);
+  });
+}
+const VERSION$1 = "1.8.4";
+const validators$1 = {};
+["object", "boolean", "number", "function", "string", "symbol"].forEach((type, i) => {
+  validators$1[type] = function validator2(thing) {
+    return typeof thing === type || "a" + (i < 1 ? "n " : " ") + type;
+  };
+});
+const deprecatedWarnings = {};
+validators$1.transitional = function transitional(validator2, version, message) {
+  function formatMessage(opt, desc) {
+    return "[Axios v" + VERSION$1 + "] Transitional option '" + opt + "'" + desc + (message ? ". " + message : "");
+  }
+  return (value, opt, opts) => {
+    if (validator2 === false) {
+      throw new AxiosError$1(
+        formatMessage(opt, " has been removed" + (version ? " in " + version : "")),
+        AxiosError$1.ERR_DEPRECATED
+      );
+    }
+    if (version && !deprecatedWarnings[opt]) {
+      deprecatedWarnings[opt] = true;
+      console.warn(
+        formatMessage(
+          opt,
+          " has been deprecated since v" + version + " and will be removed in the near future"
+        )
+      );
+    }
+    return validator2 ? validator2(value, opt, opts) : true;
+  };
+};
+validators$1.spelling = function spelling(correctSpelling) {
+  return (value, opt) => {
+    console.warn(`${opt} is likely a misspelling of ${correctSpelling}`);
+    return true;
+  };
+};
+function assertOptions(options, schema, allowUnknown) {
+  if (typeof options !== "object") {
+    throw new AxiosError$1("options must be an object", AxiosError$1.ERR_BAD_OPTION_VALUE);
+  }
+  const keys = Object.keys(options);
+  let i = keys.length;
+  while (i-- > 0) {
+    const opt = keys[i];
+    const validator2 = schema[opt];
+    if (validator2) {
+      const value = options[opt];
+      const result = value === void 0 || validator2(value, opt, options);
+      if (result !== true) {
+        throw new AxiosError$1("option " + opt + " must be " + result, AxiosError$1.ERR_BAD_OPTION_VALUE);
+      }
+      continue;
+    }
+    if (allowUnknown !== true) {
+      throw new AxiosError$1("Unknown option " + opt, AxiosError$1.ERR_BAD_OPTION);
+    }
+  }
+}
+const validator = {
+  assertOptions,
+  validators: validators$1
+};
+const validators = validator.validators;
+let Axios$1 = class Axios {
+  constructor(instanceConfig) {
+    this.defaults = instanceConfig;
+    this.interceptors = {
+      request: new InterceptorManager(),
+      response: new InterceptorManager()
+    };
+  }
+  /**
+   * Dispatch a request
+   *
+   * @param {String|Object} configOrUrl The config specific for this request (merged with this.defaults)
+   * @param {?Object} config
+   *
+   * @returns {Promise} The Promise to be fulfilled
+   */
+  async request(configOrUrl, config) {
+    try {
+      return await this._request(configOrUrl, config);
+    } catch (err) {
+      if (err instanceof Error) {
+        let dummy = {};
+        Error.captureStackTrace ? Error.captureStackTrace(dummy) : dummy = new Error();
+        const stack = dummy.stack ? dummy.stack.replace(/^.+\n/, "") : "";
+        try {
+          if (!err.stack) {
+            err.stack = stack;
+          } else if (stack && !String(err.stack).endsWith(stack.replace(/^.+\n.+\n/, ""))) {
+            err.stack += "\n" + stack;
+          }
+        } catch (e) {
+        }
+      }
+      throw err;
+    }
+  }
+  _request(configOrUrl, config) {
+    if (typeof configOrUrl === "string") {
+      config = config || {};
+      config.url = configOrUrl;
+    } else {
+      config = configOrUrl || {};
+    }
+    config = mergeConfig$1(this.defaults, config);
+    const { transitional: transitional2, paramsSerializer, headers } = config;
+    if (transitional2 !== void 0) {
+      validator.assertOptions(transitional2, {
+        silentJSONParsing: validators.transitional(validators.boolean),
+        forcedJSONParsing: validators.transitional(validators.boolean),
+        clarifyTimeoutError: validators.transitional(validators.boolean)
+      }, false);
+    }
+    if (paramsSerializer != null) {
+      if (utils$1.isFunction(paramsSerializer)) {
+        config.paramsSerializer = {
+          serialize: paramsSerializer
+        };
+      } else {
+        validator.assertOptions(paramsSerializer, {
+          encode: validators.function,
+          serialize: validators.function
+        }, true);
+      }
+    }
+    if (config.allowAbsoluteUrls !== void 0) ;
+    else if (this.defaults.allowAbsoluteUrls !== void 0) {
+      config.allowAbsoluteUrls = this.defaults.allowAbsoluteUrls;
+    } else {
+      config.allowAbsoluteUrls = true;
+    }
+    validator.assertOptions(config, {
+      baseUrl: validators.spelling("baseURL"),
+      withXsrfToken: validators.spelling("withXSRFToken")
+    }, true);
+    config.method = (config.method || this.defaults.method || "get").toLowerCase();
+    let contextHeaders = headers && utils$1.merge(
+      headers.common,
+      headers[config.method]
+    );
+    headers && utils$1.forEach(
+      ["delete", "get", "head", "post", "put", "patch", "common"],
+      (method) => {
+        delete headers[method];
+      }
+    );
+    config.headers = AxiosHeaders$1.concat(contextHeaders, headers);
+    const requestInterceptorChain = [];
+    let synchronousRequestInterceptors = true;
+    this.interceptors.request.forEach(function unshiftRequestInterceptors(interceptor) {
+      if (typeof interceptor.runWhen === "function" && interceptor.runWhen(config) === false) {
+        return;
+      }
+      synchronousRequestInterceptors = synchronousRequestInterceptors && interceptor.synchronous;
+      requestInterceptorChain.unshift(interceptor.fulfilled, interceptor.rejected);
+    });
+    const responseInterceptorChain = [];
+    this.interceptors.response.forEach(function pushResponseInterceptors(interceptor) {
+      responseInterceptorChain.push(interceptor.fulfilled, interceptor.rejected);
+    });
+    let promise;
+    let i = 0;
+    let len;
+    if (!synchronousRequestInterceptors) {
+      const chain = [dispatchRequest.bind(this), void 0];
+      chain.unshift.apply(chain, requestInterceptorChain);
+      chain.push.apply(chain, responseInterceptorChain);
+      len = chain.length;
+      promise = Promise.resolve(config);
+      while (i < len) {
+        promise = promise.then(chain[i++], chain[i++]);
+      }
+      return promise;
+    }
+    len = requestInterceptorChain.length;
+    let newConfig = config;
+    i = 0;
+    while (i < len) {
+      const onFulfilled = requestInterceptorChain[i++];
+      const onRejected = requestInterceptorChain[i++];
+      try {
+        newConfig = onFulfilled(newConfig);
+      } catch (error) {
+        onRejected.call(this, error);
+        break;
+      }
+    }
+    try {
+      promise = dispatchRequest.call(this, newConfig);
+    } catch (error) {
+      return Promise.reject(error);
+    }
+    i = 0;
+    len = responseInterceptorChain.length;
+    while (i < len) {
+      promise = promise.then(responseInterceptorChain[i++], responseInterceptorChain[i++]);
+    }
+    return promise;
+  }
+  getUri(config) {
+    config = mergeConfig$1(this.defaults, config);
+    const fullPath = buildFullPath(config.baseURL, config.url, config.allowAbsoluteUrls);
+    return buildURL(fullPath, config.params, config.paramsSerializer);
+  }
+};
+utils$1.forEach(["delete", "get", "head", "options"], function forEachMethodNoData(method) {
+  Axios$1.prototype[method] = function(url, config) {
+    return this.request(mergeConfig$1(config || {}, {
+      method,
+      url,
+      data: (config || {}).data
+    }));
+  };
+});
+utils$1.forEach(["post", "put", "patch"], function forEachMethodWithData(method) {
+  function generateHTTPMethod(isForm) {
+    return function httpMethod(url, data, config) {
+      return this.request(mergeConfig$1(config || {}, {
+        method,
+        headers: isForm ? {
+          "Content-Type": "multipart/form-data"
+        } : {},
+        url,
+        data
+      }));
+    };
+  }
+  Axios$1.prototype[method] = generateHTTPMethod();
+  Axios$1.prototype[method + "Form"] = generateHTTPMethod(true);
+});
+let CancelToken$1 = class CancelToken {
+  constructor(executor) {
+    if (typeof executor !== "function") {
+      throw new TypeError("executor must be a function.");
+    }
+    let resolvePromise;
+    this.promise = new Promise(function promiseExecutor(resolve) {
+      resolvePromise = resolve;
+    });
+    const token = this;
+    this.promise.then((cancel) => {
+      if (!token._listeners) return;
+      let i = token._listeners.length;
+      while (i-- > 0) {
+        token._listeners[i](cancel);
+      }
+      token._listeners = null;
+    });
+    this.promise.then = (onfulfilled) => {
+      let _resolve;
+      const promise = new Promise((resolve) => {
+        token.subscribe(resolve);
+        _resolve = resolve;
+      }).then(onfulfilled);
+      promise.cancel = function reject() {
+        token.unsubscribe(_resolve);
+      };
+      return promise;
+    };
+    executor(function cancel(message, config, request) {
+      if (token.reason) {
+        return;
+      }
+      token.reason = new CanceledError$1(message, config, request);
+      resolvePromise(token.reason);
+    });
+  }
+  /**
+   * Throws a `CanceledError` if cancellation has been requested.
+   */
+  throwIfRequested() {
+    if (this.reason) {
+      throw this.reason;
+    }
+  }
+  /**
+   * Subscribe to the cancel signal
+   */
+  subscribe(listener) {
+    if (this.reason) {
+      listener(this.reason);
+      return;
+    }
+    if (this._listeners) {
+      this._listeners.push(listener);
+    } else {
+      this._listeners = [listener];
+    }
+  }
+  /**
+   * Unsubscribe from the cancel signal
+   */
+  unsubscribe(listener) {
+    if (!this._listeners) {
+      return;
+    }
+    const index = this._listeners.indexOf(listener);
+    if (index !== -1) {
+      this._listeners.splice(index, 1);
+    }
+  }
+  toAbortSignal() {
+    const controller = new AbortController();
+    const abort = (err) => {
+      controller.abort(err);
+    };
+    this.subscribe(abort);
+    controller.signal.unsubscribe = () => this.unsubscribe(abort);
+    return controller.signal;
+  }
+  /**
+   * Returns an object that contains a new `CancelToken` and a function that, when called,
+   * cancels the `CancelToken`.
+   */
+  static source() {
+    let cancel;
+    const token = new CancelToken(function executor(c) {
+      cancel = c;
+    });
+    return {
+      token,
+      cancel
+    };
+  }
+};
+function spread$1(callback) {
+  return function wrap(arr) {
+    return callback.apply(null, arr);
+  };
+}
+function isAxiosError$1(payload) {
+  return utils$1.isObject(payload) && payload.isAxiosError === true;
+}
+const HttpStatusCode$1 = {
+  Continue: 100,
+  SwitchingProtocols: 101,
+  Processing: 102,
+  EarlyHints: 103,
+  Ok: 200,
+  Created: 201,
+  Accepted: 202,
+  NonAuthoritativeInformation: 203,
+  NoContent: 204,
+  ResetContent: 205,
+  PartialContent: 206,
+  MultiStatus: 207,
+  AlreadyReported: 208,
+  ImUsed: 226,
+  MultipleChoices: 300,
+  MovedPermanently: 301,
+  Found: 302,
+  SeeOther: 303,
+  NotModified: 304,
+  UseProxy: 305,
+  Unused: 306,
+  TemporaryRedirect: 307,
+  PermanentRedirect: 308,
+  BadRequest: 400,
+  Unauthorized: 401,
+  PaymentRequired: 402,
+  Forbidden: 403,
+  NotFound: 404,
+  MethodNotAllowed: 405,
+  NotAcceptable: 406,
+  ProxyAuthenticationRequired: 407,
+  RequestTimeout: 408,
+  Conflict: 409,
+  Gone: 410,
+  LengthRequired: 411,
+  PreconditionFailed: 412,
+  PayloadTooLarge: 413,
+  UriTooLong: 414,
+  UnsupportedMediaType: 415,
+  RangeNotSatisfiable: 416,
+  ExpectationFailed: 417,
+  ImATeapot: 418,
+  MisdirectedRequest: 421,
+  UnprocessableEntity: 422,
+  Locked: 423,
+  FailedDependency: 424,
+  TooEarly: 425,
+  UpgradeRequired: 426,
+  PreconditionRequired: 428,
+  TooManyRequests: 429,
+  RequestHeaderFieldsTooLarge: 431,
+  UnavailableForLegalReasons: 451,
+  InternalServerError: 500,
+  NotImplemented: 501,
+  BadGateway: 502,
+  ServiceUnavailable: 503,
+  GatewayTimeout: 504,
+  HttpVersionNotSupported: 505,
+  VariantAlsoNegotiates: 506,
+  InsufficientStorage: 507,
+  LoopDetected: 508,
+  NotExtended: 510,
+  NetworkAuthenticationRequired: 511
+};
+Object.entries(HttpStatusCode$1).forEach(([key, value]) => {
+  HttpStatusCode$1[value] = key;
+});
+function createInstance(defaultConfig) {
+  const context = new Axios$1(defaultConfig);
+  const instance = bind(Axios$1.prototype.request, context);
+  utils$1.extend(instance, Axios$1.prototype, context, { allOwnKeys: true });
+  utils$1.extend(instance, context, null, { allOwnKeys: true });
+  instance.create = function create(instanceConfig) {
+    return createInstance(mergeConfig$1(defaultConfig, instanceConfig));
+  };
+  return instance;
+}
+const axios = createInstance(defaults);
+axios.Axios = Axios$1;
+axios.CanceledError = CanceledError$1;
+axios.CancelToken = CancelToken$1;
+axios.isCancel = isCancel$1;
+axios.VERSION = VERSION$1;
+axios.toFormData = toFormData$1;
+axios.AxiosError = AxiosError$1;
+axios.Cancel = axios.CanceledError;
+axios.all = function all(promises) {
+  return Promise.all(promises);
+};
+axios.spread = spread$1;
+axios.isAxiosError = isAxiosError$1;
+axios.mergeConfig = mergeConfig$1;
+axios.AxiosHeaders = AxiosHeaders$1;
+axios.formToJSON = (thing) => formDataToJSON(utils$1.isHTMLForm(thing) ? new FormData(thing) : thing);
+axios.getAdapter = adapters.getAdapter;
+axios.HttpStatusCode = HttpStatusCode$1;
+axios.default = axios;
+const {
+  Axios: Axios2,
+  AxiosError,
+  CanceledError,
+  isCancel,
+  CancelToken: CancelToken2,
+  VERSION,
+  all: all2,
+  Cancel,
+  isAxiosError,
+  spread,
+  toFormData,
+  AxiosHeaders: AxiosHeaders2,
+  HttpStatusCode,
+  formToJSON,
+  getAdapter,
+  mergeConfig
+} = axios;
+/*! js-cookie v3.0.5 | MIT */
+function assign(target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i];
+    for (var key in source) {
+      target[key] = source[key];
+    }
+  }
+  return target;
+}
+var defaultConverter = {
+  read: function(value) {
+    if (value[0] === '"') {
+      value = value.slice(1, -1);
+    }
+    return value.replace(/(%[\dA-F]{2})+/gi, decodeURIComponent);
+  },
+  write: function(value) {
+    return encodeURIComponent(value).replace(
+      /%(2[346BF]|3[AC-F]|40|5[BDE]|60|7[BCD])/g,
+      decodeURIComponent
+    );
+  }
+};
+function init(converter, defaultAttributes) {
+  function set(name, value, attributes) {
+    if (typeof document === "undefined") {
+      return;
+    }
+    attributes = assign({}, defaultAttributes, attributes);
+    if (typeof attributes.expires === "number") {
+      attributes.expires = new Date(Date.now() + attributes.expires * 864e5);
+    }
+    if (attributes.expires) {
+      attributes.expires = attributes.expires.toUTCString();
+    }
+    name = encodeURIComponent(name).replace(/%(2[346B]|5E|60|7C)/g, decodeURIComponent).replace(/[()]/g, escape);
+    var stringifiedAttributes = "";
+    for (var attributeName in attributes) {
+      if (!attributes[attributeName]) {
+        continue;
+      }
+      stringifiedAttributes += "; " + attributeName;
+      if (attributes[attributeName] === true) {
+        continue;
+      }
+      stringifiedAttributes += "=" + attributes[attributeName].split(";")[0];
+    }
+    return document.cookie = name + "=" + converter.write(value, name) + stringifiedAttributes;
+  }
+  function get(name) {
+    if (typeof document === "undefined" || arguments.length && !name) {
+      return;
+    }
+    var cookies2 = document.cookie ? document.cookie.split("; ") : [];
+    var jar = {};
+    for (var i = 0; i < cookies2.length; i++) {
+      var parts = cookies2[i].split("=");
+      var value = parts.slice(1).join("=");
+      try {
+        var found = decodeURIComponent(parts[0]);
+        jar[found] = converter.read(value, found);
+        if (name === found) {
+          break;
+        }
+      } catch (e) {
+      }
+    }
+    return name ? jar[name] : jar;
+  }
+  return Object.create(
+    {
+      set,
+      get,
+      remove: function(name, attributes) {
+        set(
+          name,
+          "",
+          assign({}, attributes, {
+            expires: -1
+          })
+        );
+      },
+      withAttributes: function(attributes) {
+        return init(this.converter, assign({}, this.attributes, attributes));
+      },
+      withConverter: function(converter2) {
+        return init(assign({}, this.converter, converter2), this.attributes);
+      }
+    },
+    {
+      attributes: { value: Object.freeze(defaultAttributes) },
+      converter: { value: Object.freeze(converter) }
+    }
+  );
+}
+var api = init(defaultConverter, { path: "/" });
+const SESSION_COOKIE_NAME = "growdesk_session";
+const SESSION_EXPIRY_DAYS = 7;
+const LOCAL_STORAGE_KEY = "growdesk_session_data";
+let apiConfig = {
+  apiUrl: "http://localhost:8000/widget",
+  widgetId: "demo-widget",
+  widgetToken: "demo-token"
+};
+const initializeFromScript = () => {
+  var _a, _b, _c, _d;
+  const script = document.getElementById("growdesk-widget");
+  if (script) {
+    const apiUrl = script.getAttribute("data-api-url");
+    const widgetId = script.getAttribute("data-widget-id");
+    const widgetToken = script.getAttribute("data-widget-token");
+    const brandName = script.getAttribute("data-brand-name");
+    const welcomeMessage = script.getAttribute("data-welcome-message");
+    const primaryColor = script.getAttribute("data-primary-color");
+    const position = script.getAttribute("data-position");
+    if (apiUrl) apiConfig.apiUrl = apiUrl;
+    if (widgetId) apiConfig.widgetId = widgetId;
+    if (widgetToken) apiConfig.widgetToken = widgetToken;
+    window.GrowDeskConfig = {
+      ...window.GrowDeskConfig || {},
+      brandName: brandName || ((_a = window.GrowDeskConfig) == null ? void 0 : _a.brandName),
+      welcomeMessage: welcomeMessage || ((_b = window.GrowDeskConfig) == null ? void 0 : _b.welcomeMessage),
+      primaryColor: primaryColor || ((_c = window.GrowDeskConfig) == null ? void 0 : _c.primaryColor),
+      position: position || ((_d = window.GrowDeskConfig) == null ? void 0 : _d.position)
+    };
+    console.log("Widget configurado desde el script:", apiConfig, window.GrowDeskConfig);
+  } else {
+    console.warn("No se encontró el script para configurar el widget.");
+  }
+};
+const configureWidgetApi = (config) => {
+  if (config.apiUrl) apiConfig.apiUrl = config.apiUrl;
+  if (config.widgetId) apiConfig.widgetId = config.widgetId;
+  if (config.widgetToken) apiConfig.widgetToken = config.widgetToken;
+  console.log("API del widget configurada:", apiConfig);
+};
+const saveSession = (data) => {
+  const now2 = Math.floor(Date.now() / 1e3);
+  const expiration = now2 + SESSION_EXPIRY_DAYS * 24 * 60 * 60;
+  const sessionData = {
+    ...data,
+    exp: expiration
+  };
+  try {
+    api.set(SESSION_COOKIE_NAME, JSON.stringify(sessionData), {
+      expires: SESSION_EXPIRY_DAYS,
+      path: "/",
+      secure: window.location.protocol === "https:"
+    });
+  } catch (error) {
+    console.warn("No se pudo guardar sesión en cookies, usando localStorage como alternativa");
+  }
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sessionData));
+  } catch (error) {
+    console.warn("No se pudo guardar en localStorage:", error);
+  }
+  return sessionData;
+};
+const getSession = () => {
+  try {
+    const sessionCookie = api.get(SESSION_COOKIE_NAME);
+    if (sessionCookie) {
+      const sessionData = JSON.parse(sessionCookie);
+      if (sessionData.exp && sessionData.exp < Math.floor(Date.now() / 1e3)) {
+        clearSession();
+        return null;
+      }
+      return sessionData;
+    }
+    const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (localData) {
+      const sessionData = JSON.parse(localData);
+      if (sessionData.exp && sessionData.exp < Math.floor(Date.now() / 1e3)) {
+        clearSession();
+        return null;
+      }
+      return sessionData;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error al obtener sesión:", error);
+    clearSession();
+    return null;
+  }
+};
+const clearSession = () => {
+  try {
+    api.remove(SESSION_COOKIE_NAME, { path: "/" });
+  } catch (error) {
+    console.warn("Error al eliminar cookie:", error);
+  }
+  try {
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+  } catch (error) {
+    console.warn("Error al eliminar datos del localStorage:", error);
+  }
+};
+const useWidgetApi = () => {
+  const apiClient = axios.create({
+    baseURL: apiConfig.apiUrl,
+    timeout: 1e4,
+    headers: {
+      "Content-Type": "application/json",
+      "X-Widget-ID": apiConfig.widgetId,
+      "X-Widget-Token": apiConfig.widgetToken
+    },
+    // No usar withCredentials para evitar problemas de CORS
+    withCredentials: false
+  });
+  apiClient.interceptors.request.use((config) => {
+    const session = getSession();
+    if (session) {
+      config.headers["X-User-Name"] = session.name;
+      config.headers["X-User-Email"] = session.email;
+      if (session.ticketId) {
+        config.headers["X-Ticket-ID"] = session.ticketId;
+      }
+    }
+    return config;
+  });
+  const hasActiveSession = () => {
+    return getSession() !== null;
+  };
+  const createTicket = async (data) => {
+    try {
+      const baseUrl = apiConfig.apiUrl.endsWith("/") ? apiConfig.apiUrl : `${apiConfig.apiUrl}/`;
+      let response;
+      try {
+        console.log("Intentando crear ticket en:", `${baseUrl}tickets`);
+        response = await apiClient.post("/tickets", data);
+      } catch (axiosError) {
+        console.warn("Error al usar Axios estándar, intentando con fetch:", axiosError);
+        const fetchUrl = `${baseUrl}tickets`;
+        console.log("Intentando fetch a:", fetchUrl);
+        const fetchResponse = await fetch(fetchUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Widget-ID": apiConfig.widgetId,
+            "X-Widget-Token": apiConfig.widgetToken
+          },
+          body: JSON.stringify(data)
+        });
+        if (!fetchResponse.ok) {
+          throw new Error(`Error ${fetchResponse.status}: ${fetchResponse.statusText}`);
+        }
+        response = { data: await fetchResponse.json() };
+      }
+      if (response.data && response.data.ticketId) {
+        saveSession({
+          name: data.name,
+          email: data.email,
+          ticketId: response.data.ticketId
+        });
+      }
+      return response.data;
+    } catch (error) {
+      console.error("Error creating ticket:", error);
+      throw error;
+    }
+  };
+  const sendMessage = async (data) => {
+    try {
+      const baseUrl = apiConfig.apiUrl.endsWith("/") ? apiConfig.apiUrl : `${apiConfig.apiUrl}/`;
+      let response;
+      try {
+        console.log("Intentando enviar mensaje a:", `${baseUrl}messages`);
+        response = await apiClient.post("/messages", data);
+      } catch (axiosError) {
+        console.warn("Error al usar Axios estándar para enviar mensaje, intentando con fetch:", axiosError);
+        const fetchUrl = `${baseUrl}messages`;
+        console.log("Intentando fetch a:", fetchUrl);
+        const fetchResponse = await fetch(fetchUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Widget-ID": apiConfig.widgetId,
+            "X-Widget-Token": apiConfig.widgetToken,
+            "X-User-Name": data.userName || "",
+            "X-User-Email": data.userEmail || "",
+            "X-Ticket-ID": data.ticketId
+          },
+          body: JSON.stringify(data)
+        });
+        if (!fetchResponse.ok) {
+          throw new Error(`Error ${fetchResponse.status}: ${fetchResponse.statusText}`);
+        }
+        response = { data: await fetchResponse.json() };
+      }
+      return response.data;
+    } catch (error) {
+      console.error("Error sending message:", error);
+      throw error;
+    }
+  };
+  const getMessageHistory = async (ticketId) => {
+    try {
+      const baseUrl = apiConfig.apiUrl.endsWith("/") ? apiConfig.apiUrl : `${apiConfig.apiUrl}/`;
+      let response;
+      try {
+        console.log("Intentando obtener mensajes de:", `${baseUrl}tickets/${ticketId}/messages`);
+        response = await apiClient.get(`/tickets/${ticketId}/messages`);
+      } catch (axiosError) {
+        console.warn("Error al usar Axios estándar para obtener mensajes, intentando con fetch:", axiosError);
+        const fetchUrl = `${baseUrl}tickets/${ticketId}/messages`;
+        console.log("Intentando fetch a:", fetchUrl);
+        const fetchResponse = await fetch(fetchUrl, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Widget-ID": apiConfig.widgetId,
+            "X-Widget-Token": apiConfig.widgetToken,
+            "X-Ticket-ID": ticketId
+          }
+        });
+        if (!fetchResponse.ok) {
+          throw new Error(`Error ${fetchResponse.status}: ${fetchResponse.statusText}`);
+        }
+        response = { data: await fetchResponse.json() };
+      }
+      return response.data;
+    } catch (error) {
+      console.error("Error getting message history:", error);
+      throw error;
+    }
+  };
+  const getFaqs = async () => {
+    try {
+      const baseUrl = apiConfig.apiUrl.endsWith("/") ? apiConfig.apiUrl : `${apiConfig.apiUrl}/`;
+      const faqsUrl = `${baseUrl}faqs`;
+      console.log("Intentando obtener FAQs de URL:", faqsUrl);
+      console.log("Headers utilizados:", {
+        "X-Widget-ID": apiConfig.widgetId,
+        "X-Widget-Token": apiConfig.widgetToken
+      });
+      let response;
+      try {
+        console.log("Usando axios.get para obtener FAQs");
+        response = await apiClient.get("/faqs");
+        console.log("Respuesta recibida de axios:", response.status);
+      } catch (axiosError) {
+        console.warn("Error al usar Axios estándar para obtener FAQs:", axiosError);
+        console.log("Intentando fetch a:", faqsUrl);
+        const fetchResponse = await fetch(faqsUrl, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Widget-ID": apiConfig.widgetId,
+            "X-Widget-Token": apiConfig.widgetToken
+          }
+        });
+        if (!fetchResponse.ok) {
+          const statusText = fetchResponse.statusText || "Error desconocido";
+          console.error(`Error en fetch: ${fetchResponse.status} ${statusText}`);
+          throw new Error(`Error ${fetchResponse.status}: ${statusText}`);
+        }
+        const responseData = await fetchResponse.json();
+        console.log("Datos recibidos con fetch:", responseData);
+        response = { data: responseData };
+      }
+      console.log("FAQs obtenidas correctamente:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Error obteniendo FAQs:", error);
+      console.error("Configuración actual:", {
+        apiUrl: apiConfig.apiUrl,
+        widgetId: apiConfig.widgetId
+      });
+      return [];
+    }
+  };
+  const logout = () => {
+    clearSession();
+  };
+  return {
+    hasActiveSession,
+    getSession,
+    createTicket,
+    sendMessage,
+    getMessageHistory,
+    logout,
+    getFaqs
+  };
+};
 const _hoisted_1 = {
   key: 0,
   class: "pi pi-comments text-white"
@@ -954,13 +3711,65 @@ const _hoisted_3 = {
   class: "fixed bottom-24 right-6 w-80 h-96 bg-white rounded-lg shadow-xl flex flex-col overflow-hidden border border-gray-200 z-40"
 };
 const _hoisted_4 = { class: "font-medium" };
-const _hoisted_5 = { class: "flex-1 p-4 overflow-y-auto bg-gray-50" };
+const _hoisted_5 = { class: "flex items-center" };
 const _hoisted_6 = {
+  key: 0,
+  class: "flex-1 p-4 overflow-y-auto bg-gray-50 flex flex-col"
+};
+const _hoisted_7 = { class: "text-center text-gray-700 mb-4" };
+const _hoisted_8 = { class: "flex flex-col" };
+const _hoisted_9 = { class: "flex flex-col" };
+const _hoisted_10 = { class: "flex flex-col" };
+const _hoisted_11 = ["disabled"];
+const _hoisted_12 = { key: 0 };
+const _hoisted_13 = { key: 1 };
+const _hoisted_14 = {
+  key: 1,
+  class: "flex-1 overflow-y-auto bg-gray-50"
+};
+const _hoisted_15 = {
+  key: 0,
+  class: "p-4 chat-messages"
+};
+const _hoisted_16 = {
   key: 0,
   class: "text-center text-gray-500 mt-20"
 };
-const _hoisted_7 = { class: "p-3 border-t border-gray-200 bg-white" };
-const _hoisted_8 = { class: "flex items-center" };
+const _hoisted_17 = {
+  key: 1,
+  class: "p-4"
+};
+const _hoisted_18 = { class: "text-center mb-4" };
+const _hoisted_19 = {
+  key: 0,
+  class: "text-center py-4"
+};
+const _hoisted_20 = {
+  key: 1,
+  class: "text-center py-4 text-gray-500"
+};
+const _hoisted_21 = { key: 2 };
+const _hoisted_22 = { class: "font-medium text-gray-700 mb-2" };
+const _hoisted_23 = { class: "space-y-2" };
+const _hoisted_24 = ["onClick"];
+const _hoisted_25 = { class: "font-medium text-gray-800" };
+const _hoisted_26 = {
+  key: 0,
+  class: "p-3 bg-white"
+};
+const _hoisted_27 = { class: "text-gray-700" };
+const _hoisted_28 = { class: "mt-2 flex justify-end" };
+const _hoisted_29 = ["onClick"];
+const _hoisted_30 = {
+  key: 2,
+  class: "p-3 border-t border-gray-200 bg-white"
+};
+const _hoisted_31 = { class: "flex items-center" };
+const _hoisted_32 = {
+  key: 3,
+  class: "p-3 border-t border-gray-200 bg-white"
+};
+const _hoisted_33 = { class: "flex justify-between items-center" };
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "ChatWidget",
   props: {
@@ -978,14 +3787,212 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     },
     welcomeMessage: {
       type: String,
-      default: "Send a message to start chatting"
+      default: "Para iniciar tu consulta, por favor completa el siguiente formulario:"
     }
   },
   setup(__props) {
-    const props = __props;
     const isOpen = ref(false);
+    const isRegistered = ref(false);
+    const loading = ref(false);
+    const currentTicketId = ref("");
     const messages = ref([]);
     const newMessage = ref("");
+    const webSocket = ref(null);
+    const showChatView = ref(false);
+    const faqs = ref([]);
+    const loadingFaqs = ref(false);
+    const expandedFaqs = ref([]);
+    const userData = ref({
+      name: "",
+      email: "",
+      initialMessage: ""
+    });
+    const api2 = useWidgetApi();
+    const hasSession = computed(() => {
+      return api2.hasActiveSession();
+    });
+    const faqCategories = computed(() => {
+      const categories = /* @__PURE__ */ new Set();
+      faqs.value.forEach((faq) => categories.add(faq.category));
+      return Array.from(categories);
+    });
+    const getFaqsByCategory = (category) => {
+      return faqs.value.filter((faq) => faq.category === category);
+    };
+    const toggleFaq = (id) => {
+      const index = expandedFaqs.value.indexOf(id);
+      if (index === -1) {
+        expandedFaqs.value.push(id);
+      } else {
+        expandedFaqs.value.splice(index, 1);
+      }
+    };
+    const loadFaqs = async () => {
+      loadingFaqs.value = true;
+      console.log("Iniciando carga de FAQs desde el servidor...");
+      try {
+        console.log("Llamando a api.getFaqs()...");
+        const response = await api2.getFaqs();
+        console.log("Respuesta de API para FAQs:", response);
+        if (response && Array.isArray(response)) {
+          const publishedFaqs = response.filter((faq) => faq.isPublished);
+          console.log(`FAQs publicadas encontradas: ${publishedFaqs.length}`);
+          faqs.value = publishedFaqs;
+          if (publishedFaqs.length === 0) {
+            console.warn("No se encontraron FAQs publicadas para mostrar");
+          } else {
+            const categories = /* @__PURE__ */ new Set();
+            const firstFaqsIds = [];
+            faqs.value.forEach((faq) => {
+              if (!categories.has(faq.category)) {
+                categories.add(faq.category);
+                firstFaqsIds.push(faq.id);
+              }
+            });
+            expandedFaqs.value = firstFaqsIds;
+            console.log("Categorías de FAQs encontradas:", Array.from(categories));
+          }
+        } else {
+          console.error("Formato inesperado en la respuesta de FAQs:", response);
+          faqs.value = [];
+        }
+      } catch (error) {
+        console.error("Error al cargar FAQs:", error);
+        faqs.value = [];
+        if (isRegistered.value) {
+          showChatView.value = true;
+          console.log("Cambiando a vista de chat debido a error en FAQs");
+        }
+      } finally {
+        loadingFaqs.value = false;
+        console.log("Carga de FAQs finalizada. Estado:", {
+          faqsCount: faqs.value.length,
+          expandedFaqsCount: expandedFaqs.value.length,
+          showingChat: showChatView.value
+        });
+      }
+    };
+    const refreshFaqs = () => {
+      loadFaqs();
+    };
+    const setInitialQuestion = (question) => {
+      newMessage.value = question;
+      showChatView.value = true;
+      setTimeout(() => {
+        sendMessage();
+      }, 100);
+    };
+    const connectWebSocket = (ticketId) => {
+      if (!ticketId) {
+        console.error("No se puede conectar al WebSocket sin un ID de ticket");
+        return;
+      }
+      if (webSocket.value) {
+        webSocket.value.close();
+        webSocket.value = null;
+      }
+      const effectiveTicketId = ticketId;
+      const apiUrl = new URL(apiConfig.apiUrl);
+      const wsProtocol = apiUrl.protocol === "https:" ? "wss:" : "ws:";
+      const hostPart = apiUrl.hostname;
+      const portPart = apiUrl.port || (apiUrl.protocol === "https:" ? "443" : "80");
+      const wsUrl = `${wsProtocol}//${hostPart}:${portPart}/api/ws/chat/${effectiveTicketId}`;
+      console.log("Información de conexión WebSocket:", {
+        apiUrl: apiConfig.apiUrl,
+        parsedHost: hostPart,
+        parsedPort: portPart,
+        wsProtocol,
+        finalWsUrl: wsUrl,
+        ticketId: effectiveTicketId
+      });
+      try {
+        webSocket.value = new WebSocket(wsUrl);
+        webSocket.value.onopen = () => {
+          console.log("Conexión WebSocket establecida correctamente");
+        };
+        webSocket.value.onmessage = (event) => {
+          var _a, _b, _c, _d;
+          console.log("Mensaje WebSocket recibido:", event.data);
+          try {
+            const data = JSON.parse(event.data);
+            console.log("Datos WebSocket procesados:", {
+              type: data.type,
+              hasData: !!data.data,
+              hasMessage: !!data.message,
+              dataContent: (_a = data.data) == null ? void 0 : _a.content,
+              messageContent: (_b = data.message) == null ? void 0 : _b.content,
+              dataIsClient: (_c = data.data) == null ? void 0 : _c.isClient,
+              messageIsClient: (_d = data.message) == null ? void 0 : _d.isClient
+            });
+            let messageContent = "";
+            let isClientMessage = false;
+            let messageObj = null;
+            if (data.type === "new_message") {
+              if (data.message && data.message.content) {
+                messageContent = data.message.content;
+                isClientMessage = data.message.isClient === true;
+                messageObj = data.message;
+              } else if (data.data && data.data.content) {
+                messageContent = data.data.content;
+                isClientMessage = data.data.isClient === true;
+                messageObj = data.data;
+              }
+            } else if (data.type === "message_received") {
+              if (data.data && data.data.content) {
+                messageContent = data.data.content;
+                isClientMessage = data.data.isClient === true;
+                messageObj = data.data;
+              }
+            } else if (data.content) {
+              messageContent = data.content;
+              isClientMessage = data.isClient === true;
+              messageObj = data;
+            }
+            if (messageContent) {
+              console.log("Mensaje extraído para mostrar:", {
+                content: messageContent,
+                isClientMessage,
+                messageId: (messageObj == null ? void 0 : messageObj.id) || "no-id"
+              });
+              const isDuplicate = messages.value.some(
+                (msg) => msg.text === messageContent && msg.isUser === isClientMessage
+              );
+              if (!isDuplicate) {
+                messages.value.push({
+                  text: messageContent,
+                  isUser: isClientMessage
+                  // isUser=true para mensajes del cliente, false para mensajes del agente
+                });
+                scrollToBottom();
+              } else {
+                console.log("Mensaje duplicado detectado y omitido");
+              }
+            } else if (data.type === "error") {
+              console.error("Error del servidor WebSocket:", data.message || data.data || "Error desconocido");
+            } else if (data.type === "connection_established" || data.type === "identify_success") {
+              console.log("Conexión WebSocket confirmada:", data.type);
+            } else {
+              console.warn("Formato de mensaje WebSocket no reconocido:", data);
+            }
+          } catch (error) {
+            console.error("Error al procesar mensaje WebSocket:", error);
+          }
+        };
+        webSocket.value.onerror = (error) => {
+          console.error("Error en conexión WebSocket:", error);
+        };
+        webSocket.value.onclose = (event) => {
+          console.log("Conexión WebSocket cerrada. Código:", event.code, "Razón:", event.reason);
+          if (isOpen.value && isRegistered.value) {
+            setTimeout(() => {
+              connectWebSocket(currentTicketId.value);
+            }, 5e3);
+          }
+        };
+      } catch (error) {
+        console.error("Error al crear conexión WebSocket:", error);
+      }
+    };
     onMounted(() => {
       const container = document.getElementById("growdesk-widget-container");
       if (container) {
@@ -996,30 +4003,166 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
           isOpen.value = false;
         });
       }
+      if (hasSession.value) {
+        const session = api2.getSession();
+        if (session) {
+          userData.value.name = session.name;
+          userData.value.email = session.email;
+          currentTicketId.value = session.ticketId;
+          isRegistered.value = true;
+          showChatView.value = false;
+          loadFaqs();
+          loadPreviousMessages(session.ticketId);
+          connectWebSocket(session.ticketId);
+        }
+      }
+    });
+    onBeforeUnmount(() => {
+      if (webSocket.value) {
+        webSocket.value.close();
+        webSocket.value = null;
+      }
     });
     const toggleChat = () => {
       isOpen.value = !isOpen.value;
-      if (isOpen.value && messages.value.length === 0) {
+    };
+    const submitRegistration = async () => {
+      if (!userData.value.name || !userData.value.email || !userData.value.initialMessage) return;
+      loading.value = true;
+      try {
+        const ticketData = {
+          name: userData.value.name,
+          email: userData.value.email,
+          message: userData.value.initialMessage,
+          // Usamos el mensaje inicial proporcionado por el usuario
+          metadata: {
+            url: window.location.href,
+            referrer: document.referrer,
+            userAgent: navigator.userAgent,
+            screenSize: `${window.innerWidth}x${window.innerHeight}`
+          }
+        };
+        const response = await api2.createTicket(ticketData);
+        currentTicketId.value = response.ticketId;
+        isRegistered.value = true;
+        showChatView.value = false;
+        await loadFaqs();
+        console.log("FAQs cargadas después del registro:", faqs.value);
         messages.value.push({
-          text: props.welcomeMessage,
+          text: userData.value.initialMessage,
+          isUser: true
+        });
+        messages.value.push({
+          text: `Hola ${userData.value.name}, gracias por contactarnos. Puedes consultar nuestras preguntas frecuentes o iniciar un chat con nosotros.`,
           isUser: false
         });
+        connectWebSocket(response.ticketId);
+        scrollToBottom();
+      } catch (error) {
+        console.error("Error al registrar al usuario:", error);
+        alert("Lo sentimos, hubo un problema al iniciar el chat. Por favor, inténtalo de nuevo más tarde.");
+      } finally {
+        loading.value = false;
       }
     };
-    const sendMessage = () => {
-      if (newMessage.value.trim() === "") return;
-      messages.value.push({
-        text: newMessage.value,
-        isUser: true
-      });
-      const userMessage = newMessage.value;
-      newMessage.value = "";
-      setTimeout(() => {
+    const loadPreviousMessages = async (ticketId) => {
+      try {
+        loading.value = true;
+        const response = await api2.getMessageHistory(ticketId);
+        if (response && response.messages && response.messages.length > 0) {
+          console.log("Histórico de mensajes recibido:", response.messages);
+          const formattedMessages = response.messages.map((msg) => {
+            const isClientMessage = msg.isClient === true || typeof msg.isClient === "string" && msg.isClient.toLowerCase() === "true";
+            console.log(`Mensaje procesado - contenido: "${msg.text || msg.content}", isClient: ${isClientMessage}`);
+            return {
+              text: msg.text || msg.content,
+              isUser: isClientMessage
+              // Los mensajes del cliente (isClient=true) son los del usuario
+            };
+          });
+          messages.value = formattedMessages;
+          scrollToBottom();
+        } else {
+          messages.value.push({
+            text: `Hola ${userData.value.name}, bienvenido de nuevo. ¿En qué podemos ayudarte hoy?`,
+            isUser: false
+          });
+        }
+      } catch (error) {
+        console.error("Error al cargar mensajes anteriores:", error);
         messages.value.push({
-          text: `Gracias por tu mensaje: "${userMessage}". Nuestro equipo se pondrá en contacto contigo pronto.`,
+          text: `Hola ${userData.value.name}, parece que hubo un problema al cargar tus mensajes anteriores. ¿En qué podemos ayudarte hoy?`,
           isUser: false
         });
-      }, 1e3);
+      } finally {
+        loading.value = false;
+      }
+    };
+    const scrollToBottom = () => {
+      setTimeout(() => {
+        const messagesContainer = document.querySelector(".chat-messages");
+        if (messagesContainer) {
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+      }, 100);
+    };
+    const logout = () => {
+      api2.logout();
+      isRegistered.value = false;
+      currentTicketId.value = "";
+      messages.value = [];
+      faqs.value = [];
+      expandedFaqs.value = [];
+      userData.value = {
+        name: "",
+        email: "",
+        initialMessage: ""
+      };
+    };
+    const sendMessage = async () => {
+      if (newMessage.value.trim() === "" || !currentTicketId.value) return;
+      const userMessage = newMessage.value;
+      newMessage.value = "";
+      const messageId = `temp-${Date.now()}`;
+      messages.value.push({
+        id: messageId,
+        text: userMessage,
+        isUser: true,
+        pending: true
+      });
+      scrollToBottom();
+      loading.value = true;
+      try {
+        const response = await api2.sendMessage({
+          ticketId: currentTicketId.value,
+          message: userMessage,
+          userName: userData.value.name,
+          userEmail: userData.value.email
+        });
+        const index = messages.value.findIndex((msg) => msg.id === messageId);
+        if (index >= 0) {
+          messages.value[index].pending = false;
+          if (response.messageId === "duplicate-ignored") {
+            console.log("Mensaje detectado como duplicado por el servidor");
+          }
+        }
+        if (response.messageId !== "duplicate-ignored") {
+        }
+        loading.value = false;
+      } catch (error) {
+        console.error("Error al enviar el mensaje:", error);
+        const index = messages.value.findIndex((msg) => msg.id === messageId);
+        if (index >= 0) {
+          messages.value[index].error = true;
+          messages.value[index].pending = false;
+        }
+        messages.value.push({
+          text: "Lo sentimos, hubo un problema al enviar tu mensaje. Por favor, inténtalo de nuevo.",
+          isUser: false
+        });
+        scrollToBottom();
+        loading.value = false;
+      }
     };
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", null, [
@@ -1036,34 +4179,164 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
             class: "text-white p-4 flex justify-between items-center"
           }, [
             createElementVNode("h3", _hoisted_4, toDisplayString(__props.brandName), 1),
-            createElementVNode("i", {
-              class: "pi pi-times cursor-pointer",
-              onClick: toggleChat
-            })
+            createElementVNode("div", _hoisted_5, [
+              isRegistered.value ? (openBlock(), createElementBlock("i", {
+                key: 0,
+                class: "pi pi-sign-out cursor-pointer mr-3",
+                onClick: withModifiers(logout, ["stop"]),
+                title: "Cerrar sesión"
+              })) : createCommentVNode("", true),
+              createElementVNode("i", {
+                class: "pi pi-times cursor-pointer",
+                onClick: toggleChat
+              })
+            ])
           ], 4),
-          createElementVNode("div", _hoisted_5, [
-            messages.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_6, toDisplayString(__props.welcomeMessage), 1)) : createCommentVNode("", true),
-            (openBlock(true), createElementBlock(Fragment, null, renderList(messages.value, (message, index) => {
-              return openBlock(), createElementBlock("div", {
-                key: index,
-                class: "mb-3"
+          !isRegistered.value ? (openBlock(), createElementBlock("div", _hoisted_6, [
+            createElementVNode("div", _hoisted_7, toDisplayString(__props.welcomeMessage), 1),
+            createElementVNode("form", {
+              onSubmit: withModifiers(submitRegistration, ["prevent"]),
+              class: "flex flex-col gap-4"
+            }, [
+              createElementVNode("div", _hoisted_8, [
+                _cache[6] || (_cache[6] = createElementVNode("label", {
+                  for: "name",
+                  class: "text-sm text-gray-600 mb-1"
+                }, "Nombre", -1)),
+                withDirectives(createElementVNode("input", {
+                  "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => userData.value.name = $event),
+                  type: "text",
+                  id: "name",
+                  class: "border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2",
+                  style: normalizeStyle({ "--tw-ring-color": __props.primaryColor }),
+                  required: ""
+                }, null, 4), [
+                  [vModelText, userData.value.name]
+                ])
+              ]),
+              createElementVNode("div", _hoisted_9, [
+                _cache[7] || (_cache[7] = createElementVNode("label", {
+                  for: "email",
+                  class: "text-sm text-gray-600 mb-1"
+                }, "Email", -1)),
+                withDirectives(createElementVNode("input", {
+                  "onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => userData.value.email = $event),
+                  type: "email",
+                  id: "email",
+                  class: "border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2",
+                  style: normalizeStyle({ "--tw-ring-color": __props.primaryColor }),
+                  required: ""
+                }, null, 4), [
+                  [vModelText, userData.value.email]
+                ])
+              ]),
+              createElementVNode("div", _hoisted_10, [
+                _cache[8] || (_cache[8] = createElementVNode("label", {
+                  for: "firstMessage",
+                  class: "text-sm text-gray-600 mb-1"
+                }, "¿En qué podemos ayudarte?", -1)),
+                withDirectives(createElementVNode("textarea", {
+                  "onUpdate:modelValue": _cache[2] || (_cache[2] = ($event) => userData.value.initialMessage = $event),
+                  id: "firstMessage",
+                  rows: "3",
+                  class: "border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2",
+                  style: normalizeStyle({ "--tw-ring-color": __props.primaryColor }),
+                  required: "",
+                  placeholder: "Describe brevemente tu consulta..."
+                }, null, 4), [
+                  [vModelText, userData.value.initialMessage]
+                ])
+              ]),
+              createElementVNode("button", {
+                type: "submit",
+                class: "mt-2 text-white rounded-md py-2 font-medium focus:outline-none",
+                style: normalizeStyle({ backgroundColor: __props.primaryColor }),
+                disabled: loading.value
               }, [
-                createElementVNode("div", {
-                  class: normalizeClass([
-                    "max-w-[80%] p-3 rounded-lg",
-                    message.isUser ? "text-white ml-auto rounded-br-none" : "bg-gray-200 text-gray-800 rounded-bl-none"
-                  ]),
-                  style: normalizeStyle(message.isUser ? { backgroundColor: __props.primaryColor } : {})
-                }, toDisplayString(message.text), 7)
-              ]);
-            }), 128))
-          ]),
-          createElementVNode("div", _hoisted_7, [
-            createElementVNode("div", _hoisted_8, [
+                !loading.value ? (openBlock(), createElementBlock("span", _hoisted_12, "Iniciar chat")) : (openBlock(), createElementBlock("span", _hoisted_13, _cache[9] || (_cache[9] = [
+                  createElementVNode("i", { class: "pi pi-spin pi-spinner" }, null, -1),
+                  createTextVNode(" Procesando... ")
+                ])))
+              ], 12, _hoisted_11)
+            ], 32)
+          ])) : (openBlock(), createElementBlock("div", _hoisted_14, [
+            showChatView.value ? (openBlock(), createElementBlock("div", _hoisted_15, [
+              messages.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_16, " Inicia una conversación escribiendo un mensaje. ")) : createCommentVNode("", true),
+              (openBlock(true), createElementBlock(Fragment, null, renderList(messages.value, (message, index) => {
+                return openBlock(), createElementBlock("div", {
+                  key: index,
+                  class: "mb-3"
+                }, [
+                  createElementVNode("div", {
+                    class: normalizeClass([
+                      "max-w-[80%] p-3 rounded-lg",
+                      message.isUser ? "text-white ml-auto rounded-br-none" : "bg-gray-200 text-gray-800 rounded-bl-none"
+                    ]),
+                    style: normalizeStyle(message.isUser ? { backgroundColor: __props.primaryColor } : {})
+                  }, toDisplayString(message.text), 7)
+                ]);
+              }), 128))
+            ])) : (openBlock(), createElementBlock("div", _hoisted_17, [
+              createElementVNode("div", _hoisted_18, [
+                createElementVNode("button", {
+                  onClick: _cache[3] || (_cache[3] = ($event) => showChatView.value = true),
+                  class: "text-white rounded-md py-2 px-4 font-medium focus:outline-none w-full",
+                  style: normalizeStyle({ backgroundColor: __props.primaryColor })
+                }, _cache[10] || (_cache[10] = [
+                  createElementVNode("i", { class: "pi pi-comments mr-2" }, null, -1),
+                  createTextVNode("Iniciar chat ")
+                ]), 4)
+              ]),
+              _cache[12] || (_cache[12] = createElementVNode("h3", { class: "text-lg font-semibold mb-3 text-gray-700" }, "Preguntas Frecuentes", -1)),
+              loadingFaqs.value ? (openBlock(), createElementBlock("div", _hoisted_19, _cache[11] || (_cache[11] = [
+                createElementVNode("i", { class: "pi pi-spin pi-spinner text-gray-500" }, null, -1),
+                createElementVNode("p", { class: "text-sm text-gray-500 mt-2" }, "Cargando preguntas frecuentes...", -1)
+              ]))) : faqs.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_20, " No hay preguntas frecuentes disponibles. ")) : (openBlock(), createElementBlock("div", _hoisted_21, [
+                (openBlock(true), createElementBlock(Fragment, null, renderList(faqCategories.value, (category, index) => {
+                  return openBlock(), createElementBlock("div", {
+                    key: index,
+                    class: "mb-4"
+                  }, [
+                    createElementVNode("h4", _hoisted_22, toDisplayString(category), 1),
+                    createElementVNode("div", _hoisted_23, [
+                      (openBlock(true), createElementBlock(Fragment, null, renderList(getFaqsByCategory(category), (faq) => {
+                        return openBlock(), createElementBlock("div", {
+                          key: faq.id,
+                          class: "border border-gray-200 rounded-lg overflow-hidden"
+                        }, [
+                          createElementVNode("div", {
+                            class: "p-3 bg-gray-100 cursor-pointer flex justify-between items-center",
+                            onClick: ($event) => toggleFaq(faq.id)
+                          }, [
+                            createElementVNode("span", _hoisted_25, toDisplayString(faq.question), 1),
+                            createElementVNode("i", {
+                              class: normalizeClass(["pi", expandedFaqs.value.includes(faq.id) ? "pi-chevron-up" : "pi-chevron-down"])
+                            }, null, 2)
+                          ], 8, _hoisted_24),
+                          expandedFaqs.value.includes(faq.id) ? (openBlock(), createElementBlock("div", _hoisted_26, [
+                            createElementVNode("p", _hoisted_27, toDisplayString(faq.answer), 1),
+                            createElementVNode("div", _hoisted_28, [
+                              createElementVNode("button", {
+                                onClick: ($event) => setInitialQuestion(faq.question),
+                                class: "text-xs text-white rounded-md py-1 px-2 focus:outline-none",
+                                style: normalizeStyle({ backgroundColor: __props.primaryColor })
+                              }, " Consultar más ", 12, _hoisted_29)
+                            ])
+                          ])) : createCommentVNode("", true)
+                        ]);
+                      }), 128))
+                    ])
+                  ]);
+                }), 128))
+              ]))
+            ]))
+          ])),
+          isRegistered.value && showChatView.value ? (openBlock(), createElementBlock("div", _hoisted_30, [
+            createElementVNode("div", _hoisted_31, [
               withDirectives(createElementVNode("input", {
-                "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => newMessage.value = $event),
+                "onUpdate:modelValue": _cache[4] || (_cache[4] = ($event) => newMessage.value = $event),
                 type: "text",
-                placeholder: "Type a message...",
+                placeholder: "Escribe un mensaje...",
                 class: "flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2",
                 style: normalizeStyle({ "--tw-ring-color": __props.primaryColor }),
                 onKeyup: withKeys(sendMessage, ["enter"])
@@ -1074,51 +4347,35 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
                 onClick: sendMessage,
                 class: "ml-2 text-white rounded-full p-2 focus:outline-none",
                 style: normalizeStyle({ backgroundColor: __props.primaryColor })
-              }, _cache[1] || (_cache[1] = [
+              }, _cache[13] || (_cache[13] = [
                 createElementVNode("i", { class: "pi pi-send" }, null, -1)
               ]), 4)
             ])
-          ])
+          ])) : createCommentVNode("", true),
+          isRegistered.value && !showChatView.value ? (openBlock(), createElementBlock("div", _hoisted_32, [
+            createElementVNode("div", _hoisted_33, [
+              createElementVNode("button", {
+                onClick: refreshFaqs,
+                class: "text-xs text-gray-600 focus:outline-none flex items-center"
+              }, _cache[14] || (_cache[14] = [
+                createElementVNode("i", { class: "pi pi-refresh mr-1" }, null, -1),
+                createTextVNode(" Actualizar ")
+              ])),
+              createElementVNode("button", {
+                onClick: _cache[5] || (_cache[5] = ($event) => showChatView.value = true),
+                class: "text-white rounded-md py-1 px-4 text-sm focus:outline-none",
+                style: normalizeStyle({ backgroundColor: __props.primaryColor })
+              }, _cache[15] || (_cache[15] = [
+                createElementVNode("i", { class: "pi pi-comments mr-1" }, null, -1),
+                createTextVNode(" Chat ")
+              ]), 4)
+            ])
+          ])) : createCommentVNode("", true)
         ])) : createCommentVNode("", true)
       ]);
     };
   }
 });
-let currentConfig = {
-  apiUrl: "https://api.growdesk.com/widget",
-  widgetId: "",
-  widgetToken: ""
-};
-const configureWidgetApi = (config) => {
-  currentConfig = { ...currentConfig, ...config };
-  return currentConfig;
-};
-const initializeFromScript = () => {
-  console.log("Initializing widget API from script");
-  const scriptTag = document.querySelector('script[src*="widget.js"]') || document.getElementById("growdesk-widget") || document.currentScript;
-  if (scriptTag) {
-    console.log("Found widget script tag", scriptTag);
-    const widgetId = scriptTag.getAttribute("data-widget-id");
-    const apiUrl = scriptTag.getAttribute("data-api-url");
-    const widgetToken = scriptTag.getAttribute("data-widget-token");
-    console.log("Widget initialization parameters:", { widgetId, apiUrl, widgetToken: widgetToken ? "***" : null });
-    if (widgetId) {
-      const config = { widgetId };
-      if (apiUrl) config.apiUrl = apiUrl;
-      if (widgetToken) config.widgetToken = widgetToken;
-      const finalConfig = configureWidgetApi(config);
-      console.log("Widget API configured successfully", {
-        apiUrl: finalConfig.apiUrl,
-        widgetId: finalConfig.widgetId,
-        hasToken: !!finalConfig.widgetToken
-      });
-    } else {
-      console.error("GrowDesk Widget: No se proporcionó un ID de widget");
-    }
-  } else {
-    console.error("GrowDesk Widget: No se pudo encontrar el script del widget");
-  }
-};
 console.log("GrowDesk Widget - Iniciando...");
 const createWidgetContainer = () => {
   console.log("Creando contenedor para el widget");
@@ -1183,8 +4440,8 @@ let widgetInitialized = false;
 const initialize = () => {
   if (widgetInitialized) return;
   console.log("Inicializando GrowDeskWidget automáticamente");
-  const api = initializeWidget();
-  window.GrowDeskWidget = api;
+  const api2 = initializeWidget();
+  window.GrowDeskWidget = api2;
   widgetInitialized = true;
 };
 if (document.readyState === "loading") {

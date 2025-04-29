@@ -56,6 +56,7 @@ func (c *Client) ReadPump() {
 	defer func() {
 		c.Hub.Unregister <- c
 		c.Conn.Close()
+		log.Printf("Cliente WebSocket desconectado: %s", c.TicketID)
 	}()
 
 	c.Conn.SetReadLimit(maxMessageSize)
@@ -65,30 +66,128 @@ func (c *Client) ReadPump() {
 		return nil
 	})
 
+	// Esto soluciona el problema de "Formato de mensaje no reconocido"
+	// enviando un mensaje explícito de confirmación
+	// para los mensajes de identificación inicial
+	identifySuccessMsg := Message{
+		Type:     "identify_success",
+		TicketID: c.TicketID,
+		Data: map[string]interface{}{
+			"message": "Identificación exitosa",
+			"userId":  c.UserID,
+			"status":  "connected",
+		},
+	}
+	// Enviar confirmación inmediata
+	if err := c.Conn.WriteJSON(identifySuccessMsg); err != nil {
+		log.Printf("Error al enviar confirmación de identificación: %v", err)
+	}
+
 	for {
 		_, message, err := c.Conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("error: %v", err)
+				log.Printf("Error en conexión WebSocket: %v", err)
 			}
 			break
 		}
 
-		// Procesar el mensaje recibido
-		var msg Message
-		if err := json.Unmarshal(message, &msg); err != nil {
-			log.Printf("error al deserializar mensaje: %v", err)
+		// Depuración del mensaje recibido
+		log.Printf("Mensaje WebSocket recibido para ticket %s: %s", c.TicketID, string(message))
+
+		// Analizar el mensaje como JSON genérico
+		var msgMap map[string]interface{}
+		if err := json.Unmarshal(message, &msgMap); err != nil {
+			log.Printf("Error al deserializar mensaje JSON: %v", err)
+
+			// Enviar mensaje de error al cliente
+			c.Send <- Message{
+				Type:     "error",
+				TicketID: c.TicketID,
+				Data:     "Formato JSON inválido",
+			}
 			continue
 		}
 
-		// Asegurarse de que el ticketID coincida con la sala
-		if msg.TicketID != c.TicketID {
-			log.Printf("error: intento de enviar mensaje a sala incorrecta")
-			continue
-		}
+		// Extraer información relevante del mensaje
+		msgType, _ := msgMap["type"].(string)
+		msgTicketID, _ := msgMap["ticketId"].(string)
 
-		// Enviar el mensaje al hub para distribución
-		c.Hub.Broadcast <- msg
+		// Manejar el mensaje según su tipo
+		switch msgType {
+		case "identify":
+			// Mensaje de identificación del cliente
+			userID, _ := msgMap["userId"].(string)
+			if userID != "" {
+				log.Printf("Actualizado ID de usuario de %s a %s", c.UserID, userID)
+				c.UserID = userID
+			}
+
+			// Responder con confirmación de identificación
+			c.Send <- Message{
+				Type:     "identify_success",
+				TicketID: c.TicketID,
+				Data: map[string]interface{}{
+					"message": "Identificación exitosa",
+					"userId":  c.UserID,
+				},
+			}
+
+		case "new_message":
+			// Mensaje normal de chat
+			var messageData interface{}
+
+			// Verificar dónde están los datos del mensaje (data o message)
+			if data, ok := msgMap["data"].(map[string]interface{}); ok {
+				messageData = data
+			} else if msg, ok := msgMap["message"].(map[string]interface{}); ok {
+				messageData = msg
+			} else {
+				// Si no contiene datos estructurados, usar el mensaje completo
+				delete(msgMap, "type")
+				delete(msgMap, "ticketId")
+				messageData = msgMap
+			}
+
+			// Reenviar el mensaje al hub en el formato estándar
+			c.Hub.BroadcastToTicket(c.TicketID, "new_message", messageData)
+
+		default:
+			// Para cualquier otro tipo de mensaje
+			log.Printf("Recibido mensaje de tipo %s", msgType)
+
+			// Si el mensaje no tiene un tipo conocido, intentar reenviar como está
+			// pero adaptándolo al formato estándar del hub
+			if msgTicketID == c.TicketID || msgTicketID == "" {
+				var messageData interface{}
+
+				// Extraer los datos relevantes
+				if data, ok := msgMap["data"].(map[string]interface{}); ok {
+					messageData = data
+				} else {
+					// Usar todo el mensaje menos el tipo y ticketId
+					cleanMsg := make(map[string]interface{})
+					for k, v := range msgMap {
+						if k != "type" && k != "ticketId" {
+							cleanMsg[k] = v
+						}
+					}
+					messageData = cleanMsg
+				}
+
+				// Reenviar al hub
+				c.Hub.BroadcastToTicket(c.TicketID, msgType, messageData)
+			} else {
+				log.Printf("Error: mensaje para ticket incorrecto. Esperado %s, recibido %s",
+					c.TicketID, msgTicketID)
+
+				c.Send <- Message{
+					Type:     "error",
+					TicketID: c.TicketID,
+					Data:     "ID de ticket no coincide",
+				}
+			}
+		}
 	}
 }
 
@@ -124,4 +223,4 @@ func (c *Client) WritePump() {
 			}
 		}
 	}
-} 
+}

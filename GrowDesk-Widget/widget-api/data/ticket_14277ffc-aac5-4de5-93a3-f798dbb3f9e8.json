@@ -1,0 +1,28 @@
+{
+  "id": "14277ffc-aac5-4de5-93a3-f798dbb3f9e8",
+  "title": "Support request from Herbert2",
+  "description": "test",
+  "status": "new",
+  "createdBy": "herbertmm12@gmail.com",
+  "createdAt": "2025-04-29T16:25:14.860326849-04:00",
+  "updatedAt": "2025-04-29T16:25:14.860326899-04:00",
+  "messages": [
+    {
+      "id": "e2ad8885-f2d6-439a-a8e9-879227d0cb93",
+      "content": "test",
+      "isClient": true,
+      "createdAt": "2025-04-29T16:25:14.860326237-04:00",
+      "userName": "Herbert2",
+      "userEmail": "herbertmm12@gmail.com"
+    }
+  ],
+  "userEmail": "herbertmm12@gmail.com",
+  "userName": "Herbert2",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+    "screenSize": "1920x914",
+    "externalId": "TICKET-20250429202514"
+  }
+}

@@ -948,44 +948,31 @@ func sendMessage(c *gin.Context) {
 
 		// Normalizar URL base
 		baseURL := strings.TrimSuffix(apiURL, "/")
-		if strings.HasSuffix(baseURL, "/api") {
-			baseURL = strings.TrimSuffix(baseURL, "/api")
-		}
 
-		// Construir URL con parámetro explícito from_client=true
-		// Este parámetro es interpretado por el servidor para identificar mensajes del cliente
-		url := fmt.Sprintf("%s/api/tickets/%s/messages?from_client=true", baseURL, ticketID)
-		log.Printf("Enviando mensaje al sistema GrowDesk: %s", url)
+		// CORREGIDO: Usar las rutas correctas del backend de GrowDesk
+		// La ruta correcta para mensajes del widget es /api/widget/messages
+		url := fmt.Sprintf("%s/api/widget/messages", baseURL)
 
-		// Crear cabeceras específicas
+		log.Printf("Enviando mensaje al sistema GrowDesk en la ruta correcta: %s", url)
+
 		headers := map[string]string{
 			"Content-Type":       "application/json",
 			"Authorization":      "Bearer " + apiKey,
-			"X-Message-Source":   "widget-client", // Identificar la fuente como widget
-			"X-Widget-ID":        "true",
-			"X-Client-Message":   "true", // Indicador explícito de mensaje de cliente
+			"X-Message-Source":   "widget-client",
+			"X-Widget-ID":        "true", // Este campo idealmente debería ser el ID real del widget, no "true"
+			"X-Client-Message":   "true",
 			"X-Widget-Ticket-ID": ticketID,
+			"X-From-Client":      "true",
 		}
 
-		// Enviar mensaje al sistema GrowDesk
+		// Enviar el mensaje con reintentos
 		resp, err := sendHttpRequestWithRetry(url, jsonData, headers, 3)
-		if err != nil {
-			log.Printf("Error al enviar mensaje al sistema GrowDesk: %v", err)
-		} else {
+		if err == nil && resp != nil {
 			body, _ := ioutil.ReadAll(resp.Body)
 			resp.Body.Close()
-			log.Printf("Mensaje enviado al sistema GrowDesk. Respuesta: %s", string(body))
-
-			// Actualizar datos del ticket después de enviar el mensaje
-			time.Sleep(500 * time.Millisecond)
-			updatedTicket, err := getTicketFromGrowDesk(ticketID)
-			if err != nil {
-				log.Printf("Error al actualizar ticket desde GrowDesk: %v", err)
-			} else {
-				log.Printf("Ticket actualizado desde GrowDesk con %d mensajes", len(updatedTicket.Messages))
-				// Guardar el ticket actualizado localmente
-				SaveTicket(updatedTicket)
-			}
+			log.Printf("Mensaje enviado exitosamente al sistema GrowDesk. Respuesta: %s", string(body))
+		} else {
+			log.Printf("Error al enviar mensaje al sistema GrowDesk: %v", err)
 		}
 	}()
 
@@ -1170,11 +1157,23 @@ func sendMessageToWebSocketClients(ticketId string, message Message) {
 		return
 	}
 
-	// Crear mensaje de WebSocket
-	wsMessage := WebSocketMessage{
-		Type:     "new_message",
-		Message:  message,
-		TicketID: ticketId,
+	// IMPORTANTE: Asegurarse de que el mensaje tiene la estructura esperada
+	// Crear un mapa explícito con los campos exactos que espera el cliente
+	messageObj := map[string]interface{}{
+		"id":        message.ID,
+		"content":   message.Content,
+		"isClient":  message.IsClient, // Importante: mantener el nombre exacto del campo
+		"createdAt": message.CreatedAt.Format(time.RFC3339),
+		"timestamp": message.CreatedAt.Format(time.RFC3339), // Agregar timestamp para compatibilidad
+		"userName":  message.UserName,
+		"userEmail": message.UserEmail,
+	}
+
+	// Usar la estructura que espera GrowDesk (data en lugar de message)
+	wsMessage := map[string]interface{}{
+		"type":     "new_message",
+		"data":     messageObj,
+		"ticketId": ticketId,
 	}
 
 	// Serializar a JSON
@@ -1185,7 +1184,11 @@ func sendMessageToWebSocketClients(ticketId string, message Message) {
 	}
 
 	log.Printf("Enviando mensaje a los clientes del ticket: %s", ticketId)
-	log.Printf("Enviando a %d conexiones de WebSocket: %+v", len(connections), wsMessage)
+	log.Printf("Estructura del mensaje WebSocket: %+v", wsMessage)
+
+	// Imprimir JSON para depuración
+	prettyJson, _ := json.MarshalIndent(wsMessage, "", "  ")
+	log.Printf("JSON del mensaje a enviar: %s", string(prettyJson))
 
 	// Enviar a todas las conexiones
 	for _, conn := range connections {
@@ -1244,7 +1247,7 @@ func handleAgentMessage(c *gin.Context) {
 	newMessage := Message{
 		ID:        uuid.New().String(),
 		Content:   req.Content,
-		IsClient:  false, // Mensaje de agente
+		IsClient:  false, // Mensaje de agente - EXPLÍCITAMENTE FALSE
 		CreatedAt: time.Now(),
 		UserName:  req.AgentName, // Nombre del agente
 	}
@@ -1261,6 +1264,9 @@ func handleAgentMessage(c *gin.Context) {
 
 	log.Printf("Mensaje de agente guardado correctamente en ticket %s", req.TicketID)
 
+	// IMPORTANTE: Asegurarse de que el mensaje tenga el formato correcto antes de enviarlo por WebSocket
+	log.Printf("Enviando mensaje de agente a clientes via WebSocket. IsClient=%v", newMessage.IsClient)
+
 	// Enviar a todos los clientes conectados por WebSocket
 	sendMessageToWebSocketClients(req.TicketID, newMessage)
 
@@ -1268,7 +1274,7 @@ func handleAgentMessage(c *gin.Context) {
 	growDeskMessage := GrowDeskMessage{
 		TicketID: req.TicketID,
 		Content:  req.Content,
-		IsClient: false,
+		IsClient: false, // EXPLÍCITAMENTE FALSE para mensajes de agente
 		UserID:   req.UserID,
 	}
 
