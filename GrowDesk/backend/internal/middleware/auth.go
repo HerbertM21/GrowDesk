@@ -33,7 +33,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Set user info in context
+		// Guardar información del usuario en el contexto de la petición
 		c.Set("userID", tokenDetails.UserID)
 		c.Set("email", tokenDetails.Email)
 		c.Set("role", tokenDetails.Role)
@@ -66,17 +66,17 @@ func RoleMiddleware(roles ...string) gin.HandlerFunc {
 			}
 		}
 
-		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to access this resource"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "Acceso denegado. No tiene los permisos necesarios."})
 		c.Abort()
 	}
 }
 
-// AdminMiddleware
+// AdminMiddleware verifica que el usuario tenga rol de administrador
 func AdminMiddleware() gin.HandlerFunc {
 	return RoleMiddleware("admin")
 }
 
-// AgentMiddleware revisa si el usuario es un agente o administrador
+// AgentMiddleware verifica que el usuario sea agente o administrador
 func AgentMiddleware() gin.HandlerFunc {
-	return RoleMiddleware("agent", "admin")
+	return RoleMiddleware("admin", "agent")
 }

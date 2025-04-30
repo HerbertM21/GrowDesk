@@ -3,60 +3,59 @@ package models
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-// TicketStatus define los posibles valores de estado para un ticket
+// TicketStatus es el estado de un ticket
 type TicketStatus string
 
 const (
-	StatusOpen       TicketStatus = "open"
-	StatusAssigned   TicketStatus = "assigned"
-	StatusInProgress TicketStatus = "in_progress"
-	StatusResolved   TicketStatus = "resolved"
-	StatusClosed     TicketStatus = "closed"
+	StatusOpen      TicketStatus = "open"
+	StatusAssigned  TicketStatus = "assigned"
+	StatusInProcess TicketStatus = "in_process"
+	StatusResolved  TicketStatus = "resolved"
+	StatusClosed    TicketStatus = "closed"
 )
 
-// TicketPriority define los posibles valores de prioridad para un ticket
+// TicketPriority es la prioridad de un ticket
 type TicketPriority string
 
 const (
-	PriorityLow    TicketPriority = "low"
-	PriorityMedium TicketPriority = "medium"
-	PriorityHigh   TicketPriority = "high"
-	PriorityUrgent TicketPriority = "urgent"
+	PriorityLow      TicketPriority = "low"
+	PriorityMedium   TicketPriority = "medium"
+	PriorityHigh     TicketPriority = "high"
+	PriorityCritical TicketPriority = "critical"
 )
 
-// Ticket representa un ticket de soporte en el sistema
+// Customer representa información del cliente
+type Customer struct {
+	Name  string `json:"name" gorm:"type:varchar(100)"`
+	Email string `json:"email" gorm:"type:varchar(100)"`
+}
+
+// Ticket representa un ticket de soporte
 type Ticket struct {
 	ID          string         `json:"id" gorm:"primaryKey"`
-	Title       string         `json:"title" gorm:"not null"`
-	Description string         `json:"description" gorm:"type:text;not null"`
-	Status      TicketStatus   `json:"status" gorm:"not null;default:'open'"`
-	Priority    TicketPriority `json:"priority" gorm:"not null;default:'medium'"`
-	Category    string         `json:"category" gorm:"not null"`
-	CreatedBy   string         `json:"createdBy" gorm:"not null"`
-	AssignedTo  *string        `json:"assignedTo,omitempty"`
+	Title       string         `json:"title" gorm:"not null;type:varchar(150)"`
+	Description string         `json:"description" gorm:"type:text"`
+	Status      TicketStatus   `json:"status" gorm:"default:'open';type:varchar(20)"`
+	Priority    TicketPriority `json:"priority" gorm:"default:'medium';type:varchar(20)"`
+	Category    string         `json:"category" gorm:"type:varchar(50)"`
+	Customer    Customer       `json:"customer" gorm:"embedded"`
+	CreatedBy   string         `json:"createdBy" gorm:"type:varchar(100)"`
+	AssignedTo  *string        `json:"assignedTo" gorm:"type:varchar(100)"`
+	Source      string         `json:"source" gorm:"default:'backend';type:varchar(20)"` // backend, widget, api
+	Metadata    string         `json:"metadata" gorm:"type:json"`
 	CreatedAt   time.Time      `json:"createdAt"`
 	UpdatedAt   time.Time      `json:"updatedAt"`
-
-	// Relations
-	User     User      `json:"-" gorm:"foreignKey:CreatedBy"`
-	Agent    *User     `json:"-" gorm:"foreignKey:AssignedTo"`
-	Messages []Message `json:"-" gorm:"foreignKey:TicketID"`
+	Messages    []Message      `json:"messages,omitempty" gorm:"foreignKey:TicketID"`
 }
 
-// BeforeCreate es un hook de GORM que genera un UUID para nuevos tickets
+// BeforeSave genera un ID único para el ticket si no tiene uno
 func (t *Ticket) BeforeSave(tx *gorm.DB) error {
 	if t.ID == "" {
-		t.ID = generateUUID()
+		t.ID = "TICKET-" + uuid.New().String()
 	}
 	return nil
-}
-
-type Tag struct {
-	ID        string    `json:"id" gorm:"primaryKey"`
-	Name      string    `json:"name" gorm:"uniqueIndex;not null"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
 }

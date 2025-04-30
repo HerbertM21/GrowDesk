@@ -2,148 +2,146 @@ package auth
 
 import (
 	"errors"
-	"fmt"
-	"log"
-	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/joho/godotenv"
 )
 
-// TokenDetails contiene los metadatos de un token
-type TokenDetails struct {
-	UserID string
-	Email  string
-	Role   string
-	Exp    int64
+// Variables globales para la configuración de JWT
+var (
+	jwtSecret            string
+	accessTokenDuration  = 24 * time.Hour  // 24 horas por defecto
+	refreshTokenDuration = 720 * time.Hour // 30 días por defecto
+)
+
+// Claims estructura personalizada para JWT claims
+type Claims struct {
+	UserID    string `json:"userId"`
+	Email     string `json:"email"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Role      string `json:"role"`
+	TokenType string `json:"tokenType"` // access o refresh
+	jwt.RegisteredClaims
 }
 
-var secretKey string
-
-// InitAuth inicializa el sistema de autenticación
-func init() {
-	// Intentar cargar variables de entorno
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("Warning: .env file not found, using environment variables")
-	}
-
-	secretKey = getSecretKey()
-	log.Println("JWT authentication system initialized")
+// SetJWTSecret establece la clave secreta para firmar tokens JWT
+func SetJWTSecret(secret string) {
+	jwtSecret = secret
 }
 
-// InitJWT inicializa el sistema de autenticación con una clave secreta específica
-func InitJWT(secret string) {
-	if secret != "" {
-		secretKey = secret
-		log.Println("JWT authentication system initialized with custom secret")
-	} else {
-		secretKey = getSecretKey()
-		log.Println("JWT authentication system initialized with default secret")
+// SetTokenDurations configura la duración de los tokens
+func SetTokenDurations(accessDuration, refreshDuration time.Duration) {
+	if accessDuration > 0 {
+		accessTokenDuration = accessDuration
+	}
+	if refreshDuration > 0 {
+		refreshTokenDuration = refreshDuration
 	}
 }
 
-// GenerateToken crea un nuevo token JWT
-func GenerateToken(userID, email, role string) (string, error) {
-	expirationTime := time.Now().Add(time.Hour * 24 * 3) // Token expira en 3 días
+// GenerateAccessToken genera un token JWT de acceso con duración limitada
+func GenerateAccessToken(userID, email, firstName, lastName, role string) (string, time.Time, error) {
+	return generateToken(userID, email, firstName, lastName, role, "access", accessTokenDuration)
+}
 
-	claims := jwt.MapClaims{
-		"user_id": userID,
-		"email":   email,
-		"role":    role,
-		"exp":     expirationTime.Unix(),
-		"iat":     time.Now().Unix(), // Tiempo de emisión
+// GenerateRefreshToken genera un token JWT de renovación con mayor duración
+func GenerateRefreshToken(userID, email string) (string, time.Time, error) {
+	return generateToken(userID, email, "", "", "", "refresh", refreshTokenDuration)
+}
+
+// generateToken genera un token JWT con la información proporcionada
+func generateToken(userID, email, firstName, lastName, role, tokenType string, duration time.Duration) (string, time.Time, error) {
+	// Verificar que se haya establecido la clave secreta
+	if jwtSecret == "" {
+		return "", time.Time{}, errors.New("la clave secreta JWT no está configurada")
 	}
 
+	// Calcular tiempo de expiración
+	expirationTime := time.Now().Add(duration)
+
+	// Crear claims con datos del usuario
+	claims := &Claims{
+		UserID:    userID,
+		Email:     email,
+		FirstName: firstName,
+		LastName:  lastName,
+		Role:      role,
+		TokenType: tokenType,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now()),
+			Issuer:    "growdesk-api",
+			Subject:   userID,
+		},
+	}
+
+	// Crear token con los claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	tokenString, err := token.SignedString([]byte(secretKey))
+	// Firmar token con la clave secreta
+	tokenString, err := token.SignedString([]byte(jwtSecret))
 	if err != nil {
-		log.Printf("Error generating token: %v", err)
-		return "", err
+		return "", time.Time{}, err
 	}
 
-	return tokenString, nil
+	return tokenString, expirationTime, nil
 }
 
-// VerifyToken valida un token JWT
-func VerifyToken(tokenString string) (*TokenDetails, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+// ValidateToken valida un token JWT y retorna los claims si es válido
+func ValidateToken(tokenString string) (*Claims, error) {
+	// Verificar que se haya establecido la clave secreta
+	if jwtSecret == "" {
+		return nil, errors.New("la clave secreta JWT no está configurada")
+	}
+
+	// Crear objeto de claims personalizado
+	claims := &Claims{}
+
+	// Parsear y validar token
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		// Verificar algoritmo de firma
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("método de firma inesperado: %v", token.Header["alg"])
+			return nil, errors.New("método de firma inesperado")
 		}
-		return []byte(secretKey), nil
+		return []byte(jwtSecret), nil
 	})
 
+	// Verificar errores de parsing
 	if err != nil {
-		log.Printf("Error parsing token: %v", err)
 		return nil, err
 	}
 
+	// Verificar validez del token
 	if !token.Valid {
 		return nil, errors.New("token inválido")
 	}
 
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return nil, errors.New("reclamaciones de token inválidas")
-	}
-
-	// Verificar si el token ha expirado
-	if exp, ok := claims["exp"].(float64); ok {
-		if time.Now().Unix() > int64(exp) {
-			return nil, errors.New("el token ha expirado")
-		}
-	} else {
-		return nil, errors.New("fecha de expiración no válida en el token")
-	}
-
-	userID, ok := claims["user_id"].(string)
-	if !ok {
-		return nil, errors.New("ID de usuario inválido en el token")
-	}
-
-	email, ok := claims["email"].(string)
-	if !ok {
-		return nil, errors.New("email inválido en el token")
-	}
-
-	role, ok := claims["role"].(string)
-	if !ok {
-		return nil, errors.New("rol inválido en el token")
-	}
-
-	exp, ok := claims["exp"].(float64)
-	if !ok {
-		return nil, errors.New("tiempo de expiración inválido en el token")
-	}
-
-	return &TokenDetails{
-		UserID: userID,
-		Email:  email,
-		Role:   role,
-		Exp:    int64(exp),
-	}, nil
+	return claims, nil
 }
 
-// RefreshToken genera un nuevo token basado en el actual
-func RefreshToken(td *TokenDetails) (string, error) {
-	// Verificar que el token no esté a punto de expirar
-	if time.Now().Unix() > td.Exp-300 { // 5 minutos antes de la expiración
-		return GenerateToken(td.UserID, td.Email, td.Role)
+// ValidateRefreshToken valida que un token sea de tipo refresh
+func ValidateRefreshToken(tokenString string) (*Claims, error) {
+	claims, err := ValidateToken(tokenString)
+	if err != nil {
+		return nil, err
 	}
-	return "", errors.New("el token actual aún es válido")
+
+	// Verificar que sea un token de renovación
+	if claims.TokenType != "refresh" {
+		return nil, errors.New("el token no es de tipo refresh")
+	}
+
+	return claims, nil
 }
 
-// getSecretKey obtiene la clave secreta JWT de variables de entorno
-func getSecretKey() string {
-	key := os.Getenv("JWT_SECRET")
-	if key == "" {
-		// en producción, esto debería fallar, pero para desarrollo permitimos un valor predeterminado
-		defaultKey := "growdesk-development-secret-key-2024"
-		log.Printf("ADVERTENCIA: JWT_SECRET no está configurado. Usando clave de desarrollo por defecto. NO USAR EN PRODUCCIÓN.")
-		return defaultKey
+// ExtractUserFromToken extrae la información del usuario desde un token JWT
+func ExtractUserFromToken(tokenString string) (string, string, string, string, string, error) {
+	claims, err := ValidateToken(tokenString)
+	if err != nil {
+		return "", "", "", "", "", err
 	}
-	return key
+
+	return claims.UserID, claims.Email, claims.FirstName, claims.LastName, claims.Role, nil
 }

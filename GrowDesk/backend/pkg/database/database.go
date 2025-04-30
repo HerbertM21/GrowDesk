@@ -1,112 +1,187 @@
 package database
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"os"
+	"sync"
 	"time"
 
-	"github.com/joho/godotenv"
+	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
-var DB *gorm.DB
+// Variables globales para la gestión de la base de datos
+var (
+	db     *gorm.DB
+	dbLock sync.Mutex
+)
 
-// Iiniciar la bd
-func Initialize() {
-	err := godotenv.Load()
+// DatabaseType representa el tipo de base de datos a utilizar
+type DatabaseType string
+
+const (
+	DBTypeSQLite   DatabaseType = "sqlite"
+	DBTypeMySQL    DatabaseType = "mysql"
+	DBTypePostgres DatabaseType = "postgres"
+)
+
+// Config contiene la configuración de la base de datos
+type Config struct {
+	Type         DatabaseType
+	Host         string
+	Port         int
+	Username     string
+	Password     string
+	DatabaseName string
+	SSLMode      string
+	FilePath     string // Para SQLite
+	LogLevel     logger.LogLevel
+	MaxOpenConns int
+	MaxIdleConns int
+	MaxLifetime  time.Duration
+}
+
+// LoadConfigFromEnv carga la configuración desde variables de entorno
+func LoadConfigFromEnv() Config {
+	dbType := DatabaseType(getEnvOrDefault("DB_TYPE", "sqlite"))
+
+	return Config{
+		Type:         dbType,
+		Host:         getEnvOrDefault("DB_HOST", "localhost"),
+		Port:         getEnvInt("DB_PORT", 5432),
+		Username:     getEnvOrDefault("DB_USER", "postgres"),
+		Password:     getEnvOrDefault("DB_PASSWORD", "password"),
+		DatabaseName: getEnvOrDefault("DB_NAME", "growdesk"),
+		SSLMode:      getEnvOrDefault("DB_SSL_MODE", "disable"),
+		FilePath:     getEnvOrDefault("DB_FILE_PATH", "growdesk.db"),
+		LogLevel:     logger.Error,
+		MaxOpenConns: getEnvInt("DB_MAX_OPEN_CONNS", 25),
+		MaxIdleConns: getEnvInt("DB_MAX_IDLE_CONNS", 10),
+		MaxLifetime:  time.Duration(getEnvInt("DB_MAX_LIFETIME", 5)) * time.Minute,
+	}
+}
+
+// InitDB inicializa la conexión a la base de datos
+func InitDB(config Config) error {
+	dbLock.Lock()
+	defer dbLock.Unlock()
+
+	if db != nil {
+		// Ya tenemos una conexión a la base de datos
+		return nil
+	}
+
+	var err error
+	var dialector gorm.Dialector
+
+	// Configurar dialector según el tipo de base de datos
+	switch config.Type {
+	case DBTypeSQLite:
+		// SQLite
+		dialector = sqlite.Open(config.FilePath)
+	case DBTypeMySQL:
+		// MySQL
+		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+			config.Username, config.Password, config.Host, config.Port, config.DatabaseName)
+		dialector = mysql.Open(dsn)
+	case DBTypePostgres:
+		// PostgreSQL
+		dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+			config.Host, config.Port, config.Username, config.Password, config.DatabaseName, config.SSLMode)
+		dialector = postgres.Open(dsn)
+	default:
+		return fmt.Errorf("tipo de base de datos no soportado: %s", config.Type)
+	}
+
+	// Configuraciones de GORM
+	gormConfig := &gorm.Config{
+		Logger: logger.Default.LogMode(config.LogLevel),
+	}
+
+	// Inicializar conexión
+	db, err = gorm.Open(dialector, gormConfig)
 	if err != nil {
-		log.Println("Advertencia: .env no encontrado.")
+		return fmt.Errorf("error al conectar con la base de datos: %v", err)
 	}
 
-	dbHost := getEnv("DB_HOST", "localhost")
-	dbPort := getEnv("DB_PORT", "5432")
-	dbUser := getEnv("DB_USER", "postgres")
-	dbPassword := getEnv("DB_PASSWORD", "postgres")
-	dbName := getEnv("DB_NAME", "growdesk")
-	dbSSLMode := getEnv("DB_SSL_MODE", "disable")
-
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		dbHost, dbPort, dbUser, dbPassword, dbName, dbSSLMode)
-
-	// logger de GORM
-	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
-		logger.Config{
-			SlowThreshold:             time.Second, // Umbral para consultas lentas
-			LogLevel:                  logger.Info, // Nivel de log
-			IgnoreRecordNotFoundError: true,        // Ignorar errores de registro no encontrado
-			Colorful:                  true,        // Activar color
-		},
-	)
-
-	// Intentar conectar a la base de datos con reintentos
-	maxRetries := 5
-	var retryCount int
-
-	for retryCount < maxRetries {
-		log.Printf("Conectar la bd (attempt %d/%d)...", retryCount+1, maxRetries)
-
-		db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-			Logger: newLogger,
-		})
-
-		if err == nil {
-			DB = db
-			log.Println("Conexión de base de datos éxitosa")
-
-			// Verificar conexión a la base de datos
-			sqlDB, err := db.DB()
-			if err != nil {
-				log.Printf("Error al conectar con la base de datos: %v", err)
-				continue
-			}
-
-			sqlDB.SetMaxIdleConns(10)
-			sqlDB.SetMaxOpenConns(100)
-			sqlDB.SetConnMaxLifetime(time.Hour)
-
-			// Verificar que la conexión está viva con ping
-			err = sqlDB.Ping()
-			if err != nil {
-				log.Printf("Error al hacer ping a la base de datos: %v", err)
-				retryCount++
-				time.Sleep(time.Second * 3)
-				continue
-			}
-
-			return
-		}
-
-		log.Printf("Error al conectar con la base de datos: %v", err)
-		retryCount++
-		time.Sleep(time.Second * 3) // Esperar 3 segundos antes de reintentar
-	}
-
-	log.Printf("ADVERTENCIA: Error al conectar con la base de datos en %d intentos.", maxRetries)
-
-}
-
-// GetDB retorna la instancia de la bd
-func GetDB() *gorm.DB {
-	return DB
-}
-
-func MigrateDB(models ...interface{}) {
-	log.Println("Iniciando migración...")
-	err := DB.AutoMigrate(models...)
+	// Configurar pool de conexiones
+	sqlDB, err := db.DB()
 	if err != nil {
-		log.Fatalf("Error al migrar BD: %v", err)
+		return fmt.Errorf("error al obtener el pool de conexiones: %v", err)
 	}
-	log.Println("Migración de la base de datos éxitosa")
+
+	sqlDB.SetMaxOpenConns(config.MaxOpenConns)
+	sqlDB.SetMaxIdleConns(config.MaxIdleConns)
+	sqlDB.SetConnMaxLifetime(config.MaxLifetime)
+
+	// Verificar conexión
+	if err := sqlDB.Ping(); err != nil {
+		return fmt.Errorf("error al verificar conexión a la base de datos: %v", err)
+	}
+
+	// Log de éxito
+	fmt.Printf("Conexión exitosa a la base de datos: %s\n", config.Type)
+
+	return nil
 }
 
-func getEnv(key, defaultValue string) string {
+// GetDB retorna la instancia de conexión a la base de datos
+func GetDB() (*gorm.DB, error) {
+	if db == nil {
+		return nil, errors.New("la base de datos no ha sido inicializada, debe llamar a InitDB primero")
+	}
+	return db, nil
+}
+
+// CloseDB cierra la conexión a la base de datos
+func CloseDB() {
+	dbLock.Lock()
+	defer dbLock.Unlock()
+
+	if db == nil {
+		return
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		fmt.Printf("Error al obtener el pool de conexiones para cerrar: %v\n", err)
+		return
+	}
+
+	if err := sqlDB.Close(); err != nil {
+		fmt.Printf("Error al cerrar la conexión a la base de datos: %v\n", err)
+		return
+	}
+
+	db = nil
+	fmt.Println("Conexión a la base de datos cerrada correctamente")
+}
+
+// getEnvOrDefault obtiene una variable de entorno o devuelve un valor por defecto
+func getEnvOrDefault(key, defaultValue string) string {
 	value := os.Getenv(key)
 	if value == "" {
 		return defaultValue
 	}
 	return value
+}
+
+// getEnvInt obtiene una variable de entorno como entero o devuelve un valor por defecto
+func getEnvInt(key string, defaultValue int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+
+	var result int
+	_, err := fmt.Sscanf(value, "%d", &result)
+	if err != nil {
+		return defaultValue
+	}
+
+	return result
 }

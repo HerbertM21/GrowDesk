@@ -1,65 +1,35 @@
 package models
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-// WidgetConfig almacena la configuración del widget de chat
+// WidgetConfig representa la configuración de un widget para integración en sitios web
 type WidgetConfig struct {
 	ID             string    `json:"id" gorm:"primaryKey"`
-	Name           string    `json:"name" gorm:"not null"`
-	ApiKey         string    `json:"apiKey" gorm:"unique;not null"`
+	Name           string    `json:"name" gorm:"not null;type:varchar(100)"`
+	BrandName      string    `json:"brandName" gorm:"not null;type:varchar(100)"`
+	ApiKey         string    `json:"apiKey" gorm:"unique;not null;type:varchar(100)"`
 	AllowedDomains []string  `json:"allowedDomains" gorm:"type:json"`
-	WelcomeMessage string    `json:"welcomeMessage"`
-	PrimaryColor   string    `json:"primaryColor" gorm:"default:#4caf50"`
-	BrandName      string    `json:"brandName"`
-	Position       string    `json:"position" gorm:"default:bottom-right"`
+	WelcomeMessage string    `json:"welcomeMessage" gorm:"type:text"`
+	PrimaryColor   string    `json:"primaryColor" gorm:"default:'#2196F3';type:varchar(20)"`
+	Position       string    `json:"position" gorm:"default:'right';type:varchar(20)"`
 	CreatedAt      time.Time `json:"createdAt"`
 	UpdatedAt      time.Time `json:"updatedAt"`
-	CreatedBy      string    `json:"createdBy"`
-	IsActive       bool      `json:"isActive" gorm:"default:true"`
-	EmbedCode      string    `json:"embedCode" gorm:"-"` // Campo calculado, no se guarda en BD
 }
 
-// GenerateApiKey genera una nueva API Key segura
-func GenerateApiKey() (string, error) {
-	bytes := make([]byte, 16) // 32 caracteres hex
-	_, err := rand.Read(bytes)
-	if err != nil {
-		return "", err
+// BeforeSave genera un ID único y una API key para la configuración de widget si no tiene
+func (w *WidgetConfig) BeforeSave(tx *gorm.DB) error {
+	if w.ID == "" {
+		w.ID = "WIDGET-" + uuid.New().String()
 	}
-	return hex.EncodeToString(bytes), nil
-}
 
-// GenerateEmbedCode crea el código HTML para incrustar el widget
-func (w *WidgetConfig) GenerateEmbedCode(baseUrl string) string {
-	// El puerto 8082 es el que corresponde a la API del widget
-	apiUrl := "http://localhost:8082"
+	if w.ApiKey == "" {
+		w.ApiKey = uuid.New().String()
+	}
 
-	// Construye el código de inserción basado en los parámetros de configuración
-	return `<script src="` + baseUrl + `/widget.js" id="growdesk-widget"
-  data-widget-id="` + w.ID + `"
-  data-widget-token="` + w.ApiKey + `"
-  data-api-url="` + apiUrl + `"
-  data-brand-name="` + w.BrandName + `"
-  data-welcome-message="` + w.WelcomeMessage + `"
-  data-primary-color="` + w.PrimaryColor + `"
-  data-position="` + w.Position + `">
-</script>`
-}
-
-// GenerateEmbedCodeWithApiUrl permite especificar tanto la URL base como la URL de API
-func (w *WidgetConfig) GenerateEmbedCodeWithApiUrl(baseUrl, apiUrl string) string {
-	// código de inserción basado en los parámetros de configuración
-	return `<script src="` + baseUrl + `/widget.js" id="growdesk-widget"
-  data-widget-id="` + w.ID + `"
-  data-widget-token="` + w.ApiKey + `"
-  data-api-url="` + apiUrl + `"
-  data-brand-name="` + w.BrandName + `"
-  data-welcome-message="` + w.WelcomeMessage + `"
-  data-primary-color="` + w.PrimaryColor + `"
-  data-position="` + w.Position + `">
-</script>`
+	return nil
 }

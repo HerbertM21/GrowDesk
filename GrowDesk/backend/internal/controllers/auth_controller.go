@@ -11,11 +11,13 @@ import (
 	"github.com/hmdev/GrowDesk/backend/pkg/database"
 )
 
+// LoginRequest estructura para datos de inicio de sesión
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
 
+// RegisterRequest estructura para datos de registro
 type RegisterRequest struct {
 	Email     string `json:"email" binding:"required,email"`
 	Password  string `json:"password" binding:"required,min=6"`
@@ -23,11 +25,13 @@ type RegisterRequest struct {
 	LastName  string `json:"lastName" binding:"required"`
 }
 
+// AuthResponse estructura para respuesta de autenticación
 type AuthResponse struct {
 	Token string      `json:"token"`
 	User  models.User `json:"user"`
 }
 
+// Login maneja el proceso de inicio de sesión
 func Login(c *gin.Context) {
 	var request LoginRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -102,7 +106,7 @@ func Login(c *gin.Context) {
 	})
 }
 
-// registro de usuario
+// Register maneja el registro de nuevos usuarios
 func Register(c *gin.Context) {
 	var request RegisterRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -187,6 +191,7 @@ func Register(c *gin.Context) {
 	})
 }
 
+// GetMe obtiene información del usuario autenticado actual
 func GetMe(c *gin.Context) {
 	userID, exists := c.Get("userID")
 	if !exists {
@@ -194,8 +199,20 @@ func GetMe(c *gin.Context) {
 		return
 	}
 
-	var user models.User
 	db := database.GetDB()
+	if db == nil {
+		// En modo desarrollo sin DB, simular un usuario
+		c.JSON(http.StatusOK, gin.H{
+			"id":        userID,
+			"email":     c.GetString("email"),
+			"role":      c.GetString("role"),
+			"firstName": "Usuario",
+			"lastName":  "Desarrollo",
+		})
+		return
+	}
+
+	var user models.User
 	result := db.Where("id = ?", userID).First(&user)
 	if result.Error != nil {
 		log.Printf("GetMe error: usuario no encontrado: %s", userID)
