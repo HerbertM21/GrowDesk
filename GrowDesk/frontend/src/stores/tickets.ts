@@ -222,6 +222,13 @@ export const useTicketStore = defineStore('tickets', {
           throw new Error('ID de ticket requerido para actualizar');
         }
         
+        // Normalizar prioridad si está presente en los datos de actualización
+        if (updateData.priority) {
+          const originalPriority = updateData.priority;
+          updateData.priority = this.normalizePriority(updateData.priority) as Ticket['priority'];
+          console.log(`Prioridad normalizada: de "${originalPriority}" a "${updateData.priority}"`);
+        }
+        
         // Asegurarse de que id no tenga espacios ni caracteres especiales
         const cleanId = id.trim();
         console.log(`Llamando a API para actualizar ticket. URL: '/tickets/${cleanId}'`);
@@ -239,6 +246,12 @@ export const useTicketStore = defineStore('tickets', {
         if (index !== -1) {
           this.tickets[index] = response.data
           console.log(`Ticket actualizado en el índice ${index} de la colección`);
+          
+          // Actualizar también el ticket actual si coincide el ID
+          if (this.currentTicket && this.currentTicket.id === id) {
+            this.currentTicket = response.data;
+            console.log('Ticket actual actualizado con nueva información');
+          }
           
           // Registrar actividad de actualización
           const activityStore = useActivityStore()
@@ -529,22 +542,44 @@ export const useTicketStore = defineStore('tickets', {
       return updatedTicket;
     },
 
-    // Método para normalizar prioridades en diferentes formatos
+    // Función para normalizar la prioridad (asegurarse de que esté en mayúsculas)
     normalizePriority(priority: string): string {
-      if (!priority) return 'medium';
+      if (!priority) {
+        return 'MEDIUM';
+      }
       
-      // Convertir a minúsculas para comparación
-      const lowerPriority = typeof priority === 'string' ? priority.toLowerCase() : '';
+      // Convertir a string en caso de que no lo sea
+      const priorityStr = String(priority).trim().toUpperCase();
       
-      // Mapear diferentes formatos posibles al formato estándar
-      if (lowerPriority === 'baja' || lowerPriority === 'low') return 'low';
-      if (lowerPriority === 'media' || lowerPriority === 'medium') return 'medium';
-      if (lowerPriority === 'alta' || lowerPriority === 'high') return 'high';
-      if (lowerPriority === 'urgente' || lowerPriority === 'urgent') return 'urgent';
+      // Validar que el valor es una prioridad válida
+      const validPriorities = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
       
-      // Si no coincide con ninguno, devolver medio por defecto
-      console.log(`Store: Prioridad no reconocida "${priority}", utilizando "medium" por defecto`);
-      return 'medium';
+      if (validPriorities.includes(priorityStr)) {
+        return priorityStr;
+      }
+      
+      // Manejar variaciones en minúsculas
+      const lowerMap: Record<string, string> = {
+        'low': 'LOW',
+        'medium': 'MEDIUM',
+        'high': 'HIGH',
+        'urgent': 'URGENT',
+        'baja': 'LOW',
+        'media': 'MEDIUM',
+        'alta': 'HIGH',
+        'urgente': 'URGENT'
+      };
+      
+      // Intentar normalizar desde minúsculas
+      const normalizedValue = lowerMap[priority.toLowerCase()];
+      
+      if (normalizedValue) {
+        return normalizedValue;
+      }
+      
+      // Si no se encuentra una coincidencia, usar MEDIUM como valor predeterminado
+      console.warn(`Prioridad no reconocida: "${priority}". Usando MEDIUM como valor predeterminado.`);
+      return 'MEDIUM';
     },
     
     // Método de ayuda para traducir estados

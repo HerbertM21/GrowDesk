@@ -136,17 +136,41 @@ export const useActivityStore = defineStore('activity', {
       this.loading = true;
       this.error = null;
       
+      // Crear el objeto de actividad
+      const activityData = {
+        userId,
+        type,
+        targetId,
+        description,
+        timestamp: new Date().toISOString(),
+        metadata
+      };
+      
+      // En modo desarrollo, siempre usar la simulación local
+      if (import.meta.env.DEV) {
+        try {
+          const localActivity = {
+            id: `dev-${Date.now()}`,
+            ...activityData,
+            metadata: {
+              ...metadata,
+              _simulated: true
+            }
+          };
+          console.log('Actividad simulada registrada (modo desarrollo):', localActivity);
+          this.activities.push(localActivity);
+          return localActivity;
+        } catch (error) {
+          console.error('Error al simular actividad:', error);
+          this.error = 'Error al simular registro de actividad';
+          return null;
+        } finally {
+          this.loading = false;
+        }
+      }
+      
+      // En modo producción, intentar registrar en la API
       try {
-        const activityData = {
-          userId,
-          type,
-          targetId,
-          description,
-          timestamp: new Date().toISOString(),
-          metadata
-        };
-        
-        // Intentar registrar la actividad en la API
         const response = await apiClient.post('/activities', activityData);
         
         if (response.data) {
@@ -167,26 +191,13 @@ export const useActivityStore = defineStore('activity', {
         console.error('Error al registrar actividad:', error);
         this.error = 'Error al registrar actividad';
         
-        // En modo desarrollo, simular el registro local pero marcar como simulado
-        if (import.meta.env.DEV) {
-          const localActivity = {
-            id: `dev-${Date.now()}`,
-            userId,
-            type,
-            targetId,
-            description,
-            timestamp: new Date().toISOString(),
-            metadata: {
-              ...metadata,
-              _simulated: true
-            }
-          };
-          console.log('Simulando registro de actividad (solo desarrollo):', localActivity);
-          this.activities.push(localActivity);
-          return localActivity;
-        }
-        
-        return null;
+        // Crear actividad local de respaldo
+        const fallbackActivity = {
+          id: `fallback-${Date.now()}`,
+          ...activityData
+        };
+        this.activities.push(fallbackActivity);
+        return fallbackActivity;
       } finally {
         this.loading = false;
       }

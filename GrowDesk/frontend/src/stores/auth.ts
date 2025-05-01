@@ -141,7 +141,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
   
   // Verificar si el usuario está autenticado
-  async function checkAuth() {
+  async function checkAuth(): Promise<boolean> {
     const storedToken = localStorage.getItem('token');
     
     if (!storedToken) {
@@ -152,30 +152,45 @@ export const useAuthStore = defineStore('auth', () => {
     
     token.value = storedToken;
     
-    // Si ya tenemos un usuario, simplemente validamos
-    if (user.value) {
-      return true;
-    }
-    
-    // Si no tenemos usuario pero sí token, intentamos cargar el perfil
     try {
       loading.value = true;
       
-      // Primero intentamos con userId del localStorage
+      // Cargar el perfil de usuario
       const userId = localStorage.getItem('userId');
-      if (userId) {
-        // Usar el store de usuarios para cargar el perfil
-        const usersStore = useUsersStore();
-        const userData = await usersStore.fetchUser(userId);
-        
-        if (userData) {
-          user.value = userData;
-          return true;
-        }
+      if (!userId) {
+        throw new Error('No se pudo identificar al usuario');
       }
       
-      // Si no funciona, intentamos con la API
-      return await fetchCurrentUserProfile();
+      // Usar el store de usuarios para cargar el perfil
+      const usersStore = useUsersStore();
+      
+      // Asegurarse de que tenemos usuarios cargados
+      if (usersStore.users.length === 0) {
+        await usersStore.fetchUsers();
+      }
+      
+      // Buscar el usuario por ID
+      const foundUser = usersStore.users.find((u: User) => u.id.toString() === userId.toString());
+      
+      if (!foundUser) {
+        console.error('Usuario no encontrado en el store:', userId);
+        // Si estamos en desarrollo, cargar los datos mock
+        if (import.meta.env.DEV) {
+          usersStore.initMockUsers();
+          const mockUser = usersStore.users.find((u: User) => u.id.toString() === userId.toString());
+          if (mockUser) {
+            user.value = { ...mockUser };
+            console.log('Usuario mock cargado:', user.value);
+            return true;
+          }
+        }
+        throw new Error('Usuario no encontrado');
+      }
+      
+      // Actualizar el usuario
+      user.value = { ...foundUser };
+      console.log('Usuario cargado correctamente:', user.value);
+      return true;
     } catch (err) {
       console.error('Error en checkAuth:', err);
       // Si falla, limpiar token

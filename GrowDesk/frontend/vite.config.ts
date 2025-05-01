@@ -6,8 +6,8 @@ import path from 'path'
 export default defineConfig({
   plugins: [vue()],
   server: {
-    port: 3000,
-    strictPort: true,
+    port: 3001,
+    strictPort: false,
     proxy: {
       '/api': {
         target: 'http://localhost:8000',

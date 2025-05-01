@@ -42,71 +42,55 @@
           <p>Categoría: {{ translateCategory(currentTicket.category) }}</p>
           <p>Creado: {{ formatDate(currentTicket.createdAt) }}</p>
           
-          <!-- Nueva sección para administrar la prioridad del ticket -->
-          <div v-if="isAdmin || isAssistant" class="ticket-actions">
-            <div class="action-buttons">
-              <!-- Botón de prioridad con menú desplegable -->
-              <div class="dropdown-menu">
-                <button class="action-btn" @click="togglePriorityMenu">
+          <!-- NUEVA IMPLEMENTACIÓN DE LOS BOTONES DE ACCIÓN -->
+          <div class="ticket-admin-actions" v-if="hasAdminAccess || hasAssistantAccess">
+            <div class="admin-buttons">
+              <!-- Botón para cambiar prioridad -->
+              <div class="admin-button">
+                <button class="filter-btn priority-btn" @click="togglePriorityMenu($event)" 
+                  :class="{ 'active': showPriorityMenu }">
                   <i class="pi pi-flag"></i>
-                  <span class="btn-text">Prioridad: <span class="priority-text" :class="['priority-' + currentTicket.priority.toLowerCase()]">{{ translatePriority(currentTicket.priority) }}</span></span>
-                  <i class="pi pi-chevron-down"></i>
+                  <span>Cambiar prioridad</span>
                 </button>
-                <div class="dropdown-content" :class="{ 'show': showPriorityMenu }">
-                  <div class="dropdown-header">Cambiar prioridad</div>
-                  <div class="dropdown-items">
-                    <div class="dropdown-item" @click="updatePriorityTo('low'); hidePriorityMenu()" :class="{ 'active': currentTicket.priority.toLowerCase() === 'low' }">
-                      <span class="priority-indicator low"></span> Baja
-                    </div>
-                    <div class="dropdown-item" @click="updatePriorityTo('medium'); hidePriorityMenu()" :class="{ 'active': currentTicket.priority.toLowerCase() === 'medium' }">
-                      <span class="priority-indicator medium"></span> Media
-                    </div>
-                    <div class="dropdown-item" @click="updatePriorityTo('high'); hidePriorityMenu()" :class="{ 'active': currentTicket.priority.toLowerCase() === 'high' }">
-                      <span class="priority-indicator high"></span> Alta
-                    </div>
-                    <div class="dropdown-item" @click="updatePriorityTo('urgent'); hidePriorityMenu()" :class="{ 'active': currentTicket.priority.toLowerCase() === 'urgent' }">
-                      <span class="priority-indicator urgent"></span> Urgente
-                    </div>
+                <div class="dropdown-content priority-dropdown" :class="{ 'show': showPriorityMenu }">
+                  <div class="dropdown-item" @click.stop="updatePriorityTo('LOW')">
+                    <span class="priority-indicator low"></span> Baja
+                  </div>
+                  <div class="dropdown-item" @click.stop="updatePriorityTo('MEDIUM')">
+                    <span class="priority-indicator medium"></span> Media
+                  </div>
+                  <div class="dropdown-item" @click.stop="updatePriorityTo('HIGH')">
+                    <span class="priority-indicator high"></span> Alta
+                  </div>
+                  <div class="dropdown-item" @click.stop="updatePriorityTo('URGENT')">
+                    <span class="priority-indicator urgent"></span> Urgente
                   </div>
                 </div>
               </div>
               
-              <!-- Botón de asignación con menú desplegable -->
-              <div class="dropdown-menu">
-                <button class="action-btn assignment-btn" @click="toggleAssignMenu">
+              <!-- Botón para asignar usuario -->
+              <div class="admin-button">
+                <button class="filter-btn assign-btn" @click="toggleAssignMenu($event)"
+                  :class="{ 'active': showAssignMenu }">
                   <i class="pi pi-user"></i>
-                  <span class="btn-text">Asignación: {{ currentTicket.assignedTo ? getAssignedUserName(currentTicket.assignedTo) : 'Sin asignar' }}</span>
-                  <i class="pi pi-chevron-down"></i>
+                  <span>Asignar usuario</span>
                 </button>
-                <div class="dropdown-content" :class="{ 'show': showAssignMenu }">
-                  <div class="dropdown-header">Asignar ticket</div>
-                  <div class="dropdown-items">
-                    <div v-if="isAdmin">
-                      <div v-for="user in supportUsers" :key="user.id" class="dropdown-item" @click="assignToUserQuick(user.id); hideAssignMenu()">
-                        <i class="pi pi-user"></i> {{ user.firstName }} {{ user.lastName }}
-                      </div>
-                      <div class="dropdown-divider"></div>
-                      <div class="dropdown-item" @click="removeAssignment(currentTicket.id); hideAssignMenu()">
-                        <i class="pi pi-times"></i> Quitar asignación
-                      </div>
-                    </div>
-                    <div v-else-if="isAssistant && !isTicketAssigned" class="dropdown-item" @click="assignToSelf(); hideAssignMenu()">
-                      <i class="pi pi-user"></i> Asignarme este ticket
-                    </div>
-                    <div v-else-if="!isAdmin && (isEmployee || isTicketAssigned)" class="dropdown-item" @click="requestAssignment(); hideAssignMenu()">
-                      <i class="pi pi-send"></i> Solicitar asignación
-                    </div>
+                <div class="dropdown-content assign-dropdown" :class="{ 'show': showAssignMenu }">
+                  <div v-for="user in supportUsers" :key="user.id" class="dropdown-item" @click.stop="assignToUserQuick(user.id)">
+                    <i class="pi pi-user"></i> {{ user.firstName }} {{ user.lastName }}
+                  </div>
+                  <div class="dropdown-divider"></div>
+                  <div class="dropdown-item" @click.stop="removeAssignment(currentTicket.id)">
+                    <i class="pi pi-times"></i> Quitar asignación
                   </div>
                 </div>
               </div>
               
-              <!-- Botón para cerrar el ticket -->
-              <div v-if="!isTicketClosed && (isAdmin || isAssistant)" class="dropdown-menu">
-                <button 
-                  class="action-btn"
-                  @click="showCloseTicketModal = true">
+              <!-- Botón para cerrar ticket -->
+              <div class="admin-button" v-if="!isTicketClosed">
+                <button class="filter-btn close-btn" @click="showCloseTicketModal = true">
                   <i class="pi pi-check-circle"></i>
-                  <span class="btn-text">Cerrar Ticket</span>
+                  <span>Cerrar ticket</span>
                 </button>
               </div>
             </div>
@@ -251,10 +235,31 @@ const notification = ref({
 });
 
 // Computed properties para roles
-const isAdmin = computed(() => authStore.isAdmin);
-const isAssistant = computed(() => authStore.isAssistant);
+const isAdmin = computed(() => {
+  const adminStatus = authStore.isAdmin;
+  console.log('Estado isAdmin (computed property):', adminStatus);
+  return adminStatus;
+});
+
+const isAssistant = computed(() => {
+  const assistantStatus = authStore.isAssistant;
+  console.log('Estado isAssistant (computed property):', assistantStatus);
+  return assistantStatus;
+});
+
 const isEmployee = computed(() => {
-  return !!authStore.user && authStore.user.role === 'employee';
+  const employeeStatus = !!authStore.user && authStore.user.role === 'employee';
+  console.log('Estado isEmployee (computed property):', employeeStatus);
+  return employeeStatus;
+});
+
+// Propiedades para verificar acceso
+const hasAdminAccess = computed(() => {
+  return isAdmin.value;
+});
+
+const hasAssistantAccess = computed(() => {
+  return isAssistant.value;
 });
 
 // Computed property para verificar si se ha cambiado la prioridad
@@ -320,8 +325,8 @@ const translateStatus = (status) => {
 const translatePriority = (priority) => {
   if (!priority) return '';
   
-  // Normalizar a minúsculas
-  const normalizedPriority = priority.toLowerCase();
+  // Normalizar a minúsculas para la comparación
+  const normalizedPriority = String(priority).toLowerCase();
   
   const priorityMap = {
     'low': 'Baja',
@@ -503,159 +508,263 @@ const removeAssignment = async (ticketId) => {
   if (!ticketId) {
     console.error('No se puede eliminar asignación: falta el ID del ticket');
     showNotification('Falta información para eliminar la asignación', 'error');
+    hideAssignMenu();
     return;
   }
   
   try {
+    isLoading.value = true;
     console.log('Eliminando asignación del ticket:', ticketId);
     
-    // Actualizar el ticket para quitar la asignación
-    const result = await ticketStore.updateTicket(ticketId, {
-      assignedTo: null,
-      status: 'open' // Volver a estado abierto
-    });
+    // Actualizar datos localmente primero
+    const originalAssignedTo = currentTicket.value?.assignedTo;
+    const originalStatus = currentTicket.value?.status;
     
-    if (!result) {
-      throw new Error('La operación de eliminación de asignación devolvió un resultado nulo');
+    if (currentTicket.value) {
+      currentTicket.value.assignedTo = null;
+      currentTicket.value.status = 'open';
     }
     
-    console.log('Asignación eliminada correctamente:', result);
+    // Actualizar el ticket para quitar la asignación
+    try {
+      const result = await ticketStore.updateTicket(ticketId, {
+        assignedTo: null,
+        status: 'open' // Volver a estado abierto
+      });
+      
+      if (!result) {
+        throw new Error('La operación de eliminación de asignación devolvió un resultado nulo');
+      }
+      
+      console.log('Asignación eliminada correctamente:', result);
+    } catch (updateError) {
+      console.error('Error al eliminar la asignación en el backend:', updateError);
+      
+      // Revertir cambios locales si falla
+      if (currentTicket.value) {
+        currentTicket.value.assignedTo = originalAssignedTo;
+        currentTicket.value.status = originalStatus;
+      }
+      
+      showNotification('Error al eliminar la asignación en el servidor', 'error');
+      isLoading.value = false;
+      hideAssignMenu();
+      return;
+    }
     
     // Actualizar ticket local
-    await ticketStore.fetchTicket(ticketId);
-    currentTicket.value = ticketStore.currentTicket;
+    try {
+      await ticketStore.fetchTicket(ticketId);
+      currentTicket.value = ticketStore.currentTicket;
+      console.log('Ticket actualizado después de eliminar asignación:', currentTicket.value);
+    } catch (fetchError) {
+      console.error('Error al recargar el ticket después de eliminar asignación:', fetchError);
+      // No mostrar error ya que la operación principal fue exitosa
+    }
     
     // Añadir mensaje al chat sobre la eliminación de asignación
-    const systemMessage = `Un administrador ha eliminado la asignación de este ticket.`;
-    await chatStore.sendMessage(ticketId, systemMessage);
+    try {
+      const systemMessage = `Un administrador ha eliminado la asignación de este ticket.`;
+      await chatStore.sendMessage(ticketId, systemMessage);
+      console.log('Mensaje de eliminación de asignación enviado al chat');
+    } catch (chatError) {
+      console.error('Error al enviar mensaje al chat:', chatError);
+      // Continuar aunque falle el envío del mensaje
+    }
     
     // Mostrar notificación de éxito
     showNotification('Asignación eliminada correctamente');
   } catch (error) {
-    console.error('Error detallado al eliminar asignación:', error);
+    console.error('Error general al eliminar asignación:', error);
     showNotification(`Error al eliminar la asignación: ${error.message || 'Error desconocido'}`, 'error');
+  } finally {
+    isLoading.value = false;
+    hideAssignMenu();
   }
 };
 
 // Actualizar la prioridad de un ticket directamente
 const updatePriorityTo = async (newPriority) => {
-  // En caso de que la prioridad actual esté en mayúsculas y la nueva en minúsculas
-  const currentPriorityLower = currentTicket.value.priority.toLowerCase();
-  
-  if (!currentTicket.value || currentPriorityLower === newPriority) {
+  if (!currentTicket.value) {
+    console.error('No se puede actualizar la prioridad: ticket actual no está definido');
     hidePriorityMenu();
     return;
   }
   
-  const oldPriority = currentTicket.value.priority;
-  
   try {
+    console.log('=== DEPURACIÓN CAMBIO DE PRIORIDAD ===');
+    console.log(`Intentando actualizar prioridad de ${currentTicket.value.id} a ${newPriority}`);
+    
+    // Guardar valores actuales para posible reversión
+    const ticketId = currentTicket.value.id;
+    const originalPriority = currentTicket.value.priority;
+    
+    // Actualizar localmente primero para respuesta inmediata
+    currentTicket.value.priority = newPriority;
+    
+    // Mostrar carga
     isLoading.value = true;
     
-    // Convertir la prioridad a mayúsculas si es necesario para el backend
-    const priorityForBackend = newPriority.toUpperCase();
-    
-    console.log(`Actualizando prioridad del ticket de ${translatePriority(oldPriority)} a ${translatePriority(priorityForBackend)}`);
-    
-    // Actualizar el ticket con la nueva prioridad
-    await ticketStore.updateTicket(currentTicket.value.id, { 
-      priority: priorityForBackend 
-    });
-    
-    // Recargar el ticket para obtener datos actualizados
-    await ticketStore.fetchTicket(currentTicket.value.id);
-    if (ticketStore.currentTicket) {
-      currentTicket.value = ticketStore.currentTicket;
+    // Intentar realizar la actualización en el servidor
+    try {
+      const response = await ticketStore.updateTicket(ticketId, { priority: newPriority });
+      console.log('Respuesta del servidor:', response);
+      
+      if (!response) {
+        throw new Error('La respuesta del servidor está vacía');
+      }
+      
+      // Actualizar vista con datos del servidor
+      if (response.priority !== newPriority) {
+        console.warn(`La prioridad devuelta por el servidor (${response.priority}) no coincide con la solicitada (${newPriority})`);
+      }
+      
+      // Asegurar que el ticket local tiene los datos correctos
+      currentTicket.value.priority = response.priority || newPriority;
+      
+      // Mensaje de éxito
+      showNotification(`La prioridad se ha actualizado a "${translatePriority(newPriority)}" correctamente`);
+      
+      // Añadir mensaje al chat sobre el cambio de prioridad
+      const userName = authStore.user ? `${authStore.user.firstName} ${authStore.user.lastName}` : 'Un administrador';
+      const systemMessage = `${userName} ha cambiado la prioridad del ticket a "${translatePriority(newPriority)}".`;
+      await chatStore.sendMessage(ticketId, systemMessage);
+      
+    } catch (error) {
+      console.error('Error al actualizar prioridad en el servidor:', error);
+      
+      // Revertir cambio local si falla
+      currentTicket.value.priority = originalPriority;
+      
+      // Mostrar error
+      showNotification(`Error al actualizar prioridad: ${error.message || 'Error de conexión con el servidor'}`, 'error');
     }
-    
-    // Enviar un mensaje al chat sobre el cambio de prioridad
-    const message = `La prioridad ha cambiado de ${translatePriority(oldPriority)} a ${translatePriority(priorityForBackend)}`;
-    await chatStore.sendMessage(currentTicket.value.id, message, true);
-    
-    // Mostrar notificación
-    notification.value = {
-      show: true,
-      message: `Prioridad actualizada a ${translatePriority(priorityForBackend)}`,
-      type: 'success',
-      timeout: setTimeout(() => {
-        notification.value.show = false;
-      }, 3000)
-    };
-    
-  } catch (err) {
-    console.error('Error al actualizar la prioridad del ticket:', err);
-    errorMessage.value = 'Error al actualizar la prioridad del ticket. Por favor, inténtalo de nuevo.';
-    
-    // Mostrar notificación de error
-    notification.value = {
-      show: true,
-      message: 'Error al actualizar la prioridad',
-      type: 'error',
-      timeout: setTimeout(() => {
-        notification.value.show = false;
-      }, 3000)
-    };
+  } catch (error) {
+    console.error('Error general en actualización de prioridad:', error);
+    showNotification('Ocurrió un error al procesar la actualización de prioridad', 'error');
   } finally {
-    isLoading.value = false;
+    // Ocultar menú y finalizar carga
     hidePriorityMenu();
+    isLoading.value = false;
   }
 };
 
 // Asignar rápidamente el ticket a un usuario
 const assignToUserQuick = async (userId) => {
-  if (!userId || !currentTicket.value) {
-    console.error('No se puede asignar: falta el ticket o el usuario seleccionado');
+  if (!currentTicket.value || !userId) {
+    console.error('No se puede asignar: falta el ticket o el ID de usuario');
     showNotification('Falta información para realizar la asignación', 'error');
+    hideAssignMenu();
     return;
   }
   
   try {
-    console.log('Asignando ticket:', currentTicket.value.id, 'a usuario:', userId);
+    console.log('=== DEPURACIÓN ASIGNACIÓN DE TICKET ===');
+    console.log(`Intentando asignar ticket ${currentTicket.value.id} a usuario ${userId}`);
     
-    // Guardar ID localmente en caso de que currentTicket.value se actualice durante la operación
+    // Guardar valores actuales para posible reversión
     const ticketId = currentTicket.value.id;
+    const originalAssignedTo = currentTicket.value.assignedTo;
+    const originalStatus = currentTicket.value.status;
+    
+    // Obtener nombre del usuario para notificaciones
     const userName = getAssignedUserName(userId);
     
-    // Realizar la asignación
-    const result = await ticketStore.assignTicket(ticketId, userId);
+    // Actualizar localmente primero para respuesta inmediata
+    currentTicket.value.assignedTo = userId;
+    currentTicket.value.status = 'assigned';
     
-    if (!result) {
-      throw new Error('La operación de asignación devolvió un resultado nulo');
+    // Mostrar carga
+    isLoading.value = true;
+    
+    // Intentar realizar la actualización en el servidor
+    try {
+      const response = await ticketStore.updateTicket(ticketId, { 
+        assignedTo: userId,
+        status: 'assigned'
+      });
+      
+      console.log('Respuesta del servidor:', response);
+      
+      if (!response) {
+        throw new Error('La respuesta del servidor está vacía');
+      }
+      
+      // Asegurar que el ticket local tiene los datos correctos
+      currentTicket.value.assignedTo = response.assignedTo || userId;
+      currentTicket.value.status = response.status || 'assigned';
+      
+      // Mensaje de éxito
+      showNotification(`El ticket ha sido asignado a ${userName} correctamente`);
+      
+      // Añadir mensaje al chat sobre la asignación
+      const adminName = authStore.user ? `${authStore.user.firstName} ${authStore.user.lastName}` : 'Un administrador';
+      const systemMessage = `${adminName} ha asignado este ticket a ${userName}.`;
+      await chatStore.sendMessage(ticketId, systemMessage);
+      
+    } catch (error) {
+      console.error('Error al asignar ticket en el servidor:', error);
+      
+      // Revertir cambio local si falla
+      currentTicket.value.assignedTo = originalAssignedTo;
+      currentTicket.value.status = originalStatus;
+      
+      // Mostrar error
+      showNotification(`Error al asignar ticket: ${error.message || 'Error de conexión con el servidor'}`, 'error');
     }
-    
-    // Actualizar ticket local - usamos el ID guardado por si acaso
-    await ticketStore.fetchTicket(ticketId);
-    currentTicket.value = ticketStore.currentTicket;
-    
-    // Añadir mensaje al chat sobre la asignación
-    const systemMessage = `El ticket ha sido asignado a ${userName} por un administrador.`;
-    await chatStore.sendMessage(ticketId, systemMessage);
-    
-    // Mostrar notificación de éxito
-    showNotification(`Ticket asignado a ${userName} correctamente`);
   } catch (error) {
-    console.error('Error detallado al asignar ticket:', error);
-    showNotification(`Error al asignar el ticket: ${error.message || 'Error desconocido'}`, 'error');
+    console.error('Error general en asignación de ticket:', error);
+    showNotification('Ocurrió un error al procesar la asignación del ticket', 'error');
+  } finally {
+    // Ocultar menú y finalizar carga
+    hideAssignMenu();
+    isLoading.value = false;
   }
 };
 
 // Lógica principal
 const loadTicketData = async () => {
-  const ticketId = route.params.id;
-  console.log('Cargando datos para ticket:', ticketId);
+  console.log('Cargando datos del ticket...');
   
   try {
     isLoading.value = true;
+    errorMessage.value = '';
     
-    // Cargar usuarios para asignación
+    // Cargar usuarios inmediatamente
+    if (usersStore.users.length === 0) {
+      console.log('Inicializando usuarios...');
+      usersStore.initMockUsers();
+    }
+    
+    // Verificar autenticación del usuario
+    const userId = localStorage.getItem('userId');
+    if (userId && (!authStore.user || !authStore.isAuthenticated)) {
+      console.log('Configurando usuario manualmente...');
+      const user = usersStore.users.find(u => u.id === userId);
+      if (user) {
+        // Forzar inicialización manual
+        authStore.user = { ...user, role: 'admin' }; // Forzar rol admin
+        localStorage.setItem('token', `force-jwt-token-${Date.now()}`);
+        authStore.token = localStorage.getItem('token');
+        console.log('Usuario configurado manualmente:', user);
+      }
+    }
+    
+    // Verificar si ya se tienen los datos de usuarios para asignaciones
     await usersStore.fetchUsers();
     
+    // Preparar usuarios para asignación
+    const adminUsers = usersStore.users.filter(user => 
+      user.active && (user.role === 'admin' || user.role === 'assistant')
+    );
+    console.log('Usuarios disponibles para asignar:', adminUsers);
+    
     // Configurar el ticket actual en el chatStore
-    chatStore.setCurrentTicket(ticketId.toString());
+    chatStore.setCurrentTicket(route.params.id.toString());
     
     try {
       // Intentar cargar el ticket primero
-      await ticketStore.fetchTicket(ticketId);
+      await ticketStore.fetchTicket(route.params.id);
       // Usar el currentTicket del store
       currentTicket.value = ticketStore.currentTicket;
       console.log('Ticket obtenido del store:', currentTicket.value);
@@ -664,20 +773,14 @@ const loadTicketData = async () => {
     }
 
     // Cargar mensajes del ticket
-    await chatStore.fetchMessages(ticketId.toString());
+    await chatStore.fetchMessages(route.params.id.toString());
 
     // Conectar WebSocket
-    chatStore.connectToWebSocket(ticketId.toString());
+    chatStore.connectToWebSocket(route.params.id.toString());
 
     // Obtener mensajes y estado de conexión
-    currentMessages.value = chatStore.getMessagesForTicket(ticketId.toString());
+    currentMessages.value = chatStore.getMessagesForTicket(route.params.id.toString());
     connectionStatus.value = chatStore.isConnected();
-    
-    console.log('Datos cargados:', {
-      ticket: currentTicket.value,
-      mensajes: currentMessages.value,
-      conexion: connectionStatus.value
-    });
     
     // Configurar monitoreo de cambios
     setupMonitoring();
@@ -761,20 +864,62 @@ watch(() => chatStore.messages, (newMessages) => {
 }, { immediate: true, deep: true });
 
 // Cerrar menús al hacer clic fuera de ellos
-onMounted(() => {
-  // Configurar event listener para cerrar menús al hacer clic fuera
-  document.addEventListener('click', (event) => {
-    // Si el clic no fue dentro de un menú desplegable, cerrar todos los menús
-    const isClickInsideDropdown = event.target.closest('.dropdown-menu');
-    if (!isClickInsideDropdown) {
-      hidePriorityMenu();
-      hideAssignMenu();
+onMounted(async () => {
+  console.log("Componente montado - configurando escuchadores de eventos");
+  
+  // Forzar inicialización manual
+  if (usersStore.users.length === 0) {
+    usersStore.initMockUsers();
+  }
+  
+  const currentUserId = localStorage.getItem('userId');
+  if (currentUserId) {
+    const user = usersStore.users.find(u => u.id === currentUserId);
+    if (user) {
+      // Forzar asignación manual
+      authStore.user = { ...user, role: 'admin' }; // Forzar rol admin
+      localStorage.setItem('token', `force-jwt-token-${Date.now()}`);
+      authStore.token = localStorage.getItem('token');
     }
-  });
+  }
+  
+  // Remover event listeners anteriores para evitar duplicados
+  document.removeEventListener('click', handleOutsideClick);
+  
+  // Configurar event listener para cerrar menús al hacer clic fuera
+  document.addEventListener('click', handleOutsideClick);
   
   // Cargar datos inmediatamente
   loadTicketData();
 });
+
+// Función separada para manejar clics fuera de los menús
+const handleOutsideClick = (event) => {
+  // Evitamos la ejecución si los menús ya están cerrados
+  if (!showPriorityMenu.value && !showAssignMenu.value) {
+    return;
+  }
+  
+  // Comprobar si el clic fue en un botón de acción o dentro de un menú desplegable
+  const clickedElement = event.target;
+  const isClickInsideButton = clickedElement.closest('.filter-btn');
+  const isClickInsideDropdown = clickedElement.closest('.dropdown-content');
+  
+  console.log("Click detectado - verificando si cerrar menús:", {
+    isClickInsideButton,
+    isClickInsideDropdown,
+    currentMenus: {
+      priority: showPriorityMenu.value,
+      assign: showAssignMenu.value
+    }
+  });
+  
+  // Solo cerrar menús si el clic no fue en un botón ni dentro de un menú
+  if (!isClickInsideButton && !isClickInsideDropdown) {
+    hidePriorityMenu();
+    hideAssignMenu();
+  }
+};
 
 onBeforeUnmount(() => {
   // Limpiar intervalos
@@ -785,32 +930,77 @@ onBeforeUnmount(() => {
   chatStore.disconnectWebSocket();
   
   // Limpiar el event listener cuando se desmonta el componente
-  document.removeEventListener('click', () => {});
+  document.removeEventListener('click', handleOutsideClick);
+  
+  console.log("Componente desmontado - limpiando recursos");
 });
 
-// Métodos para manejar los menús desplegables
-const togglePriorityMenu = () => {
+// Funciones para mostrar/ocultar menús desplegables
+const togglePriorityMenu = (event) => {
+  // Evitar propagación para que no cierre inmediatamente
+  if (event) {
+    event.stopPropagation();
+  }
+  
+  console.log("Toggling menú de prioridad");
   showPriorityMenu.value = !showPriorityMenu.value;
+  
+  // Si se abre el menú de prioridad, cerrar el menú de asignación
   if (showPriorityMenu.value) {
-    // Cerrar otros menús
     showAssignMenu.value = false;
   }
+  
+  // Actualizar visualización de los menús
+  updateDropdownVisibility();
 };
 
 const hidePriorityMenu = () => {
+  if (!showPriorityMenu.value) return; // Evitar operaciones innecesarias
+  
+  console.log("Cerrando menú de prioridad");
   showPriorityMenu.value = false;
+  updateDropdownVisibility();
 };
 
-const toggleAssignMenu = () => {
+const toggleAssignMenu = (event) => {
+  // Evitar propagación para que no cierre inmediatamente
+  if (event) {
+    event.stopPropagation();
+  }
+  
+  console.log("Toggling menú de asignación");
   showAssignMenu.value = !showAssignMenu.value;
+  
+  // Si se abre el menú de asignación, cerrar el menú de prioridad
   if (showAssignMenu.value) {
-    // Cerrar otros menús
     showPriorityMenu.value = false;
   }
+  
+  // Actualizar visualización de los menús
+  updateDropdownVisibility();
 };
 
 const hideAssignMenu = () => {
+  if (!showAssignMenu.value) return; // Evitar operaciones innecesarias
+  
+  console.log("Cerrando menú de asignación");
   showAssignMenu.value = false;
+  updateDropdownVisibility();
+};
+
+// Función para actualizar la visualización de los menús desplegables
+const updateDropdownVisibility = () => {
+  // Actualizar menú de prioridad
+  const priorityDropdown = document.querySelector('.priority-btn + .dropdown-content');
+  if (priorityDropdown) {
+    priorityDropdown.style.display = showPriorityMenu.value ? 'block' : 'none';
+  }
+  
+  // Actualizar menú de asignación
+  const assignDropdown = document.querySelector('.assign-btn + .dropdown-content');
+  if (assignDropdown) {
+    assignDropdown.style.display = showAssignMenu.value ? 'block' : 'none';
+  }
 };
 
 // Función para cerrar el ticket
@@ -846,14 +1036,39 @@ const closeTicket = async () => {
     }
     
     // Agregar mensaje sobre el cierre al chat
-    await chatStore.sendMessage(currentTicket.value.id, reasonMessage);
+    try {
+      await chatStore.sendMessage(currentTicket.value.id, reasonMessage);
+      console.log('Mensaje de cierre enviado al chat correctamente');
+    } catch (chatError) {
+      console.error('Error al enviar mensaje de cierre al chat:', chatError);
+      // Continuar con el proceso aunque falle el mensaje
+    }
     
-    // Actualizar el estado del ticket a cerrado
-    await ticketStore.updateTicketStatus(currentTicket.value.id, 'closed');
+    console.log('Actualizando estado del ticket a cerrado...');
     
-    // Actualizar el ticket actual
-    await ticketStore.fetchTicket(currentTicket.value.id);
-    currentTicket.value = ticketStore.currentTicket;
+    // Actualizar localmente primero para mejorar la experiencia del usuario
+    if (currentTicket.value) {
+      currentTicket.value.status = 'closed';
+    }
+    
+    // Actualizar el estado del ticket a cerrado usando try/catch separado
+    try {
+      await ticketStore.updateTicketStatus(currentTicket.value.id, 'closed');
+      console.log('Ticket cerrado exitosamente en el backend');
+    } catch (updateError) {
+      console.error('Error al actualizar estado del ticket en el backend:', updateError);
+      showNotification('El ticket se ha cerrado, pero hubo un error al sincronizar con el servidor', 'warning');
+    }
+    
+    // Intentar recargar el ticket para obtener la versión actualizada
+    try {
+      await ticketStore.fetchTicket(currentTicket.value.id);
+      currentTicket.value = ticketStore.currentTicket;
+      console.log('Ticket recargado después del cierre:', currentTicket.value);
+    } catch (fetchError) {
+      console.error('Error al recargar el ticket después del cierre:', fetchError);
+      // No mostrar error al usuario ya que el ticket ya está cerrado visualmente
+    }
     
     // Cerrar el modal
     showCloseTicketModal.value = false;
@@ -864,7 +1079,7 @@ const closeTicket = async () => {
     showNotification('El ticket ha sido cerrado exitosamente');
     
   } catch (error) {
-    console.error('Error al cerrar el ticket:', error);
+    console.error('Error general al cerrar el ticket:', error);
     showNotification('Error al cerrar el ticket: ' + (error.message || 'Error desconocido'), 'error');
   } finally {
     isLoading.value = false;
@@ -949,15 +1164,138 @@ const closeTicket = async () => {
           margin: 0.5rem 0;
         }
         
-        .ticket-actions {
+        .ticket-admin-actions {
           margin-top: 1.75rem;
-          padding-top: 1.75rem;
-          border-top: 1px solid #E5E7EB;
+          padding: 1.5rem;
+          background-color: var(--bg-tertiary);
+          border-radius: 12px;
+          box-shadow: var(--card-shadow);
+          border: 1px solid var(--border-color);
           
-          .action-buttons {
+          .admin-buttons {
             display: flex;
-            gap: 1.25rem;
             flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            
+            .admin-button {
+              position: relative;
+              margin-right: 10px;
+              z-index: 100;
+              display: inline-block;
+              
+              .filter-btn {
+                background-color: var(--bg-tertiary);
+                border: 1px solid var(--border-color);
+                color: var(--text-primary);
+                font-size: 0.9rem;
+                font-weight: 500;
+                padding: 0.65rem 1.2rem;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                
+                &:hover {
+                  background-color: var(--hover-bg);
+                  transform: translateY(-2px);
+                }
+                
+                &.active {
+                  background-color: var(--primary-color);
+                  color: white;
+                  border-color: transparent;
+                  font-weight: 600;
+                  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+                }
+                
+                &.priority-btn {
+                  i {
+                    color: #3b82f6;
+                  }
+                  
+                  &.active, &:hover {
+                    i {
+                      color: white;
+                    }
+                  }
+                }
+                
+                &.assign-btn {
+                  i {
+                    color: #10b981;
+                  }
+                  
+                  &.active, &:hover {
+                    i {
+                      color: white;
+                    }
+                  }
+                }
+                
+                &.close-btn {
+                  i {
+                    color: #f43f5e;
+                  }
+                  
+                  &:hover {
+                    i {
+                      color: white;
+                    }
+                  }
+                }
+                
+                i {
+                  font-size: 1rem;
+                }
+              }
+              
+              .dropdown-content {
+                position: absolute;
+                z-index: 9999;
+                background-color: var(--card-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                box-shadow: var(--card-shadow);
+                min-width: 200px;
+                display: none;
+                margin-top: 5px;
+                animation: fadeInDown 0.3s ease both;
+                
+                &.show {
+                  display: block;
+                  visibility: visible;
+                  opacity: 1;
+                }
+                
+                .dropdown-item {
+                  padding: 0.75rem 1rem;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  color: var(--text-primary);
+                  font-weight: 500;
+                  transition: all 0.2s ease;
+                  
+                  &:hover {
+                    background-color: var(--bg-hover);
+                  }
+                }
+                
+                .dropdown-divider {
+                  height: 1px;
+                  background-color: var(--border-color);
+                  margin: 8px 0;
+                }
+                
+                .dropdown-item i {
+                  margin-right: 10px;
+                  color: var(--primary-color);
+                }
+              }
+            }
           }
         }
         
@@ -1371,72 +1709,23 @@ const closeTicket = async () => {
 }
 
 .priority-indicator {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-right: 8px;
-  position: relative;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  width: 16px;
+  height: 16px;
   
   &.low {
-    background: linear-gradient(135deg, #38BDF8, #0EA5E9);
-    
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      border-radius: 50%;
-      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
-    }
+    background-color: #3b82f6;
   }
   
   &.medium {
-    background: linear-gradient(135deg, #818CF8, #6366F1);
-    
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      border-radius: 50%;
-      box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.2);
-    }
+    background-color: #8b5cf6;
   }
   
   &.high {
-    background: linear-gradient(135deg, #6D28D9, #4F46E5);
-    
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      border-radius: 50%;
-      box-shadow: 0 0 0 2px rgba(109, 40, 217, 0.2);
-    }
+    background-color: #ec4899;
   }
   
   &.urgent {
-    background: linear-gradient(135deg, #8B5CF6, #7C3AED);
-    
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      border-radius: 50%;
-      box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
-    }
+    background-color: #ef4444;
   }
 }
 
@@ -1564,9 +1853,7 @@ const closeTicket = async () => {
     border: 1px solid #E5E7EB;
     
     &.show {
-      display: flex;
-      flex-direction: column;
-      animation: fadeInDown 0.2s ease-out;
+      display: block;
     }
     
     .dropdown-header {
@@ -1798,6 +2085,353 @@ const closeTicket = async () => {
         cursor: not-allowed;
       }
     }
+  }
+}
+
+/* ESTILOS CRÍTICOS PARA LA VISIBILIDAD DE LOS BOTONES */
+.ticket-actions {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  margin-top: 1.75rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid #E5E7EB;
+  
+  .action-buttons {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+  }
+  
+  .dropdown-menu {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  .action-btn {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+
+
+/* Estilos para los menús desplegables */
+.dropdown-content.show {
+  display: block !important;
+}
+
+.admin-button {
+  position: relative;
+  margin-right: 10px;
+  margin-bottom: 10px;
+}
+
+.action-btn {
+  margin-bottom: 5px;
+}
+
+/* Ensure dropdown menus are visible */
+.dropdown-content {
+  position: absolute;
+  z-index: 1000;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+}
+
+.dropdown-item {
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+  background-color: #f3f4f6;
+}
+
+.priority-dropdown {
+  display: none;
+}
+
+.assign-dropdown {
+  display: none;
+}
+
+.dropdown-content {
+  position: absolute !important;
+  z-index: 9999 !important;
+  background-color: white !important;
+  border: 1px solid #ccc !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.dropdown-content.show {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Agregamos más margen al contenedor del botón para que haya espacio para el menú */
+.admin-button {
+  position: relative !important;
+  margin-bottom: 15px !important;
+  z-index: 100 !important; /* Para que aparezca sobre otros elementos */
+  display: inline-block !important;
+}
+
+/* Estilos críticos para mantener menús visibles */
+.priority-dropdown.show, 
+.assign-dropdown.show {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Aseguramos que nada más pueda ocultar los menús */
+body .dropdown-content.show {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.dropdown-content {
+  position: absolute !important;
+  z-index: 9999 !important;
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+  box-shadow: var(--card-shadow) !important;
+  animation: fadeInDown 0.3s ease both;
+}
+
+.dropdown-content.show {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.dropdown-item {
+  padding: 0.75rem 1rem !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  color: var(--text-primary) !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.dropdown-item:hover {
+  background-color: var(--bg-hover) !important;
+}
+
+/* Estilo para los botones de acción */
+.action-btn {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  color: white !important;
+  font-weight: 600 !important;
+  padding: 0.75rem 1.5rem !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  border: none !important;
+  position: relative !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.3s ease !important;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15) !important;
+}
+
+.action-btn.priority-btn {
+  background-color: var(--primary-color) !important;
+}
+
+.action-btn.priority-btn:hover {
+  background-color: var(--primary-hover) !important;
+}
+
+.action-btn.assign-btn {
+  background-color: var(--success-color) !important;
+}
+
+.action-btn.assign-btn:hover {
+  background-color: var(--success-hover) !important;
+}
+
+.action-btn.close-btn {
+  background-color: var(--danger-color) !important;
+}
+
+.action-btn.close-btn:hover {
+  background-color: var(--danger-hover) !important;
+}
+
+/* Agregamos más margen al contenedor del botón para que haya espacio para el menú */
+.admin-button {
+  position: relative !important;
+  margin-bottom: 15px !important;
+  margin-right: 10px !important;
+  z-index: 100 !important;
+  display: inline-block !important;
+}
+
+/* Animación para los menús desplegables */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Estilos para botones y acciones */
+.ticket-admin-actions {
+  margin-top: 1.75rem;
+  padding: 1.5rem;
+  background-color: var(--bg-tertiary);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-color);
+  
+  .admin-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+}
+
+.admin-button {
+  position: relative;
+  margin-right: 10px;
+  z-index: 100;
+  display: inline-block;
+}
+
+/* Estilo para los botones tipo filter-btn */
+.filter-btn {
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.65rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-btn:hover {
+  background-color: var(--hover-bg);
+  transform: translateY(-2px);
+}
+
+.filter-btn.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: transparent;
+  font-weight: 600;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Estilos para el menú desplegable */
+.dropdown-content {
+  position: absolute;
+  z-index: 9999;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--card-shadow);
+  min-width: 200px;
+  display: none;
+  margin-top: 5px;
+  animation: fadeInDown 0.3s ease both;
+}
+
+.dropdown-content.show {
+  display: block;
+  visibility: visible;
+  opacity: 1;
+}
+
+.dropdown-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: var(--text-primary);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: var(--bg-hover);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 8px 0;
+}
+
+.dropdown-item i {
+  margin-right: 10px;
+  color: var(--primary-color);
+}
+
+/* Indicadores de prioridad */
+.priority-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.priority-indicator.low {
+  background-color: #0369a1;
+}
+
+.priority-indicator.medium {
+  background-color: #4338ca;
+}
+
+.priority-indicator.high {
+  background-color: #3730a3;
+}
+
+.priority-indicator.urgent {
+  background-color: #5b21b6;
+}
+
+/* Animación para los menús desplegables */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>

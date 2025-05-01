@@ -28,7 +28,7 @@ app.use(PrimeVue)
 
 // Inicializar stores con datos mock para desarrollo
 if (import.meta.env.DEV) {
-  setTimeout(() => {
+  setTimeout(async () => {
     const userStore = useUsersStore()
     userStore.initMockUsers()
     console.log('Usuarios mock inicializados desde main.ts')
@@ -37,6 +37,11 @@ if (import.meta.env.DEV) {
     const authStore = useAuthStore()
     authStore.setRouter(router)
     console.log('Router proporcionado al auth store')
+    
+    // Verificar si hay una sesión activa y cargar los datos del usuario
+    await authStore.checkAuth()
+    console.log('Estado de autenticación verificado:', authStore.isAuthenticated)
+    console.log('Roles de usuario - Admin:', authStore.isAdmin, 'Asistente:', authStore.isAssistant)
   }, 100)
 }
 

@@ -760,35 +760,63 @@ const server = http.createServer(async (req, res) => {
 
     // Actualizar un ticket (endpoint para actualizar datos o asignar)
     if (req.method === 'PUT' && req.url.startsWith('/api/tickets/')) {
+      // Extraer el token de autenticación
       const token = extractToken(req);
       
-      if (validateToken(token)) {
-        // Extraer ID del ticket correctamente (eliminando posibles parámetros query)
-        let ticketId = req.url.split('/api/tickets/')[1];
-        if (ticketId.includes('?')) {
-          ticketId = ticketId.split('?')[0];
-        }
-        
-        console.log(`Recibida solicitud PUT para actualizar ticket: ${ticketId}`);
-        
-        const data = await readBody(req);
-        console.log(`Datos recibidos para actualización:`, data);
-        
-        const ticketIndex = tickets.findIndex(t => t.id === ticketId);
-        
-        if (ticketIndex !== -1) {
-          console.log(`Ticket encontrado en índice ${ticketIndex}, actualizando con datos:`, data);
+      // Validar el token
+      if (!validateToken(token)) {
+        console.log('[DEPURACIÓN DETALLADA] Token de autorización no válido o no presente');
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'No autorizado' }));
+        return;
+      }
+      
+      // Extraer ID del ticket correctamente (eliminando posibles parámetros query)
+      let ticketId = req.url.split('/api/tickets/')[1];
+      if (ticketId.includes('?')) {
+        ticketId = ticketId.split('?')[0];
+      }
+      
+      console.log(`[DEPURACIÓN DETALLADA] Recibida solicitud PUT para actualizar ticket: ${ticketId}`);
+      console.log(`[DEPURACIÓN DETALLADA] Headers de la solicitud:`, req.headers);
+      
+      // Usar readBody de forma correcta con then/catch
+      readBody(req)
+        .then(data => {
+          console.log(`[DEPURACIÓN DETALLADA] Datos recibidos para actualización:`, JSON.stringify(data, null, 2));
+          
+          const ticketIndex = tickets.findIndex(t => t.id === ticketId);
+          
+          if (ticketIndex === -1) {
+            console.error(`[DEPURACIÓN DETALLADA] Ticket ${ticketId} no encontrado`);
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: `Ticket ${ticketId} no encontrado` }));
+            return;
+          }
+          
+          console.log(`[DEPURACIÓN DETALLADA] Ticket encontrado en índice ${ticketIndex}`);
+          console.log(`[DEPURACIÓN DETALLADA] Estado actual:`, tickets[ticketIndex].status);
+          console.log(`[DEPURACIÓN DETALLADA] Prioridad actual:`, tickets[ticketIndex].priority);
+          console.log(`[DEPURACIÓN DETALLADA] Asignado actualmente a:`, tickets[ticketIndex].assignedTo);
+          
+          // IMPORTANTE: Normalizar la prioridad si se envía
+          if (data.priority) {
+            // Asegurarse de que la prioridad esté en mayúsculas como se espera en la interfaz
+            const originalPriority = data.priority;
+            data.priority = String(data.priority).toUpperCase();
+            console.log(`[DEPURACIÓN DETALLADA] Normalizando prioridad de "${originalPriority}" a "${data.priority}"`);
+          }
           
           // Si se está asignando un usuario, actualizar el estado
           if (data.assignedTo !== undefined) {
             if (data.assignedTo) {
               // Si se asigna a alguien, cambiar estado a "assigned"
               data.status = 'assigned';
-              console.log(`Asignando ticket a usuario: ${data.assignedTo}, cambiando estado a 'assigned'`);
+              console.log(`[DEPURACIÓN DETALLADA] Asignando ticket a usuario: ${data.assignedTo}, cambiando estado a 'assigned'`);
             } else if (tickets[ticketIndex].assignedTo && !data.assignedTo) {
               // Si se quita la asignación, volver a "open"
               data.status = 'open';
-              console.log(`Quitando asignación, cambiando estado a 'open'`);
+              console.log(`[DEPURACIÓN DETALLADA] Quitando asignación, cambiando estado a 'open'`);
             }
           }
           
@@ -810,20 +838,25 @@ const server = http.createServer(async (req, res) => {
           // Guardar cambios en el archivo
           saveTickets();
           
-          console.log(`Ticket ${ticketId} actualizado correctamente:`, updatedTicket);
+          console.log(`[DEPURACIÓN DETALLADA] Ticket ${ticketId} actualizado correctamente`);
+          console.log(`[DEPURACIÓN DETALLADA] Nueva prioridad: ${updatedTicket.priority}`);
+          console.log(`[DEPURACIÓN DETALLADA] Nuevo estado: ${updatedTicket.status}`);
+          console.log(`[DEPURACIÓN DETALLADA] Nuevo asignado: ${updatedTicket.assignedTo}`);
           
-          // Responder con el ticket actualizado
-          res.writeHead(200, { 'Content-Type': 'application/json' });
+          // Responder con el ticket actualizado y asegurar que los headers CORS están correctos
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+          res.setHeader('Content-Type', 'application/json');
+          res.writeHead(200);
           res.end(JSON.stringify(updatedTicket));
-        } else {
-          console.error(`Ticket ${ticketId} no encontrado`);
-          res.writeHead(404, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: `Ticket ${ticketId} no encontrado` }));
-        }
-      } else {
-        res.writeHead(401, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'No autorizado' }));
-      }
+        })
+        .catch(err => {
+          console.error('[DEPURACIÓN DETALLADA] Error al procesar la solicitud:', err);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Error al procesar los datos de la solicitud' }));
+        });
+      
       return;
     }
 
