@@ -139,22 +139,29 @@ const currentCategory = ref({
 
 // Cargar categorías al montar el componente
 onMounted(() => {
+  console.log('CategoriesManagement: componente montado')
   // Solo cargamos datos si el usuario es administrador
   if (isAdmin.value) {
-    categoryStore.fetchCategories();
+    console.log('CategoriesManagement: usuario es admin, cargando categorías')
+    categoryStore.fetchCategories().then(() => {
+      console.log('CategoriesManagement: categorías cargadas:', categoryStore.categories)
+    })
   } else {
     // Si no es admin, redirigimos al dashboard
+    console.log('CategoriesManagement: usuario no es admin, redirigiendo al dashboard')
     redirectToDashboard();
   }
 });
 
 // Métodos
 const editCategory = (category: { id: number, name: string, description: string }) => {
+  console.log('CategoriesManagement: editando categoría:', category)
   currentCategory.value = { ...category };
   isEditing.value = true;
 };
 
 const cancelEdit = () => {
+  console.log('CategoriesManagement: cancelando edición')
   currentCategory.value = {
     id: null,
     name: '',
@@ -164,28 +171,41 @@ const cancelEdit = () => {
 };
 
 const saveCategory = async () => {
+  console.log('CategoriesManagement: guardando categoría:', currentCategory.value)
   try {
     if (isEditing.value) {
+      console.log('CategoriesManagement: actualizando categoría existente')
       await categoryStore.updateCategory(currentCategory.value);
+      console.log('CategoriesManagement: categoría actualizada')
     } else {
+      console.log('CategoriesManagement: añadiendo nueva categoría')
       await categoryStore.addCategory({
         name: currentCategory.value.name,
         description: currentCategory.value.description
       });
+      console.log('CategoriesManagement: categoría añadida')
     }
     // Resetear formulario
     cancelEdit();
+    // Mostrar notificación de éxito
+    notificationsStore.success(`Categoría ${isEditing.value ? 'actualizada' : 'creada'} correctamente`);
   } catch (error) {
     console.error('Error al guardar categoría:', error);
+    notificationsStore.error(`Error al ${isEditing.value ? 'actualizar' : 'crear'} la categoría`);
   }
 };
 
 const deleteCategory = async (id: number) => {
+  console.log('CategoriesManagement: confirmando eliminación de categoría:', id)
   if (confirm('¿Está seguro de que desea eliminar esta categoría?')) {
     try {
+      console.log('CategoriesManagement: eliminando categoría:', id)
       await categoryStore.deleteCategory(id);
+      console.log('CategoriesManagement: categoría eliminada')
+      notificationsStore.success('Categoría eliminada correctamente');
     } catch (error) {
       console.error('Error al eliminar categoría:', error);
+      notificationsStore.error('Error al eliminar la categoría');
     }
   }
 };

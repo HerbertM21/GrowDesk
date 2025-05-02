@@ -68,6 +68,21 @@
                 </div>
               </div>
               
+              <!-- Nuevo botón para cambiar categoría -->
+              <div class="admin-button">
+                <button class="filter-btn category-btn" @click="toggleCategoryMenu($event)" 
+                  :class="{ 'active': showCategoryMenu }">
+                  <i class="pi pi-tag"></i>
+                  <span>Cambiar categoría</span>
+                </button>
+                <div class="dropdown-content category-dropdown" :class="{ 'show': showCategoryMenu }">
+                  <div v-for="category in availableCategories" :key="category.id" 
+                       class="dropdown-item" @click.stop="updateCategoryTo(category.name)">
+                    <span class="category-indicator"></span> {{ category.name }}
+                  </div>
+                </div>
+              </div>
+              
               <!-- Botón para asignar usuario -->
               <div class="admin-button">
                 <button class="filter-btn assign-btn" @click="toggleAssignMenu($event)"
@@ -192,6 +207,7 @@ import { useTicketStore } from '@/stores/tickets';
 import { useChatStore } from '@/stores/chat';
 import { useAuthStore } from '@/stores/auth';
 import { useUsersStore } from '@/stores/users';
+import { useCategoriesStore } from '@/stores/categories';
 
 // Obtener stores y route
 const route = useRoute();
@@ -200,6 +216,7 @@ const ticketStore = useTicketStore();
 const chatStore = useChatStore();
 const authStore = useAuthStore();
 const usersStore = useUsersStore();
+const categoriesStore = useCategoriesStore();
 
 // Variables reactivas 
 const isLoading = ref(true);
@@ -220,6 +237,7 @@ const selectedPriority = ref('');
 // Variables para controlar la visibilidad de los menús desplegables
 const showPriorityMenu = ref(false);
 const showAssignMenu = ref(false);
+const showCategoryMenu = ref(false);
 
 // Variables para el cierre de ticket
 const showCloseTicketModal = ref(false);
@@ -290,6 +308,11 @@ const canCloseTicket = computed(() => {
     return closeReasonText.value.trim().length > 0;
   }
   return closeReason.value !== '';
+});
+
+// Computed property for categories
+const availableCategories = computed(() => {
+  return categoriesStore.categories;
 });
 
 // Funciones auxiliares
@@ -735,6 +758,11 @@ const loadTicketData = async () => {
       console.log('Inicializando usuarios...');
       usersStore.initMockUsers();
     }
+
+    // Asegurar que las categorías estén cargadas
+    console.log('Cargando categorías explícitamente...');
+    await categoriesStore.fetchCategories();
+    console.log('Categorías disponibles:', categoriesStore.categories);
     
     // Verificar autenticación del usuario
     const userId = localStorage.getItem('userId');
@@ -891,12 +919,15 @@ onMounted(async () => {
   
   // Cargar datos inmediatamente
   loadTicketData();
+  
+  // Cargar categorías
+  await categoriesStore.fetchCategories();
 });
 
 // Función separada para manejar clics fuera de los menús
 const handleOutsideClick = (event) => {
   // Evitamos la ejecución si los menús ya están cerrados
-  if (!showPriorityMenu.value && !showAssignMenu.value) {
+  if (!showPriorityMenu.value && !showAssignMenu.value && !showCategoryMenu.value) {
     return;
   }
   
@@ -910,7 +941,8 @@ const handleOutsideClick = (event) => {
     isClickInsideDropdown,
     currentMenus: {
       priority: showPriorityMenu.value,
-      assign: showAssignMenu.value
+      assign: showAssignMenu.value,
+      category: showCategoryMenu.value
     }
   });
   
@@ -918,6 +950,7 @@ const handleOutsideClick = (event) => {
   if (!isClickInsideButton && !isClickInsideDropdown) {
     hidePriorityMenu();
     hideAssignMenu();
+    hideCategoryMenu();
   }
 };
 
@@ -948,6 +981,7 @@ const togglePriorityMenu = (event) => {
   // Si se abre el menú de prioridad, cerrar el menú de asignación
   if (showPriorityMenu.value) {
     showAssignMenu.value = false;
+    showCategoryMenu.value = false;
   }
   
   // Actualizar visualización de los menús
@@ -974,6 +1008,7 @@ const toggleAssignMenu = (event) => {
   // Si se abre el menú de asignación, cerrar el menú de prioridad
   if (showAssignMenu.value) {
     showPriorityMenu.value = false;
+    showCategoryMenu.value = false;
   }
   
   // Actualizar visualización de los menús
@@ -985,6 +1020,33 @@ const hideAssignMenu = () => {
   
   console.log("Cerrando menú de asignación");
   showAssignMenu.value = false;
+  updateDropdownVisibility();
+};
+
+const toggleCategoryMenu = (event) => {
+  // Evitar propagación para que no cierre inmediatamente
+  if (event) {
+    event.stopPropagation();
+  }
+  
+  console.log("Toggling menú de categoría");
+  showCategoryMenu.value = !showCategoryMenu.value;
+  
+  // Si se abre el menú de categoría, cerrar el menú de asignación
+  if (showCategoryMenu.value) {
+    showAssignMenu.value = false;
+    showPriorityMenu.value = false;
+  }
+  
+  // Actualizar visualización de los menús
+  updateDropdownVisibility();
+};
+
+const hideCategoryMenu = () => {
+  if (!showCategoryMenu.value) return; // Evitar operaciones innecesarias
+  
+  console.log("Cerrando menú de categoría");
+  showCategoryMenu.value = false;
   updateDropdownVisibility();
 };
 
@@ -1000,6 +1062,12 @@ const updateDropdownVisibility = () => {
   const assignDropdown = document.querySelector('.assign-btn + .dropdown-content');
   if (assignDropdown) {
     assignDropdown.style.display = showAssignMenu.value ? 'block' : 'none';
+  }
+  
+  // Actualizar menú de categoría
+  const categoryDropdown = document.querySelector('.category-btn + .dropdown-content');
+  if (categoryDropdown) {
+    categoryDropdown.style.display = showCategoryMenu.value ? 'block' : 'none';
   }
 };
 
@@ -1082,6 +1150,66 @@ const closeTicket = async () => {
     console.error('Error general al cerrar el ticket:', error);
     showNotification('Error al cerrar el ticket: ' + (error.message || 'Error desconocido'), 'error');
   } finally {
+    isLoading.value = false;
+  }
+};
+
+// Función para actualizar la categoría de un ticket
+const updateCategoryTo = async (newCategory) => {
+  if (!currentTicket.value) {
+    console.error('No se puede actualizar la categoría: ticket actual no está definido');
+    hideCategoryMenu();
+    return;
+  }
+  
+  try {
+    console.log(`Intentando actualizar categoría de ${currentTicket.value.id} a ${newCategory}`);
+    
+    // Guardar valores actuales para posible reversión
+    const ticketId = currentTicket.value.id;
+    const originalCategory = currentTicket.value.category;
+    
+    // Actualizar localmente primero para respuesta inmediata
+    currentTicket.value.category = newCategory;
+    
+    // Mostrar carga
+    isLoading.value = true;
+    
+    // Intentar realizar la actualización en el servidor
+    try {
+      const response = await ticketStore.updateTicket(ticketId, { category: newCategory });
+      console.log('Respuesta del servidor:', response);
+      
+      if (!response) {
+        throw new Error('La respuesta del servidor está vacía');
+      }
+      
+      // Asegurar que el ticket local tiene los datos correctos
+      currentTicket.value.category = response.category || newCategory;
+      
+      // Mensaje de éxito
+      showNotification(`La categoría se ha actualizado a "${newCategory}" correctamente`);
+      
+      // Añadir mensaje al chat sobre el cambio de categoría
+      const userName = authStore.user ? `${authStore.user.firstName} ${authStore.user.lastName}` : 'Un administrador';
+      const systemMessage = `${userName} ha cambiado la categoría del ticket a "${newCategory}".`;
+      await chatStore.sendMessage(ticketId, systemMessage);
+      
+    } catch (error) {
+      console.error('Error al actualizar categoría en el servidor:', error);
+      
+      // Revertir cambio local si falla
+      currentTicket.value.category = originalCategory;
+      
+      // Mostrar error
+      showNotification(`Error al actualizar categoría: ${error.message || 'Error de conexión con el servidor'}`, 'error');
+    }
+  } catch (error) {
+    console.error('Error general en actualización de categoría:', error);
+    showNotification('Ocurrió un error al procesar la actualización de categoría', 'error');
+  } finally {
+    // Ocultar menú y finalizar carga
+    hideCategoryMenu();
     isLoading.value = false;
   }
 };
@@ -2433,5 +2561,37 @@ body .dropdown-content.show {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.category-dropdown {
+  display: none;
+}
+
+.category-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.category-indicator.technical {
+  background-color: #3b82f6;
+}
+
+.category-indicator.billing {
+  background-color: #c7d2fe;
+}
+
+.category-indicator.general {
+  background-color: #bae6fd;
+}
+
+.category-indicator.feature {
+  background-color: #ddd6fe;
+}
+
+.category-indicator.soporte {
+  background-color: #38c172;
 }
 </style>

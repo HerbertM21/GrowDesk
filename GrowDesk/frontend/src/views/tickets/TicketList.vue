@@ -90,6 +90,27 @@
                 </button>
               </div>
             </div>
+
+            <!-- Nuevo filtro de categorías -->
+            <div class="filter-group">
+              <label>Categoría:</label>
+              <div class="filter-options">
+                <button 
+                  @click="setCategoryFilter('all')" 
+                  :class="['filter-btn', categoryFilter === 'all' ? 'active' : '']"
+                >
+                  Todas
+                </button>
+                <button 
+                  v-for="category in availableCategories" 
+                  :key="category" 
+                  @click="setCategoryFilter(category)" 
+                  :class="['filter-btn', categoryFilter === category ? 'active' : '']"
+                >
+                  {{ category }}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -162,10 +183,12 @@ import { useTicketStore } from '@/stores/tickets'
 import { useUsersStore } from '@/stores/users'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
+import { useCategoriesStore } from '@/stores/categories'
 
 const ticketStore = useTicketStore()
 const usersStore = useUsersStore()
 const route = useRoute()
+const categoriesStore = useCategoriesStore()
 
 // Extraer las propiedades reactivas del store usando storeToRefs
 const { tickets, loading, error } = storeToRefs(ticketStore)
@@ -173,6 +196,7 @@ const { tickets, loading, error } = storeToRefs(ticketStore)
 // Filtros
 const statusFilter = ref('all')
 const assignmentFilter = ref('all')
+const categoryFilter = ref('all')
 
 // Setters para los filtros
 const setStatusFilter = (status: string) => {
@@ -181,6 +205,10 @@ const setStatusFilter = (status: string) => {
 
 const setAssignmentFilter = (assignment: string) => {
   assignmentFilter.value = assignment
+}
+
+const setCategoryFilter = (category: string) => {
+  categoryFilter.value = category
 }
 
 // Tickets filtrados
@@ -199,12 +227,18 @@ const filteredTickets = computed(() => {
     result = result.filter(ticket => ticket.assignedTo === null || ticket.assignedTo === '')
   }
   
+  // Filtrar por categoría
+  if (categoryFilter.value !== 'all') {
+    result = result.filter(ticket => ticket.category === categoryFilter.value)
+  }
+  
   return result
 })
 
 // Cargar usuarios
 onMounted(async () => {
   await usersStore.fetchUsers()
+  await categoriesStore.fetchCategories()
 })
 
 // Función para obtener el nombre de usuario por ID
@@ -218,6 +252,18 @@ const getUserFullName = (userId: string | null): string => {
   
   return userId // Si no encuentra el usuario, muestra el ID como fallback
 }
+
+// Obtener las categorías disponibles
+const availableCategories = computed(() => {
+  // Primero obtenemos las categorías del store de categorías
+  const storeCategories = categoriesStore.categories.map(cat => cat.name)
+  
+  // Luego obtenemos las categorías únicas de los tickets
+  const ticketCategories = [...new Set(tickets.value.map(ticket => ticket.category).filter(Boolean))]
+  
+  // Combinamos ambas fuentes y eliminamos duplicados
+  return [...new Set([...storeCategories, ...ticketCategories])]
+})
 
 // Función para cargar tickets
 const loadTickets = async () => {
