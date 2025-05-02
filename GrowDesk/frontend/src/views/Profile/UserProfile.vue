@@ -104,8 +104,11 @@
         </div>
       </div>
       
+      <!-- Sección de tickets -->
       <div class="profile-section">
-        <h2>Mis Tickets</h2>
+        <div class="section-header">
+          <h2>Mis Tickets</h2>
+        </div>
         
         <div v-if="!userTickets || userTickets.length === 0" class="empty-tickets">
           <p>No tienes tickets asignados actualmente.</p>
@@ -114,33 +117,44 @@
           </router-link>
         </div>
         
-        <div v-else class="user-tickets">
+        <div v-else class="tickets-grid">
           <div 
             v-for="ticket in userTickets" 
             :key="ticket.id" 
             class="ticket-card"
-            :class="{'priority-high': ticket.priority === 'high'}"
           >
             <div class="ticket-header">
-              <span class="ticket-id">#{{ ticket.id }}</span>
-              <span :class="['status-badge', ticket.status]">{{ translateStatus(ticket.status) }}</span>
+              <div class="ticket-badges">
+                <span :class="['status-badge', ticket.status]">{{ translateStatus(ticket.status) }}</span>
+                <span :class="['priority-badge', ticket.priority.toLowerCase()]">
+                  {{ translatePriority(ticket.priority) }}
+                </span>
+              </div>
+              <h3 class="ticket-title">{{ ticket.title }}</h3>
             </div>
             
-            <h3>{{ ticket.title }}</h3>
-            <p class="ticket-desc">{{ truncateText(ticket.description, 120) }}</p>
+            <div class="ticket-body">
+              <p class="ticket-description">{{ truncateText(ticket.description, 120) }}</p>
+            </div>
             
             <div class="ticket-meta">
-              <div>
-                <strong>Categoría:</strong> {{ ticket.category }}
+              <div class="meta-item">
+                <i class="pi pi-tag"></i>
+                <span>{{ ticket.category || 'Sin categoría' }}</span>
               </div>
-              <div>
-                <strong>Creado:</strong> {{ formatDate(ticket.createdAt) }}
+              
+              <div class="meta-item">
+                <i class="pi pi-calendar"></i>
+                <span>{{ formatDate(ticket.createdAt) }}</span>
               </div>
             </div>
             
-            <router-link :to="`/tickets/${ticket.id}`" class="view-ticket-link">
-              Ver detalle
-            </router-link>
+            <div class="ticket-footer">
+              <router-link :to="`/tickets/${ticket.id}`" class="view-details-btn">
+                <i class="pi pi-eye"></i>
+                Ver Detalles
+              </router-link>
+            </div>
           </div>
         </div>
       </div>
@@ -228,7 +242,11 @@ const userRoleClass = computed(() => {
 });
 
 const openTickets = computed(() => {
-  return userTickets.value.filter(ticket => ticket.status === 'open').length;
+  return userTickets.value.filter(ticket => 
+    ticket.status === 'open' || 
+    ticket.status === 'assigned' || 
+    ticket.status === 'in_progress'
+  ).length;
 });
 
 const closedTickets = computed(() => {
@@ -256,6 +274,22 @@ const translateStatus = (status: string): string => {
     'closed': 'Cerrado'
   };
   return statuses[status] || status;
+};
+
+const translatePriority = (priority: string): string => {
+  if (!priority) return 'Media';
+  
+  // Normalizar a minúsculas para la comparación
+  const lowerPriority = priority.toLowerCase();
+  
+  const priorityMap: Record<string, string> = {
+    'low': 'Baja',
+    'medium': 'Media',
+    'high': 'Alta',
+    'urgent': 'Urgente'
+  };
+  
+  return priorityMap[lowerPriority] || priority;
 };
 
 const truncateText = (text: string, maxLength: number): string => {
@@ -440,74 +474,45 @@ const loadUserTickets = async (userId: string) => {
   try {
     console.log(`Cargando tickets asignados al usuario ${userId} en tiempo real`);
     
-    // Usar directamente el servicio de tickets para asegurar datos actualizados
-    console.log('Intentando obtener tickets usando ticketService.getUserTickets()');
-    
-    // Establecer un estado de carga para mostrar al usuario
-    const loadingTicket = {
+    // Mostrar inmediatamente un indicador de carga
+    userTickets.value = [{
       id: 'loading',
       title: 'Cargando tickets...',
       description: 'Buscando tickets asignados en tiempo real',
-      status: 'open',
-      priority: 'MEDIUM',
+      status: 'open' as 'open',
+      priority: 'MEDIUM' as 'MEDIUM',
       category: 'System',
       createdBy: 'system',
       assignedTo: userId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
-    };
+    }];
     
-    // Mostrar inmediatamente un indicador de carga
-    userTickets.value = [loadingTicket];
+    // Intentar obtener tickets reales desde el store
+    console.log('Intentando obtener tickets reales usando ticketStore.fetchUserTickets()');
+    await ticketStore.fetchTickets(); // Asegurar que tenemos tickets cargados
+    const realTickets = await ticketStore.fetchUserTickets(userId);
     
-    // Realizar la petición
-    const tickets = await ticketService.getUserTickets(userId);
-    
-    if (tickets && Array.isArray(tickets)) {
-      // Verificar si hay tickets
-      if (tickets.length > 0) {
-        userTickets.value = tickets;
-        console.log(`${tickets.length} tickets asignados al usuario ${userId}`, tickets);
-      } else {
-        console.warn(`No se encontraron tickets asignados al usuario ${userId}, creando ticket de emergencia`);
-        userTickets.value = [{
-          id: 'TICKET-20250327041753',
-          title: 'Problema al cargar los tickets de usuario',
-          description: 'Los tickets asignados no aparecen en la interfaz de usuario',
-          status: 'open',
-          priority: 'HIGH',
-          category: 'Bug',
-          createdBy: '2',
-          assignedTo: userId,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }];
-      }
-    } else {
-      console.warn(`No se encontraron tickets asignados al usuario ${userId}, creando ticket de emergencia`);
-      userTickets.value = [{
-        id: 'TICKET-20250327041753',
-        title: 'Problema al cargar los tickets de usuario',
-        description: 'Los tickets asignados no aparecen en la interfaz de usuario',
-        status: 'open',
-        priority: 'HIGH',
-        category: 'Bug',
-        createdBy: '2',
-        assignedTo: userId,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }];
+    if (realTickets && Array.isArray(realTickets) && realTickets.length > 0) {
+      userTickets.value = realTickets;
+      console.log(`${realTickets.length} tickets reales asignados al usuario ${userId}`, realTickets);
+      return;
     }
+    
+    // Si no hay tickets, mostrar array vacío
+    userTickets.value = [];
+    console.log(`No se encontraron tickets asignados al usuario ${userId}`);
+    
   } catch (error) {
-    console.error(`Error al cargar tickets asignados al usuario ${userId}:`, error);
+    console.error('Error al cargar tickets del usuario:', error);
     userTickets.value = [{
-      id: 'TICKET-20250327041753',
-      title: 'Problema al cargar los tickets de usuario',
-      description: 'Los tickets asignados no aparecen en la interfaz de usuario',
-      status: 'open',
-      priority: 'HIGH',
-      category: 'Bug',
-      createdBy: '2',
+      id: 'ERROR-TICKET',
+      title: 'Error al cargar tickets',
+      description: 'Hubo un problema al cargar los tickets asignados',
+      status: 'open' as 'open',
+      priority: 'MEDIUM' as 'MEDIUM',
+      category: 'Error',
+      createdBy: 'system',
       assignedTo: userId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -848,6 +853,22 @@ const handleProfileUpdated = async (updatedUser: any) => {
   box-shadow: var(--card-shadow);
   border: 1px solid var(--border-color);
   
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    
+    h2 {
+      margin: 0;
+      margin-bottom: 0;
+      color: var(--text-primary);
+      font-size: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: none;
+    }
+  }
+  
   h2 {
     margin-top: 0;
     margin-bottom: 1.5rem;
@@ -870,66 +891,191 @@ const handleProfileUpdated = async (updatedUser: any) => {
   }
 }
 
-.user-tickets {
+.tickets-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
+  margin-top: 1.5rem;
   
   .ticket-card {
+    border-radius: 16px;
+    overflow: hidden;
     border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 1.25rem;
-    position: relative;
+    transition: all 0.3s ease;
     box-shadow: var(--card-shadow);
     background-color: var(--card-bg);
     
-    &.priority-high {
-      border-left: 4px solid var(--danger-color);
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.1);
     }
     
     .ticket-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 0.75rem;
+      padding: 1rem 1rem 0.5rem;
+      margin-bottom: 0.5rem;
       
-      .ticket-id {
+      .ticket-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        
+        .status-badge,
+        .priority-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 0.35rem 0.75rem;
+          border-radius: 99px;
+          font-size: 0.8rem;
+          font-weight: 500;
+          
+          &::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+          }
+        }
+        
+        .status-badge {
+          &.open { 
+            background: rgba(30, 64, 175, 0.1); 
+            color: #1e40af; 
+            &::before { background-color: #1e40af; }
+          }
+          &.assigned { 
+            background: rgba(91, 33, 182, 0.1); 
+            color: #5b21b6; 
+            &::before { background-color: #5b21b6; }
+          }
+          &.in_progress { 
+            background: rgba(3, 105, 161, 0.1); 
+            color: #0369a1; 
+            &::before { background-color: #0369a1; }
+          }
+          &.resolved { 
+            background: rgba(67, 56, 202, 0.1); 
+            color: #4338ca; 
+            &::before { background-color: #4338ca; }
+          }
+          &.closed { 
+            background: rgba(55, 65, 81, 0.1); 
+            color: #374151; 
+            &::before { background-color: #374151; }
+          }
+        }
+        
+        .priority-badge {
+          &.low { 
+            background: rgba(3, 105, 161, 0.1); 
+            color: #0369a1; 
+            &::before { background-color: #0369a1; }
+          }
+          &.medium { 
+            background: rgba(67, 56, 202, 0.1); 
+            color: #4338ca; 
+            &::before { background-color: #4338ca; }
+          }
+          &.high { 
+            background: rgba(55, 48, 163, 0.1); 
+            color: #3730a3; 
+            &::before { background-color: #3730a3; }
+          }
+          &.urgent { 
+            background: rgba(91, 33, 182, 0.1); 
+            color: #5b21b6; 
+            &::before { background-color: #5b21b6; }
+          }
+        }
+      }
+      
+      .ticket-title {
+        font-size: 1.1rem;
         font-weight: 600;
-        color: var(--text-secondary);
+        color: var(--text-primary);
+        margin: 0;
+        line-height: 1.4;
       }
     }
     
-    h3 {
-      margin: 0 0 0.75rem 0;
-      font-size: 1.1rem;
-      color: var(--text-primary);
-    }
-    
-    .ticket-desc {
-      color: var(--text-secondary);
-      margin: 0 0 1rem 0;
-      line-height: 1.4;
+    .ticket-body {
+      padding: 0 1rem 1rem;
+      
+      .ticket-description {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
     }
     
     .ticket-meta {
+      padding: 0.75rem 1rem;
+      background-color: var(--bg-tertiary);
+      border-top: 1px solid var(--border-color);
       display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      margin-bottom: 1rem;
+      flex-direction: column;
+      gap: 0.5rem;
+      
+      .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        
+        i {
+          width: 24px;
+          height: 24px;
+          background-color: rgba(99, 102, 241, 0.1);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--primary-color);
+          font-size: 0.8rem;
+        }
+        
+        span {
+          font-size: 0.85rem;
+          color: var(--text-secondary);
+        }
+      }
     }
     
-    .view-ticket-link {
-      display: inline-block;
-      padding: 0.5rem 1rem;
-      background-color: var(--bg-tertiary);
-      border-radius: var(--border-radius);
-      text-decoration: none;
-      color: var(--text-primary);
-      font-weight: 500;
+    .ticket-footer {
+      padding: 0.75rem 1rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: center;
       
-      &:hover {
-        background-color: var(--hover-bg);
+      .view-details-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        width: 100%;
+        justify-content: center;
+        
+        &:hover {
+          background-color: var(--primary-dark-color, #0d47a1);
+        }
+        
+        i {
+          font-size: 0.9rem;
+        }
       }
     }
   }
