@@ -94,12 +94,8 @@
             
             <div class="performance-card">
               <div class="card-content">
-                <h3>Tickets por Día</h3>
-                <div class="tickets-per-day">
-                  <div v-for="count in ticketsPerDay.slice(0, 3).map(([_, c]) => c)" :key="count" class="day-count">
-                    <span class="count">{{ count }}</span>
-                  </div>
-                </div>
+                <h3>Tickets por día</h3>
+                <p class="number">{{ averageTicketsPerDay }}</p>
               </div>
             </div>
           </div>
@@ -259,6 +255,21 @@ const formatDate = (dateString: string): string => {
     month: '2-digit'
   })
 }
+
+// Añadir después de ticketsPerDay computed
+const averageTicketsPerDay = computed(() => {
+  // Obtener todos los valores de tickets por día
+  const ticketsPerDayValues = ticketsPerDay.value.map(([_, count]) => count);
+  
+  // Si no hay datos, devolver 0
+  if (ticketsPerDayValues.length === 0) return 0;
+  
+  // Calcular la suma total de tickets
+  const totalTickets = ticketsPerDayValues.reduce((sum, count) => sum + count, 0);
+  
+  // Calcular y redondear el promedio
+  return Math.round(totalTickets / ticketsPerDayValues.length);
+});
 </script>
 
 <style lang="scss" scoped>
@@ -477,25 +488,6 @@ const formatDate = (dateString: string): string => {
         font-size: 0.875rem;
         color: var(--text-secondary);
         font-style: italic;
-      }
-    }
-  }
-  
-  .tickets-per-day {
-    margin-top: 1rem;
-    
-    .day-count {
-      padding: 0.5rem 0;
-      border-bottom: 1px solid var(--border-color);
-      
-      &:last-child {
-        border-bottom: none;
-      }
-      
-      .count {
-        font-size: 2rem;
-        font-weight: 700;
-        color: var(--primary-color);
       }
     }
   }
