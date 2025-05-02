@@ -1226,7 +1226,7 @@ func handleAgentMessage(c *gin.Context) {
 			// Crear ticket
 			ticket = Ticket{
 				ID:          req.TicketID,
-				Title:       fmt.Sprintf("Solicitud de soporte de agente"),
+				Title:       "Solicitud de soporte de agente",
 				Description: "Este ticket fue creado automáticamente al recibir un mensaje de un agente.",
 				Status:      "new",
 				CreatedBy:   "agent",
