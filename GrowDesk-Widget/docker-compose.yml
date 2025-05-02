@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  widget-api:
+    build:
+      context: ./widget-api
+      dockerfile: Dockerfile
+    ports:
+      - "8082:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=growdesk_widget
+    depends_on:
+      - postgres
+    volumes:
+      - ./widget-api:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  demo-site:
+    build:
+      context: ./demo-site
+      dockerfile: Dockerfile
+    ports:
+      - "8090:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=development
+      - WIDGET_API_URL=http://widget-api:3000
+    volumes:
+      - ./demo-site:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  widget-src:
+    build:
+      context: ./widget-src
+      dockerfile: Dockerfile
+    ports:
+      - "5174:5173"
+    volumes:
+      - ./widget-src:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:8082
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: growdesk_widget
+    ports:
+      - "5434:5432"
+    volumes:
+      - widget_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  widget_postgres_data: 

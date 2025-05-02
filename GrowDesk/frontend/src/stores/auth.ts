@@ -26,13 +26,13 @@ interface AuthState {
 
 export const useAuthStore = defineStore('auth', () => {
   // Estado
-  const user = ref<User | null>(null)
-  const token = ref<string | null>(localStorage.getItem('token'))
-  const loading = ref<boolean>(false)
-  const error = ref<string | null>(null)
+  const user = ref(null as User | null)
+  const token = ref(localStorage.getItem('token') as string | null)
+  const loading = ref(false)
+  const error = ref(null as string | null)
   
   // Variable para almacenar el router
-  let routerInstance: Router | null = router
+  let routerInstance: typeof router = router
   
   // Getters
   const isAuthenticated = computed(() => {
@@ -64,7 +64,7 @@ export const useAuthStore = defineStore('auth', () => {
       // En un entorno real, aquí se haría una llamada a la API
       // Por ahora, simulamos la autenticación con el store de usuarios
       const usersStore = useUsersStore();
-      const foundUser = usersStore.users.find((u) => 
+      const foundUser = usersStore.users.find((u: User) => 
         u.email === email && u.active === true
       );
       
@@ -245,7 +245,7 @@ export const useAuthStore = defineStore('auth', () => {
         throw new Error('No se pudo identificar al usuario');
       }
       
-      const foundUser = usersStore.users.find(u => u.id.toString() === userId.toString());
+      const foundUser = usersStore.users.find((u: User) => u.id.toString() === userId.toString());
       
       if (!foundUser) {
         throw new Error('Usuario no encontrado');
@@ -262,7 +262,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
   
   // Función para configurar el router desde el exterior
-  function setRouter(r: Router) {
+  function setRouter(r: typeof router) {
     routerInstance = r;
   }
   

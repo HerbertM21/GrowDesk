@@ -4,15 +4,20 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.dev
-    container_name: growdesk-frontend-dev
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=development
+    container_name: growdesk-frontend
     ports:
-      - "5173:5173"
+      - "3000:3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules
     environment:
+      - NODE_ENV=development
       - VITE_API_URL=http://localhost:8080/api
+      - HOST=0.0.0.0
+      - PORT=3000
     networks:
       - grow-network
     restart: unless-stopped
