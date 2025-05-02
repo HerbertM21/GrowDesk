@@ -7,6 +7,9 @@
     <!-- Navegación lateral para usuarios autenticados -->
     <SideNavigation v-if="isAuthenticated && !isAuthRoute" />
     
+    <!-- Componente de notificaciones global -->
+    <NotificationsManager />
+    
     <main class="main-content" :class="{ 
       'auth-content': isAuthRoute,
       'app-content': isAuthenticated && !isAuthRoute
@@ -32,6 +35,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useRoute } from 'vue-router';
 import MainNavigation from '@/components/layout/MainNavigation.vue';
 import SideNavigation from '@/components/layout/SideNavigation.vue';
+import NotificationsManager from '@/components/notifications/NotificationsManager.vue';
 
 // Inicializar auth store
 const authStore = useAuthStore();

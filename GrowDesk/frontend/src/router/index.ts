@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/auth/Login.vue'
 import Dashboard from '../views/dashboard/Dashboard.vue'
 import { useAuthStore } from '../stores/auth'
+import { useNotificationsStore } from '../stores/notifications'
 
 // Definir las rutas
 const routes = [
@@ -45,45 +46,6 @@ const routes = [
     }
   },
   {
-    path: '/admin',
-    name: 'admin',
-    component: () => import('../views/Admin/UsersList.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true
-    }
-  },
-  {
-    path: '/admin/widget-config',
-    name: 'widget-config',
-    component: () => import('../views/Admin/WidgetConfigView.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/admin/users',
-    name: 'admin-users',
-    component: () => import('../views/Admin/UsersList.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/admin/profile-management',
-    name: 'profile-management',
-    component: () => import('../views/Admin/ProfileManagement.vue'),
-    meta: { requiresAuth: true, requiresAdminOrAssistant: true }
-  },
-  {
-    path: '/admin/categories',
-    name: 'categories-management',
-    component: () => import('../views/Admin/CategoriesManagement.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/admin/faqs',
-    name: 'faqs-management',
-    component: () => import('../views/Admin/FaqManagement.vue'),
-    meta: { requiresAuth: true, requiresAdminOrAssistant: true }
-  },
-  {
     path: '/profile',
     name: 'user-profile',
     component: () => import('../views/Profile/UserProfile.vue'),
@@ -94,11 +56,8 @@ const routes = [
     name: 'user-settings',
     component: () => import('../views/Profile/UserSettings.vue'),
     meta: { requiresAuth: true }
-  }
-]
-
-// Rutas de administración
-const adminRoutes = [
+  },
+  // Rutas de administración
   {
     path: "/admin",
     redirect: "/admin/dashboard",
@@ -120,7 +79,7 @@ const adminRoutes = [
     path: "/admin/profile-management",
     name: "admin-profile-management",
     component: () => import("../views/Admin/ProfileManagement.vue"),
-    meta: { requiresAuth: true, requiresAdmin: true }
+    meta: { requiresAuth: true, requiresAdminOrAssistant: true }
   },
   {
     path: "/admin/categories",
@@ -132,7 +91,7 @@ const adminRoutes = [
     path: "/admin/faqs",
     name: "admin-faqs",
     component: () => import("../views/Admin/FaqManagement.vue"),
-    meta: { requiresAuth: true, requiresAdmin: true }
+    meta: { requiresAuth: true, requiresAdminOrAssistant: true }
   },
   {
     path: "/admin/widget-config",
@@ -140,10 +99,7 @@ const adminRoutes = [
     component: () => import("../views/Admin/WidgetConfigView.vue"),
     meta: { requiresAuth: true, requiresAdmin: true }
   }
-];
-
-// Añadir rutas de administración
-routes.push(...adminRoutes);
+]
 
 // Crear la instancia del router
 const router = createRouter({
@@ -157,16 +113,23 @@ const router = createRouter({
 })
 
 // Protección de rutas
-// @ts-expect-error 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to: any, from: any, next: any) => {
   const authStore = useAuthStore()
+  const notificationsStore = useNotificationsStore()
   
   // Si la ruta requiere autenticación y el usuario no está autenticado
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    notificationsStore.error('Debes iniciar sesión para acceder a esta página')
     next({ name: 'login' })
   } 
   // Si la ruta requiere rol de admin y el usuario no es admin
   else if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    notificationsStore.error('No tienes permisos suficientes para acceder a esta sección')
+    next({ name: 'dashboard' })
+  }
+  // Si la ruta requiere rol de admin o asistente y el usuario no es ninguno de esos roles
+  else if (to.meta.requiresAdminOrAssistant && !(authStore.isAdmin || authStore.isAssistant)) {
+    notificationsStore.error('No tienes permisos suficientes para acceder a esta sección')
     next({ name: 'dashboard' })
   }
   // En otros casos, permitir la navegación

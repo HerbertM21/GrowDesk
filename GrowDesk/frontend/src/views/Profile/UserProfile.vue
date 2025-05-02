@@ -339,9 +339,24 @@ const loadProfile = async () => {
   try {
     // Obtener el ID del usuario desde la ruta o usar el usuario actual
     let userId: string | undefined;
+    const currentUserId = authStore.user?.id || localStorage.getItem('userId');
     
     if (route.params.id) {
       userId = route.params.id.toString();
+      
+      // Verificar si el usuario actual tiene permisos para ver este perfil
+      if (userId !== currentUserId) {
+        // Solo administradores pueden ver perfiles de otros usuarios
+        if (!authStore.isAdmin) {
+          console.warn('Intento no autorizado de acceder a perfil de otro usuario');
+          error.value = 'No tienes permisos para ver este perfil';
+          
+          // Redirigir al usuario a su propio perfil
+          router.replace('/profile');
+          loading.value = false;
+          return;
+        }
+      }
     } else if (authStore.user && authStore.user.id) {
       userId = authStore.user.id.toString();
     } else if (localStorage.getItem('userId')) {

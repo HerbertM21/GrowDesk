@@ -1,193 +1,205 @@
 /* eslint-disable */
 <template>
   <div class="admin-section">
-    <div class="users-list">
-      <!-- Sección del encabezado con fondo de color primario y forma ondulada -->
-      <div class="hero-section">
-        <div class="hero-content">
-          <h1 class="hero-title">Administración de Usuarios</h1>
-          <p class="hero-subtitle">Gestione todos los usuarios del sistema, asigne roles y controle su estado.</p>
-          
-          <button class="create-user-btn" @click="showCreateModal = true">
-            <i class="pi pi-plus"></i>
-            Nuevo Usuario
-          </button>
-        </div>
-        <div class="wave-shape"></div>
+    <div v-if="!isAdmin" class="authorization-error">
+      <div class="alert alert-danger">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>No tienes permisos suficientes para acceder a esta página</span>
       </div>
-      
-      <!-- Contenido principal -->
-      <div class="content-wrapper">
-        <!-- Filtros con nuevo diseño visual -->
-        <div class="filters-section">
-          <h2 class="section-title">
-            <span class="title-icon"><i class="pi pi-filter"></i></span>
-            Filtrar Usuarios
-          </h2>
-          
-          <div class="filters-container">
-            <div class="filter-group">
-              <label>Rol:</label>
-              <div class="filter-options">
-                <button 
-                  @click="roleFilter = 'all'" 
-                  :class="['filter-btn', roleFilter === 'all' ? 'active' : '']"
-                >
-                  Todos
-                </button>
-                <button 
-                  @click="roleFilter = 'admin'" 
-                  :class="['filter-btn', roleFilter === 'admin' ? 'active' : '']"
-                >
-                  Administradores
-                </button>
-                <button 
-                  @click="roleFilter = 'assistant'" 
-                  :class="['filter-btn', roleFilter === 'assistant' ? 'active' : '']"
-                >
-                  Asistentes
-                </button>
-                <button 
-                  @click="roleFilter = 'employee'" 
-                  :class="['filter-btn', roleFilter === 'employee' ? 'active' : '']"
-                >
-                  Empleados
-                </button>
-              </div>
-            </div>
+      <button @click="redirectToDashboard" class="btn btn-primary">
+        <i class="pi pi-home"></i> Volver al Dashboard
+      </button>
+    </div>
+    
+    <template v-else>
+      <div class="users-list">
+        <!-- Sección del encabezado con fondo de color primario y forma ondulada -->
+        <div class="hero-section">
+          <div class="hero-content">
+            <h1 class="hero-title">Administración de Usuarios</h1>
+            <p class="hero-subtitle">Gestione todos los usuarios del sistema, asigne roles y controle su estado.</p>
             
-            <div class="filter-group">
-              <label>Estado:</label>
-              <div class="filter-options">
-                <button 
-                  @click="statusFilter = 'all'" 
-                  :class="['filter-btn', statusFilter === 'all' ? 'active' : '']"
-                >
-                  Todos
-                </button>
-                <button 
-                  @click="statusFilter = 'active'" 
-                  :class="['filter-btn', statusFilter === 'active' ? 'active' : '']"
-                >
-                  Activos
-                </button>
-                <button 
-                  @click="statusFilter = 'inactive'" 
-                  :class="['filter-btn', statusFilter === 'inactive' ? 'active' : '']"
-                >
-                  Inactivos
-                </button>
-              </div>
-            </div>
-            
-            <div class="filter-group">
-              <label>Buscar:</label>
-              <div class="search-container">
-                <input 
-                  v-model="searchQuery" 
-                  type="text" 
-                  placeholder="Buscar por nombre o correo..." 
-                  class="search-input"
-                />
-                <i class="pi pi-search search-icon"></i>
-              </div>
-            </div>
+            <button class="create-user-btn" @click="showCreateModal = true">
+              <i class="pi pi-plus"></i>
+              Nuevo Usuario
+            </button>
           </div>
-        </div>
-
-        <!-- Estado de carga, error o vacío -->
-        <div v-if="loading" class="status-message loading">
-          <i class="pi pi-spin pi-spinner"></i>
-          <p>Cargando usuarios...</p>
+          <div class="wave-shape"></div>
         </div>
         
-        <div v-else-if="error" class="status-message error">
-          <i class="pi pi-exclamation-triangle"></i>
-          <p>{{ error }}</p>
-        </div>
-        
-        <div v-else-if="filteredUsers.length === 0" class="status-message empty">
-          <i class="pi pi-inbox"></i>
-          <p>No se encontraron usuarios con los filtros seleccionados</p>
-        </div>
-        
-        <!-- Lista de usuarios con nuevo diseño -->
-        <div v-else class="users-grid">
-          <div 
-            v-for="user in filteredUsers" 
-            :key="user.id" 
-            class="user-card"
-          >
-            <div class="user-header">
-              <div class="user-badges">
-                <span :class="['role-badge', user.role]">{{ translateRole(user.role) }}</span>
-                <span :class="['status-badge', user.active ? 'active' : 'inactive']">
-                  {{ user.active ? 'Activo' : 'Inactivo' }}
-                </span>
-              </div>
-              <h3 class="user-title">{{ user.firstName }} {{ user.lastName }}</h3>
-            </div>
+        <!-- Contenido principal -->
+        <div class="content-wrapper">
+          <!-- Filtros con nuevo diseño visual -->
+          <div class="filters-section">
+            <h2 class="section-title">
+              <span class="title-icon"><i class="pi pi-filter"></i></span>
+              Filtrar Usuarios
+            </h2>
             
-            <div class="user-body">
-              <p class="user-email">{{ user.email }}</p>
-              <div class="user-detail" v-if="user.department">
-                <span class="detail-label">Departamento:</span>
-                <span>{{ user.department }}</span>
-              </div>
-            </div>
-            
-            <div class="user-meta">
-              <div class="meta-item" v-if="user.createdAt">
-                <i class="pi pi-calendar"></i>
-                <span>{{ formatDate(user.createdAt) }}</span>
+            <div class="filters-container">
+              <div class="filter-group">
+                <label>Rol:</label>
+                <div class="filter-options">
+                  <button 
+                    @click="roleFilter = 'all'" 
+                    :class="['filter-btn', roleFilter === 'all' ? 'active' : '']"
+                  >
+                    Todos
+                  </button>
+                  <button 
+                    @click="roleFilter = 'admin'" 
+                    :class="['filter-btn', roleFilter === 'admin' ? 'active' : '']"
+                  >
+                    Administradores
+                  </button>
+                  <button 
+                    @click="roleFilter = 'assistant'" 
+                    :class="['filter-btn', roleFilter === 'assistant' ? 'active' : '']"
+                  >
+                    Asistentes
+                  </button>
+                  <button 
+                    @click="roleFilter = 'employee'" 
+                    :class="['filter-btn', roleFilter === 'employee' ? 'active' : '']"
+                  >
+                    Empleados
+                  </button>
+                </div>
               </div>
               
-              <div class="meta-item">
-                <i class="pi pi-id-card"></i>
-                <span>{{ user.id }}</span>
+              <div class="filter-group">
+                <label>Estado:</label>
+                <div class="filter-options">
+                  <button 
+                    @click="statusFilter = 'all'" 
+                    :class="['filter-btn', statusFilter === 'all' ? 'active' : '']"
+                  >
+                    Todos
+                  </button>
+                  <button 
+                    @click="statusFilter = 'active'" 
+                    :class="['filter-btn', statusFilter === 'active' ? 'active' : '']"
+                  >
+                    Activos
+                  </button>
+                  <button 
+                    @click="statusFilter = 'inactive'" 
+                    :class="['filter-btn', statusFilter === 'inactive' ? 'active' : '']"
+                  >
+                    Inactivos
+                  </button>
+                </div>
+              </div>
+              
+              <div class="filter-group">
+                <label>Buscar:</label>
+                <div class="search-container">
+                  <input 
+                    v-model="searchQuery" 
+                    type="text" 
+                    placeholder="Buscar por nombre o correo..." 
+                    class="search-input"
+                  />
+                  <i class="pi pi-search search-icon"></i>
+                </div>
               </div>
             </div>
-            
-            <div class="user-actions">
-              <button class="action-btn" @click="editUser(user)" title="Editar usuario">
-                <i class="pi pi-pencil"></i>
-              </button>
-              <button class="action-btn" @click="changeRole(user)" title="Cambiar rol">
-                <i class="pi pi-users"></i>
-              </button>
-              <button 
-                class="action-btn" 
-                :class="user.active ? 'warning' : 'success'"
-                @click="toggleActive(user)" 
-                :title="user.active ? 'Desactivar usuario' : 'Activar usuario'"
-              >
-                <i :class="user.active ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
-              </button>
-              <button 
-                class="action-btn danger" 
-                @click="confirmDelete(user)" 
-                v-if="currentUser?.id !== user.id"
-                title="Eliminar usuario"
-              >
-                <i class="pi pi-trash"></i>
-              </button>
+          </div>
+
+          <!-- Estado de carga, error o vacío -->
+          <div v-if="loading" class="status-message loading">
+            <i class="pi pi-spin pi-spinner"></i>
+            <p>Cargando usuarios...</p>
+          </div>
+          
+          <div v-else-if="error" class="status-message error">
+            <i class="pi pi-exclamation-triangle"></i>
+            <p>{{ error }}</p>
+          </div>
+          
+          <div v-else-if="filteredUsers.length === 0" class="status-message empty">
+            <i class="pi pi-inbox"></i>
+            <p>No se encontraron usuarios con los filtros seleccionados</p>
+          </div>
+          
+          <!-- Lista de usuarios con nuevo diseño -->
+          <div v-else class="users-grid">
+            <div 
+              v-for="user in filteredUsers" 
+              :key="user.id" 
+              class="user-card"
+            >
+              <div class="user-header">
+                <div class="user-badges">
+                  <span :class="['role-badge', user.role]">{{ translateRole(user.role) }}</span>
+                  <span :class="['status-badge', user.active ? 'active' : 'inactive']">
+                    {{ user.active ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </div>
+                <h3 class="user-title">{{ user.firstName }} {{ user.lastName }}</h3>
+              </div>
+              
+              <div class="user-body">
+                <p class="user-email">{{ user.email }}</p>
+                <div class="user-detail" v-if="user.department">
+                  <span class="detail-label">Departamento:</span>
+                  <span>{{ user.department }}</span>
+                </div>
+              </div>
+              
+              <div class="user-meta">
+                <div class="meta-item" v-if="user.createdAt">
+                  <i class="pi pi-calendar"></i>
+                  <span>{{ formatDate(user.createdAt) }}</span>
+                </div>
+                
+                <div class="meta-item">
+                  <i class="pi pi-id-card"></i>
+                  <span>{{ user.id }}</span>
+                </div>
+              </div>
+              
+              <div class="user-actions">
+                <button class="action-btn" @click="editUser(user)" title="Editar usuario">
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button class="action-btn" @click="changeRole(user)" title="Cambiar rol">
+                  <i class="pi pi-users"></i>
+                </button>
+                <button 
+                  class="action-btn" 
+                  :class="user.active ? 'warning' : 'success'"
+                  @click="toggleActive(user)" 
+                  :title="user.active ? 'Desactivar usuario' : 'Activar usuario'"
+                >
+                  <i :class="user.active ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+                </button>
+                <button 
+                  class="action-btn danger" 
+                  @click="confirmDelete(user)" 
+                  v-if="currentUser?.id !== user.id"
+                  title="Eliminar usuario"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
+        
+        <!-- Modales -->
+        <UserCreateModal v-if="showCreateModal" @close="showCreateModal = false" @created="handleUserCreated" />
+        <UserEditModal v-if="showEditModal" :user="selectedUser" @close="showEditModal = false" @updated="handleUserUpdated" />
+        <UserRoleModal v-if="showRoleModal" :user="selectedUser" @close="showRoleModal = false" @role-changed="handleRoleChanged" />
+        <ConfirmDialog 
+          v-if="showDeleteConfirm" 
+          title="Confirmar eliminación" 
+          message="¿Estás seguro de que quieres eliminar este usuario? Esta acción no se puede deshacer."
+          @confirm="deleteUser"
+          @cancel="showDeleteConfirm = false" 
+        />
       </div>
-      
-      <!-- Modales -->
-      <UserCreateModal v-if="showCreateModal" @close="showCreateModal = false" @created="handleUserCreated" />
-      <UserEditModal v-if="showEditModal" :user="selectedUser" @close="showEditModal = false" @updated="handleUserUpdated" />
-      <UserRoleModal v-if="showRoleModal" :user="selectedUser" @close="showRoleModal = false" @role-changed="handleRoleChanged" />
-      <ConfirmDialog 
-        v-if="showDeleteConfirm" 
-        title="Confirmar eliminación" 
-        message="¿Estás seguro de que quieres eliminar este usuario? Esta acción no se puede deshacer."
-        @confirm="deleteUser"
-        @cancel="showDeleteConfirm = false" 
-      />
-    </div>
+    </template>
   </div>
 </template>
 
@@ -201,10 +213,14 @@ import UserCreateModal from '@/components/Admin/UserCreateModal.vue';
 import UserEditModal from '@/components/Admin/UserEditModal.vue';
 import UserRoleModal from '@/components/Admin/UserRoleModal.vue';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
+import { useRouter } from 'vue-router';
+import { useNotificationsStore } from '@/stores/notifications';
 
 // Stores
 const userStore = useUsersStore();
 const authStore = useAuthStore();
+const notificationsStore = useNotificationsStore();
+const router = useRouter();
 const { users, loading, error } = storeToRefs(userStore);
 const currentUser = computed(() => authStore.user);
 
@@ -219,6 +235,11 @@ const showEditModal = ref(false);
 const showRoleModal = ref(false);
 const showDeleteConfirm = ref(false);
 const selectedUser = ref<User | null>(null);
+
+// Verificar permisos
+const isAdmin = computed(() => {
+  return authStore.isAdmin;
+});
 
 // Filtrar usuarios según criterios
 const filteredUsers = computed(() => {
@@ -337,9 +358,21 @@ const handleRoleChanged = () => {
   console.log('Rol actualizado: lista recargada');
 };
 
-// Cargar usuarios al montar el componente
+// Función para redirigir al dashboard
+const redirectToDashboard = () => {
+  notificationsStore.warning('Has sido redirigido al Dashboard debido a permisos insuficientes');
+  router.push('/dashboard');
+};
+
+// Hook de ciclo de vida
 onMounted(() => {
-  userStore.fetchUsers();
+  // Solo cargamos datos si el usuario es administrador
+  if (isAdmin.value) {
+    userStore.fetchUsers();
+  } else {
+    // Si no es admin, redirigimos al dashboard
+    redirectToDashboard();
+  }
   
   // Para modo de desarrollo con el mock server
   if (process.env.NODE_ENV === 'development' && users.value.length === 0) {

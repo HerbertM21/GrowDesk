@@ -15,7 +15,8 @@
       </div>
     </div>
     
-    <div class="nav-section" v-if="isAdminOrAssistant">
+    <!-- Sección de administración solo visible para admins -->
+    <div class="nav-section" v-if="isAdmin">
       <h3>Administración</h3>
       <div class="nav-items">
         <router-link to="/admin/dashboard" class="nav-item" :class="{ 'active': isActive('/admin/dashboard') }">
@@ -23,7 +24,7 @@
           <span>Administración</span>
         </router-link>
         
-        <router-link v-if="isAdmin" to="/admin/users" class="nav-item" :class="{ 'active': isActive('/admin/users') }">
+        <router-link to="/admin/users" class="nav-item" :class="{ 'active': isActive('/admin/users') }">
           <i class="pi pi-users"></i>
           <span>Usuarios</span>
         </router-link>
@@ -33,7 +34,7 @@
           <span>Perfiles</span>
         </router-link>
         
-        <router-link v-if="isAdmin" to="/admin/categories" class="nav-item" :class="{ 'active': isActive('/admin/categories') }">
+        <router-link to="/admin/categories" class="nav-item" :class="{ 'active': isActive('/admin/categories') }">
           <i class="pi pi-tags"></i>
           <span>Categorías</span>
         </router-link>
@@ -43,9 +44,25 @@
           <span>FAQs</span>
         </router-link>
         
-        <router-link v-if="isAdmin" to="/admin/widget-config" class="nav-item" :class="{ 'active': isActive('/admin/widget-config') }">
+        <router-link to="/admin/widget-config" class="nav-item" :class="{ 'active': isActive('/admin/widget-config') }">
           <i class="pi pi-wrench"></i>
           <span>Widget</span>
+        </router-link>
+      </div>
+    </div>
+    
+    <!-- Sección solo para asistentes (solo Perfiles y FAQs) -->
+    <div class="nav-section" v-if="isAssistant">
+      <h3>Administración</h3>
+      <div class="nav-items">
+        <router-link to="/admin/profile-management" class="nav-item" :class="{ 'active': isActive('/admin/profile-management') }">
+          <i class="pi pi-user-edit"></i>
+          <span>Perfiles</span>
+        </router-link>
+        
+        <router-link to="/admin/faqs" class="nav-item" :class="{ 'active': isActive('/admin/faqs') }">
+          <i class="pi pi-question-circle"></i>
+          <span>FAQs</span>
         </router-link>
       </div>
     </div>
@@ -62,6 +79,11 @@
           <i class="pi pi-cog"></i>
           <span>Configuración</span>
         </router-link>
+        
+        <a href="#" @click.prevent="handleLogout" class="nav-item logout-item">
+          <i class="pi pi-sign-out"></i>
+          <span>Cerrar Sesión</span>
+        </a>
       </div>
     </div>
   </div>
@@ -69,7 +91,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 
 interface Props {
@@ -79,6 +101,7 @@ interface Props {
 defineProps<Props>();
 
 const route = useRoute();
+const router = useRouter();
 const authStore = useAuthStore();
 
 // Función para verificar si una ruta está activa
@@ -86,13 +109,19 @@ const isActive = (path: string) => {
   return route.path.startsWith(path);
 };
 
-// Computar roles del usuario
-const isAdminOrAssistant = computed(() => {
-  return authStore.isAdmin || authStore.isAssistant;
-});
+// Función para manejar el cierre de sesión
+const handleLogout = () => {
+  authStore.logout();
+  router.push('/login');
+};
 
+// Computar roles del usuario
 const isAdmin = computed(() => {
   return authStore.isAdmin;
+});
+
+const isAssistant = computed(() => {
+  return authStore.isAssistant;
 });
 </script>
 
@@ -166,6 +195,24 @@ const isAdmin = computed(() => {
       
       i {
         color: var(--primary-color);
+      }
+    }
+    
+    &.logout-item {
+      cursor: pointer;
+      margin-top: 0.5rem;
+      border-top: 1px solid var(--border-color);
+      
+      i {
+        color: #e74c3c;
+      }
+      
+      &:hover {
+        background-color: rgba(231, 76, 60, 0.1);
+        
+        i {
+          color: #e74c3c;
+        }
       }
     }
   }

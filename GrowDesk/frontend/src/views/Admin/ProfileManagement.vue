@@ -1,271 +1,285 @@
 <template>
   <div class="admin-section">
-    <div class="profile-management">
-      <!-- Sección del encabezado con fondo de color primario y forma ondulada -->
-      <div class="hero-section">
-        <div class="hero-content">
-          <h1 class="hero-title">Gestión de Perfiles de Usuarios</h1>
-          <p class="hero-subtitle">Administre los perfiles de los usuarios del sistema</p>
-        </div>
-        <div class="wave-shape"></div>
+    <!-- Permiso verificado: Solo admins y asistentes -->
+    <div v-if="!isAdminOrAssistant" class="permission-error">
+      <div class="error-container">
+        <i class="pi pi-exclamation-triangle"></i>
+        <h2>Acceso restringido</h2>
+        <p>No tienes permiso para acceder a esta sección. Esta página solo está disponible para administradores y asistentes.</p>
+        <button class="btn btn-primary" @click="goToDashboard">Volver al Dashboard</button>
       </div>
-      
-      <div class="content-wrapper">
-        <!-- Vista de selección de usuario -->
-        <div class="filters-section">
-          <h2 class="section-title">
-            <span class="title-icon"><i class="pi pi-user"></i></span>
-            Selección de Usuario
-          </h2>
+    </div>
+
+    <div v-else>
+      <div class="admin-section">
+        <div class="profile-management">
+          <!-- Sección del encabezado con fondo de color primario y forma ondulada -->
+          <div class="hero-section">
+            <div class="hero-content">
+              <h1 class="hero-title">Gestión de Perfiles de Usuarios</h1>
+              <p class="hero-subtitle">Administre los perfiles de los usuarios del sistema</p>
+            </div>
+            <div class="wave-shape"></div>
+          </div>
           
-          <div class="filters-container">
-            <div class="filter-group">
-              <label for="user-select">Seleccione un usuario para gestionar su perfil:</label>
-              <div class="select-container">
-                <select id="user-select" v-model="selectedUserId" class="form-control" @change="loadUserProfile">
-                  <option value="" disabled>Seleccione un usuario</option>
-                  <option v-for="user in users" :key="user.id" :value="user.id">
-                    {{ user.firstName }} {{ user.lastName }} ({{ translateRole(user.role) }})
-                  </option>
-                </select>
-                <i class="pi pi-chevron-down"></i>
+          <div class="content-wrapper">
+            <!-- Vista de selección de usuario -->
+            <div class="filters-section">
+              <h2 class="section-title">
+                <span class="title-icon"><i class="pi pi-user"></i></span>
+                Selección de Usuario
+              </h2>
+              
+              <div class="filters-container">
+                <div class="filter-group">
+                  <label for="user-select">Seleccione un usuario para gestionar su perfil:</label>
+                  <div class="select-container">
+                    <select id="user-select" v-model="selectedUserId" class="form-control" @change="loadUserProfile">
+                      <option value="" disabled>Seleccione un usuario</option>
+                      <option v-for="user in users" :key="user.id" :value="user.id">
+                        {{ user.firstName }} {{ user.lastName }} ({{ translateRole(user.role) }})
+                      </option>
+                    </select>
+                    <i class="pi pi-chevron-down"></i>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-        
-        <!-- Sección principal con tarjetas para diferentes aspectos del perfil del usuario seleccionado -->
-        <div class="profile-grid" v-if="selectedUserId">
-          <!-- Información personal -->
-          <div class="profile-card">
-            <div class="profile-card-header">
-              <i class="pi pi-user"></i>
-              <h2>Información Personal</h2>
-            </div>
-            <div class="profile-card-body">
-              <form @submit.prevent="updatePersonalInfo">
-                <div class="profile-form-group">
-                  <label for="firstName">Nombre</label>
-                  <input 
-                    id="firstName" 
-                    v-model="personalInfo.firstName" 
-                    type="text" 
-                    class="form-control"
-                    required
-                    :class="{ 'is-invalid': errors.firstName }"
-                  />
-                  <div v-if="errors.firstName" class="invalid-feedback">
-                    {{ errors.firstName }}
-                  </div>
+            
+            <!-- Sección principal con tarjetas para diferentes aspectos del perfil del usuario seleccionado -->
+            <div class="profile-grid" v-if="selectedUserId">
+              <!-- Información personal -->
+              <div class="profile-card">
+                <div class="profile-card-header">
+                  <i class="pi pi-user"></i>
+                  <h2>Información Personal</h2>
                 </div>
-                
-                <div class="profile-form-group">
-                  <label for="lastName">Apellido</label>
-                  <input 
-                    id="lastName" 
-                    v-model="personalInfo.lastName" 
-                    type="text" 
-                    class="form-control"
-                    required
-                    :class="{ 'is-invalid': errors.lastName }"
-                  />
-                  <div v-if="errors.lastName" class="invalid-feedback">
-                    {{ errors.lastName }}
-                  </div>
-                </div>
-                
-                <div class="profile-form-group">
-                  <label for="email">Email</label>
-                  <input 
-                    id="email" 
-                    v-model="personalInfo.email" 
-                    type="email" 
-                    class="form-control"
-                    required
-                    :class="{ 'is-invalid': errors.email }"
-                    disabled
-                  />
-                  <div v-if="errors.email" class="invalid-feedback">
-                    {{ errors.email }}
-                  </div>
-                  <small class="form-text text-muted">
-                    El email no se puede cambiar por motivos de seguridad.
-                  </small>
-                </div>
-                
-                <div class="profile-form-group">
-                  <label for="department">Departamento</label>
-                  <select 
-                    id="department" 
-                    v-model="personalInfo.department" 
-                    class="form-control"
-                    :class="{ 'is-invalid': errors.department }"
-                  >
-                    <option value="" disabled>Seleccione un departamento</option>
-                    <option value="IT">IT</option>
-                    <option value="RRHH">RRHH</option>
-                    <option value="Ventas">Ventas</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Soporte">Soporte</option>
-                  </select>
-                  <div v-if="errors.department" class="invalid-feedback">
-                    {{ errors.department }}
-                  </div>
-                </div>
-                
-                <div class="profile-card-actions">
-                  <button 
-                    type="submit" 
-                    class="btn btn-primary"
-                    :disabled="isSubmitting"
-                  >
-                    <i class="pi pi-save"></i> Guardar Cambios
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-          
-          <!-- Cambio de rol y estado -->
-          <div class="profile-card">
-            <div class="profile-card-header">
-              <i class="pi pi-users"></i>
-              <h2>Rol y Estado</h2>
-            </div>
-            <div class="profile-card-body">
-              <form @submit.prevent="updateUserRole">
-                <div class="profile-form-group">
-                  <label for="role">Rol</label>
-                  <select 
-                    id="role" 
-                    v-model="userRole.role" 
-                    class="form-control"
-                    :class="{ 'is-invalid': errors.role }"
-                  >
-                    <option value="" disabled>Seleccione un rol</option>
-                    <option value="admin">Administrador</option>
-                    <option value="assistant">Asistente</option>
-                    <option value="employee">Empleado</option>
-                  </select>
-                  <div v-if="errors.role" class="invalid-feedback">
-                    {{ errors.role }}
-                  </div>
-                </div>
-                
-                <div class="profile-form-group">
-                  <label>Estado de la cuenta</label>
-                  <div class="toggle-switch-container">
-                    <label class="toggle-switch">
+                <div class="profile-card-body">
+                  <form @submit.prevent="updatePersonalInfo">
+                    <div class="profile-form-group">
+                      <label for="firstName">Nombre</label>
                       <input 
-                        type="checkbox" 
-                        v-model="userRole.active"
-                      >
-                      <span class="slider round"></span>
-                    </label>
-                    <span class="toggle-label">
-                      {{ userRole.active ? 'Activo' : 'Inactivo' }}
-                    </span>
-                  </div>
-                </div>
-                
-                <div class="profile-card-actions">
-                  <button 
-                    type="submit" 
-                    class="btn btn-primary"
-                    :disabled="isSubmitting"
-                  >
-                    <i class="pi pi-users"></i> Actualizar Rol
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-          
-          <!-- Resetear contraseña -->
-          <div class="profile-card">
-            <div class="profile-card-header">
-              <i class="pi pi-lock"></i>
-              <h2>Resetear Contraseña</h2>
-            </div>
-            <div class="profile-card-body">
-              <form @submit.prevent="resetPassword">
-                <div class="profile-form-group">
-                  <label for="newPassword">Nueva Contraseña</label>
-                  <div class="password-input-container">
-                    <input 
-                      id="newPassword" 
-                      v-model="passwordData.newPassword" 
-                      :type="showNewPassword ? 'text' : 'password'" 
-                      class="form-control"
-                      required
-                      :class="{ 'is-invalid': errors.newPassword }"
-                    />
-                    <button 
-                      type="button" 
-                      class="password-toggle" 
-                      @click="showNewPassword = !showNewPassword"
-                    >
-                      <i :class="showNewPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
-                    </button>
-                  </div>
-                  <div v-if="errors.newPassword" class="invalid-feedback">
-                    {{ errors.newPassword }}
-                  </div>
-                  <div class="password-strength" v-if="passwordData.newPassword">
-                    <div class="strength-meter">
-                      <div 
-                        class="strength-meter-fill" 
-                        :style="{ width: passwordStrength.percent + '%' }"
-                        :class="passwordStrength.class"
-                      ></div>
+                        id="firstName" 
+                        v-model="personalInfo.firstName" 
+                        type="text" 
+                        class="form-control"
+                        required
+                        :class="{ 'is-invalid': errors.firstName }"
+                      />
+                      <div v-if="errors.firstName" class="invalid-feedback">
+                        {{ errors.firstName }}
+                      </div>
                     </div>
-                    <span class="strength-text" :class="passwordStrength.class">
-                      {{ passwordStrength.label }}
-                    </span>
-                  </div>
+                    
+                    <div class="profile-form-group">
+                      <label for="lastName">Apellido</label>
+                      <input 
+                        id="lastName" 
+                        v-model="personalInfo.lastName" 
+                        type="text" 
+                        class="form-control"
+                        required
+                        :class="{ 'is-invalid': errors.lastName }"
+                      />
+                      <div v-if="errors.lastName" class="invalid-feedback">
+                        {{ errors.lastName }}
+                      </div>
+                    </div>
+                    
+                    <div class="profile-form-group">
+                      <label for="email">Email</label>
+                      <input 
+                        id="email" 
+                        v-model="personalInfo.email" 
+                        type="email" 
+                        class="form-control"
+                        required
+                        :class="{ 'is-invalid': errors.email }"
+                        disabled
+                      />
+                      <div v-if="errors.email" class="invalid-feedback">
+                        {{ errors.email }}
+                      </div>
+                      <small class="form-text text-muted">
+                        El email no se puede cambiar por motivos de seguridad.
+                      </small>
+                    </div>
+                    
+                    <div class="profile-form-group">
+                      <label for="department">Departamento</label>
+                      <select 
+                        id="department" 
+                        v-model="personalInfo.department" 
+                        class="form-control"
+                        :class="{ 'is-invalid': errors.department }"
+                      >
+                        <option value="" disabled>Seleccione un departamento</option>
+                        <option value="IT">IT</option>
+                        <option value="RRHH">RRHH</option>
+                        <option value="Ventas">Ventas</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Soporte">Soporte</option>
+                      </select>
+                      <div v-if="errors.department" class="invalid-feedback">
+                        {{ errors.department }}
+                      </div>
+                    </div>
+                    
+                    <div class="profile-card-actions">
+                      <button 
+                        type="submit" 
+                        class="btn btn-primary"
+                        :disabled="isSubmitting"
+                      >
+                        <i class="pi pi-save"></i> Guardar Cambios
+                      </button>
+                    </div>
+                  </form>
                 </div>
-                
-                <div class="profile-form-group">
-                  <label for="confirmPassword">Confirmar Contraseña</label>
-                  <div class="password-input-container">
-                    <input 
-                      id="confirmPassword" 
-                      v-model="passwordData.confirmPassword" 
-                      :type="showConfirmPassword ? 'text' : 'password'" 
-                      class="form-control"
-                      required
-                      :class="{ 'is-invalid': errors.confirmPassword }"
-                    />
-                    <button 
-                      type="button" 
-                      class="password-toggle" 
-                      @click="showConfirmPassword = !showConfirmPassword"
-                    >
-                      <i :class="showConfirmPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
-                    </button>
-                  </div>
-                  <div v-if="errors.confirmPassword" class="invalid-feedback">
-                    {{ errors.confirmPassword }}
-                  </div>
+              </div>
+              
+              <!-- Cambio de rol y estado -->
+              <div class="profile-card">
+                <div class="profile-card-header">
+                  <i class="pi pi-users"></i>
+                  <h2>Rol y Estado</h2>
                 </div>
-                
-                <div class="profile-card-actions">
-                  <button 
-                    type="submit" 
-                    class="btn btn-primary"
-                    :disabled="isSubmitting"
-                  >
-                    <i class="pi pi-lock"></i> Resetear Contraseña
-                  </button>
+                <div class="profile-card-body">
+                  <form @submit.prevent="updateUserRole">
+                    <div class="profile-form-group">
+                      <label for="role">Rol</label>
+                      <select 
+                        id="role" 
+                        v-model="userRole.role" 
+                        class="form-control"
+                        :class="{ 'is-invalid': errors.role }"
+                      >
+                        <option value="" disabled>Seleccione un rol</option>
+                        <option value="admin">Administrador</option>
+                        <option value="assistant">Asistente</option>
+                        <option value="employee">Empleado</option>
+                      </select>
+                      <div v-if="errors.role" class="invalid-feedback">
+                        {{ errors.role }}
+                      </div>
+                    </div>
+                    
+                    <div class="profile-form-group">
+                      <label>Estado de la cuenta</label>
+                      <div class="toggle-switch-container">
+                        <label class="toggle-switch">
+                          <input 
+                            type="checkbox" 
+                            v-model="userRole.active"
+                          >
+                          <span class="slider round"></span>
+                        </label>
+                        <span class="toggle-label">
+                          {{ userRole.active ? 'Activo' : 'Inactivo' }}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div class="profile-card-actions">
+                      <button 
+                        type="submit" 
+                        class="btn btn-primary"
+                        :disabled="isSubmitting"
+                      >
+                        <i class="pi pi-users"></i> Actualizar Rol
+                      </button>
+                    </div>
+                  </form>
                 </div>
-              </form>
+              </div>
+              
+              <!-- Resetear contraseña -->
+              <div class="profile-card">
+                <div class="profile-card-header">
+                  <i class="pi pi-lock"></i>
+                  <h2>Resetear Contraseña</h2>
+                </div>
+                <div class="profile-card-body">
+                  <form @submit.prevent="resetPassword">
+                    <div class="profile-form-group">
+                      <label for="newPassword">Nueva Contraseña</label>
+                      <div class="password-input-container">
+                        <input 
+                          id="newPassword" 
+                          v-model="passwordData.newPassword" 
+                          :type="showNewPassword ? 'text' : 'password'" 
+                          class="form-control"
+                          required
+                          :class="{ 'is-invalid': errors.newPassword }"
+                        />
+                        <button 
+                          type="button" 
+                          class="password-toggle" 
+                          @click="showNewPassword = !showNewPassword"
+                        >
+                          <i :class="showNewPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+                        </button>
+                      </div>
+                      <div v-if="errors.newPassword" class="invalid-feedback">
+                        {{ errors.newPassword }}
+                      </div>
+                      <div class="password-strength" v-if="passwordData.newPassword">
+                        <div class="strength-meter">
+                          <div 
+                            class="strength-meter-fill" 
+                            :style="{ width: passwordStrength.percent + '%' }"
+                            :class="passwordStrength.class"
+                          ></div>
+                        </div>
+                        <span class="strength-text" :class="passwordStrength.class">
+                          {{ passwordStrength.label }}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div class="profile-form-group">
+                      <label for="confirmPassword">Confirmar Contraseña</label>
+                      <div class="password-input-container">
+                        <input 
+                          id="confirmPassword" 
+                          v-model="passwordData.confirmPassword" 
+                          :type="showConfirmPassword ? 'text' : 'password'" 
+                          class="form-control"
+                          required
+                          :class="{ 'is-invalid': errors.confirmPassword }"
+                        />
+                        <button 
+                          type="button" 
+                          class="password-toggle" 
+                          @click="showConfirmPassword = !showConfirmPassword"
+                        >
+                          <i :class="showConfirmPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+                        </button>
+                      </div>
+                      <div v-if="errors.confirmPassword" class="invalid-feedback">
+                        {{ errors.confirmPassword }}
+                      </div>
+                    </div>
+                    
+                    <div class="profile-card-actions">
+                      <button 
+                        type="submit" 
+                        class="btn btn-primary"
+                        :disabled="isSubmitting"
+                      >
+                        <i class="pi pi-lock"></i> Resetear Contraseña
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            
+            <div v-else class="empty-state">
+              <i class="pi pi-user-edit" style="font-size: 3rem"></i>
+              <p>Seleccione un usuario para gestionar su perfil</p>
             </div>
           </div>
-        </div>
-        
-        <div v-else class="empty-state">
-          <i class="pi pi-user-edit" style="font-size: 3rem"></i>
-          <p>Seleccione un usuario para gestionar su perfil</p>
         </div>
       </div>
     </div>
@@ -276,8 +290,14 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useUsersStore } from '@/stores/users';
 import type { User } from '@/stores/users';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import { useNotificationsStore } from '@/stores/notifications';
 
 const usersStore = useUsersStore();
+const router = useRouter();
+const authStore = useAuthStore();
+const notificationsStore = useNotificationsStore();
 
 // Lista de usuarios para seleccionar
 const users = computed(() => usersStore.users);
@@ -318,6 +338,27 @@ const passwordData = reactive({
 // Mostrar/ocultar contraseñas
 const showNewPassword = ref(false);
 const showConfirmPassword = ref(false);
+
+// Verificación de permisos
+const isAdminOrAssistant = computed(() => {
+  return authStore.isAdmin || authStore.isAssistant;
+});
+
+// Función para redireccionar al dashboard
+function goToDashboard() {
+  router.push('/dashboard');
+}
+
+// Mostrar notificación si no tiene permiso
+onMounted(() => {
+  if (!isAdminOrAssistant.value) {
+    notificationsStore.addNotification({
+      type: 'error',
+      message: 'No tienes permiso para acceder a la gestión de perfiles.',
+      timeout: 5000
+    });
+  }
+});
 
 // Cargar datos iniciales
 onMounted(async () => {
@@ -1117,5 +1158,39 @@ const translateRole = (role: string) => {
       }
     }
   }
+}
+
+/* Estilos para el mensaje de error de permisos */
+.permission-error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 120px);
+  padding: 2rem;
+}
+
+.error-container {
+  max-width: 500px;
+  text-align: center;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.error-container i {
+  font-size: 3rem;
+  color: #f59e0b;
+  margin-bottom: 1rem;
+}
+
+.error-container h2 {
+  margin-bottom: 1rem;
+  color: #334155;
+}
+
+.error-container p {
+  margin-bottom: 2rem;
+  color: #64748b;
 }
 </style>

@@ -1,257 +1,269 @@
 /* eslint-disable */
 <template>
   <div class="admin-section">
-    <!-- Sección del encabezado con fondo de gradiente y forma ondulada -->
-    <div class="hero-section">
-      <div class="hero-content">
-        <h1 class="hero-title">Gestión de Preguntas Frecuentes</h1>
-        <p class="hero-subtitle">
-          Crear y administrar las preguntas frecuentes que se mostrarán a los clientes.
-        </p>
-        
-        <button class="btn btn-accent" @click="openCreateModal">
-          <i class="pi pi-plus"></i> Nueva Pregunta
-        </button>
+    <!-- Permiso verificado: Solo admins y asistentes -->
+    <div v-if="!isAdminOrAssistant" class="permission-error">
+      <div class="error-container">
+        <i class="pi pi-exclamation-triangle"></i>
+        <h2>Acceso restringido</h2>
+        <p>No tienes permiso para acceder a esta sección. Esta página solo está disponible para administradores y asistentes.</p>
+        <button class="btn btn-primary" @click="goToDashboard">Volver al Dashboard</button>
       </div>
-      <div class="wave-shape"></div>
     </div>
-    
-    <div class="content-wrapper">
-      <div v-if="loading" class="loading">
-        <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
-        <p>Cargando preguntas frecuentes...</p>
-      </div>
-      <div v-else-if="error" class="alert alert-danger">
-        <i class="pi pi-exclamation-circle"></i> {{ error }}
+
+    <div v-else>
+      <!-- Sección del encabezado con fondo de gradiente y forma ondulada -->
+      <div class="hero-section">
+        <div class="hero-content">
+          <h1 class="hero-title">Gestión de Preguntas Frecuentes</h1>
+          <p class="hero-subtitle">
+            Crear y administrar las preguntas frecuentes que se mostrarán a los clientes.
+          </p>
+          
+          <button class="btn btn-accent" @click="openCreateModal">
+            <i class="pi pi-plus"></i> Nueva Pregunta
+          </button>
+        </div>
+        <div class="wave-shape"></div>
       </div>
       
-      <div v-else>
-        <div class="admin-card">
-          <div class="filter-controls">
-            <div class="search-box">
-              <div class="form-group">
-                <label class="form-label">Buscar:</label>
-                <div class="search-input-container">
-                  <input type="text" v-model="searchQuery" class="form-control" placeholder="Buscar preguntas..." />
-                  <i class="pi pi-search search-icon"></i>
+      <div class="content-wrapper">
+        <div v-if="loading" class="loading">
+          <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+          <p>Cargando preguntas frecuentes...</p>
+        </div>
+        <div v-else-if="error" class="alert alert-danger">
+          <i class="pi pi-exclamation-circle"></i> {{ error }}
+        </div>
+        
+        <div v-else>
+          <div class="admin-card">
+            <div class="filter-controls">
+              <div class="search-box">
+                <div class="form-group">
+                  <label class="form-label">Buscar:</label>
+                  <div class="search-input-container">
+                    <input type="text" v-model="searchQuery" class="form-control" placeholder="Buscar preguntas..." />
+                    <i class="pi pi-search search-icon"></i>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <div class="filter-group">
-              <label class="form-label">Filtrar por categoría:</label>
-              <select v-model="categoryFilter" class="form-control">
-                <option value="all">Todas las categorías</option>
-                <option v-for="category in categories" :key="category" :value="category">
-                  {{ category }}
-                </option>
-              </select>
-            </div>
-            
-            <div class="filter-group">
-              <label class="form-label">Estado:</label>
-              <select v-model="publishFilter" class="form-control">
-                <option value="all">Todos</option>
-                <option value="published">Publicados</option>
-                <option value="unpublished">No publicados</option>
-              </select>
-            </div>
-          </div>
-          
-          <div class="faq-list-container">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Pregunta</th>
-                  <th>Categoría</th>
-                  <th>Estado</th>
-                  <th>Última actualización</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-if="filteredFaqs.length === 0">
-                  <td colspan="5" class="no-results">
-                    No se encontraron preguntas frecuentes que coincidan con los filtros.
-                  </td>
-                </tr>
-                <tr v-for="faq in filteredFaqs" :key="faq.id">
-                  <td class="question-cell">{{ faq.question }}</td>
-                  <td><span class="category-tag">{{ faq.category }}</span></td>
-                  <td>
-                    <span :class="['status-badge', faq.isPublished ? 'published' : 'unpublished']">
-                      {{ faq.isPublished ? 'Publicado' : 'No publicado' }}
-                    </span>
-                  </td>
-                  <td>{{ formatDate(faq.updatedAt) }}</td>
-                  <td class="actions-cell">
-                    <button @click="openViewModal(faq)" class="btn btn-icon" title="Ver detalles">
-                      <i class="pi pi-eye"></i>
-                    </button>
-                    <button @click="openEditModal(faq)" class="btn btn-icon" title="Editar">
-                      <i class="pi pi-pencil"></i>
-                    </button>
-                    <button @click="confirmDelete(faq)" class="btn btn-icon btn-danger" title="Eliminar">
-                      <i class="pi pi-trash"></i>
-                    </button>
-                    <button 
-                      @click="togglePublish(faq.id)" 
-                      class="btn btn-icon" 
-                      :class="faq.isPublished ? 'btn-warning' : 'btn-success'"
-                      :title="faq.isPublished ? 'Despublicar' : 'Publicar'"
-                    >
-                      <i :class="['pi', faq.isPublished ? 'pi-eye-slash' : 'pi-check-circle']"></i>
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Modal para ver detalles de una pregunta -->
-    <div v-if="showViewModal" class="modal-overlay" @click.self="showViewModal = false">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Detalles de la Pregunta</h2>
-          <button class="close-btn" @click="showViewModal = false">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="faq-details">
-            <div class="detail-section">
-              <h3>Pregunta</h3>
-              <p>{{ currentFaq.question }}</p>
-            </div>
-            
-            <div class="detail-section">
-              <h3>Respuesta</h3>
-              <div class="answer-content">{{ currentFaq.answer }}</div>
-            </div>
-            
-            <div class="detail-group">
-              <div class="detail-item">
-                <h4>Categoría</h4>
-                <p class="category-tag">{{ currentFaq.category }}</p>
-              </div>
               
-              <div class="detail-item">
-                <h4>Estado</h4>
-                <span :class="['status-badge', currentFaq.isPublished ? 'published' : 'unpublished']">
-                  {{ currentFaq.isPublished ? 'Publicado' : 'No publicado' }}
-                </span>
-              </div>
-            </div>
-            
-            <div class="detail-group">
-              <div class="detail-item">
-                <h4>Creado</h4>
-                <p>{{ formatDate(currentFaq.createdAt) }}</p>
-              </div>
-              
-              <div class="detail-item">
-                <h4>Última actualización</h4>
-                <p>{{ formatDate(currentFaq.updatedAt) }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline-secondary" @click="showViewModal = false">Cerrar</button>
-          <button class="btn btn-primary" @click="openEditModal(currentFaq)">Editar</button>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Modal para crear/editar una pregunta -->
-    <div v-if="showEditModal" class="modal-overlay" @click.self="cancelEdit">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>{{ isEditing ? 'Editar Pregunta' : 'Nueva Pregunta' }}</h2>
-          <button class="close-btn" @click="cancelEdit">&times;</button>
-        </div>
-        <div class="modal-body">
-          <form @submit.prevent="saveFaq" class="faq-form">
-            <div class="form-group">
-              <label for="question" class="form-label">Pregunta <span class="required">*</span></label>
-              <input 
-                type="text" 
-                id="question" 
-                v-model="formData.question" 
-                required
-                class="form-control"
-                :class="{ 'is-invalid': formErrors.question }"
-              />
-              <span v-if="formErrors.question" class="error-text">{{ formErrors.question }}</span>
-            </div>
-            
-            <div class="form-group">
-              <label for="answer" class="form-label">Respuesta <span class="required">*</span></label>
-              <textarea 
-                id="answer" 
-                v-model="formData.answer" 
-                rows="6" 
-                required
-                class="form-control"
-                :class="{ 'is-invalid': formErrors.answer }"
-              ></textarea>
-              <span v-if="formErrors.answer" class="error-text">{{ formErrors.answer }}</span>
-            </div>
-            
-            <div class="form-group">
-              <label for="category" class="form-label">Categoría <span class="required">*</span></label>
-              <div class="category-input">
-                <select 
-                  id="category" 
-                  v-model="formData.category" 
-                  required
-                  class="form-control"
-                  :class="{ 'is-invalid': formErrors.category }"
-                >
-                  <option value="" disabled>Seleccione una categoría</option>
+              <div class="filter-group">
+                <label class="form-label">Filtrar por categoría:</label>
+                <select v-model="categoryFilter" class="form-control">
+                  <option value="all">Todas las categorías</option>
                   <option v-for="category in categories" :key="category" :value="category">
                     {{ category }}
                   </option>
                 </select>
-                <span v-if="formErrors.category" class="error-text">{{ formErrors.category }}</span>
+              </div>
+              
+              <div class="filter-group">
+                <label class="form-label">Estado:</label>
+                <select v-model="publishFilter" class="form-control">
+                  <option value="all">Todos</option>
+                  <option value="published">Publicados</option>
+                  <option value="unpublished">No publicados</option>
+                </select>
               </div>
             </div>
             
-            <div class="form-group">
-              <div class="checkbox-container">
-                <input type="checkbox" id="isPublished" v-model="formData.isPublished" />
-                <label for="isPublished" class="checkbox-label">Publicar esta pregunta</label>
-              </div>
-              <p class="help-text">
-                Las preguntas publicadas serán visibles para los usuarios en la sección de ayuda.
-              </p>
+            <div class="faq-list-container">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Pregunta</th>
+                    <th>Categoría</th>
+                    <th>Estado</th>
+                    <th>Última actualización</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="filteredFaqs.length === 0">
+                    <td colspan="5" class="no-results">
+                      No se encontraron preguntas frecuentes que coincidan con los filtros.
+                    </td>
+                  </tr>
+                  <tr v-for="faq in filteredFaqs" :key="faq.id">
+                    <td class="question-cell">{{ faq.question }}</td>
+                    <td><span class="category-tag">{{ faq.category }}</span></td>
+                    <td>
+                      <span :class="['status-badge', faq.isPublished ? 'published' : 'unpublished']">
+                        {{ faq.isPublished ? 'Publicado' : 'No publicado' }}
+                      </span>
+                    </td>
+                    <td>{{ formatDate(faq.updatedAt) }}</td>
+                    <td class="actions-cell">
+                      <button @click="openViewModal(faq)" class="btn btn-icon" title="Ver detalles">
+                        <i class="pi pi-eye"></i>
+                      </button>
+                      <button @click="openEditModal(faq)" class="btn btn-icon" title="Editar">
+                        <i class="pi pi-pencil"></i>
+                      </button>
+                      <button @click="confirmDelete(faq)" class="btn btn-icon btn-danger" title="Eliminar">
+                        <i class="pi pi-trash"></i>
+                      </button>
+                      <button 
+                        @click="togglePublish(faq.id)" 
+                        class="btn btn-icon" 
+                        :class="faq.isPublished ? 'btn-warning' : 'btn-success'"
+                        :title="faq.isPublished ? 'Despublicar' : 'Publicar'"
+                      >
+                        <i :class="['pi', faq.isPublished ? 'pi-eye-slash' : 'pi-check-circle']"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" @click="cancelEdit">Cancelar</button>
-          <button type="button" class="btn btn-primary" @click="saveFaq">
-            {{ isEditing ? 'Actualizar' : 'Guardar' }}
-          </button>
+          </div>
         </div>
       </div>
-    </div>
-    
-    <!-- Modal de confirmación para eliminar -->
-    <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="showDeleteConfirm = false">
-      <div class="modal-content confirm-modal">
-        <div class="modal-header">
-          <h2>Confirmar eliminación</h2>
-          <button class="close-btn" @click="showDeleteConfirm = false">&times;</button>
+      
+      <!-- Modal para ver detalles de una pregunta -->
+      <div v-if="showViewModal" class="modal-overlay" @click.self="showViewModal = false">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Detalles de la Pregunta</h2>
+            <button class="close-btn" @click="showViewModal = false">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="faq-details">
+              <div class="detail-section">
+                <h3>Pregunta</h3>
+                <p>{{ currentFaq.question }}</p>
+              </div>
+              
+              <div class="detail-section">
+                <h3>Respuesta</h3>
+                <div class="answer-content">{{ currentFaq.answer }}</div>
+              </div>
+              
+              <div class="detail-group">
+                <div class="detail-item">
+                  <h4>Categoría</h4>
+                  <p class="category-tag">{{ currentFaq.category }}</p>
+                </div>
+                
+                <div class="detail-item">
+                  <h4>Estado</h4>
+                  <span :class="['status-badge', currentFaq.isPublished ? 'published' : 'unpublished']">
+                    {{ currentFaq.isPublished ? 'Publicado' : 'No publicado' }}
+                  </span>
+                </div>
+              </div>
+              
+              <div class="detail-group">
+                <div class="detail-item">
+                  <h4>Creado</h4>
+                  <p>{{ formatDate(currentFaq.createdAt) }}</p>
+                </div>
+                
+                <div class="detail-item">
+                  <h4>Última actualización</h4>
+                  <p>{{ formatDate(currentFaq.updatedAt) }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary" @click="showViewModal = false">Cerrar</button>
+            <button class="btn btn-primary" @click="openEditModal(currentFaq)">Editar</button>
+          </div>
         </div>
-        <div class="modal-body">
-          <p>¿Estás seguro de que deseas eliminar esta pregunta frecuente?</p>
-          <p class="warning-text">Esta acción no se puede deshacer.</p>
+      </div>
+      
+      <!-- Modal para crear/editar una pregunta -->
+      <div v-if="showEditModal" class="modal-overlay" @click.self="cancelEdit">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>{{ isEditing ? 'Editar Pregunta' : 'Nueva Pregunta' }}</h2>
+            <button class="close-btn" @click="cancelEdit">&times;</button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="saveFaq" class="faq-form">
+              <div class="form-group">
+                <label for="question" class="form-label">Pregunta <span class="required">*</span></label>
+                <input 
+                  type="text" 
+                  id="question" 
+                  v-model="formData.question" 
+                  required
+                  class="form-control"
+                  :class="{ 'is-invalid': formErrors.question }"
+                />
+                <span v-if="formErrors.question" class="error-text">{{ formErrors.question }}</span>
+              </div>
+              
+              <div class="form-group">
+                <label for="answer" class="form-label">Respuesta <span class="required">*</span></label>
+                <textarea 
+                  id="answer" 
+                  v-model="formData.answer" 
+                  rows="6" 
+                  required
+                  class="form-control"
+                  :class="{ 'is-invalid': formErrors.answer }"
+                ></textarea>
+                <span v-if="formErrors.answer" class="error-text">{{ formErrors.answer }}</span>
+              </div>
+              
+              <div class="form-group">
+                <label for="category" class="form-label">Categoría <span class="required">*</span></label>
+                <div class="category-input">
+                  <select 
+                    id="category" 
+                    v-model="formData.category" 
+                    required
+                    class="form-control"
+                    :class="{ 'is-invalid': formErrors.category }"
+                  >
+                    <option value="" disabled>Seleccione una categoría</option>
+                    <option v-for="category in categories" :key="category" :value="category">
+                      {{ category }}
+                    </option>
+                  </select>
+                  <span v-if="formErrors.category" class="error-text">{{ formErrors.category }}</span>
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <div class="checkbox-container">
+                  <input type="checkbox" id="isPublished" v-model="formData.isPublished" />
+                  <label for="isPublished" class="checkbox-label">Publicar esta pregunta</label>
+                </div>
+                <p class="help-text">
+                  Las preguntas publicadas serán visibles para los usuarios en la sección de ayuda.
+                </p>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" @click="cancelEdit">Cancelar</button>
+            <button type="button" class="btn btn-primary" @click="saveFaq">
+              {{ isEditing ? 'Actualizar' : 'Guardar' }}
+            </button>
+          </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline-secondary" @click="showDeleteConfirm = false">Cancelar</button>
-          <button class="btn btn-danger" @click="deleteFaq">Eliminar</button>
+      </div>
+      
+      <!-- Modal de confirmación para eliminar -->
+      <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="showDeleteConfirm = false">
+        <div class="modal-content confirm-modal">
+          <div class="modal-header">
+            <h2>Confirmar eliminación</h2>
+            <button class="close-btn" @click="showDeleteConfirm = false">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p>¿Estás seguro de que deseas eliminar esta pregunta frecuente?</p>
+            <p class="warning-text">Esta acción no se puede deshacer.</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary" @click="showDeleteConfirm = false">Cancelar</button>
+            <button class="btn btn-danger" @click="deleteFaq">Eliminar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -263,6 +275,9 @@ import { ref, computed, onMounted } from 'vue';
 import { useFaqsStore } from '../../stores/faqs';
 import type { FAQ } from '../../types/faq.types';
 import { storeToRefs } from 'pinia';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import { useNotificationsStore } from '@/stores/notifications';
 
 // Store para FAQs
 const faqStore = useFaqsStore();
@@ -306,8 +321,30 @@ const formErrors = ref({
 const newCategory = ref('');
 const faqToDelete = ref<number | null>(null);
 
-// Cargar FAQs al montar el componente
+// Stores para la verificación de permisos
+const authStore = useAuthStore();
+const router = useRouter();
+const notificationsStore = useNotificationsStore();
+
+// Verificación de permisos
+const isAdminOrAssistant = computed(() => {
+  return authStore.isAdmin || authStore.isAssistant;
+});
+
+// Función para redireccionar al dashboard
+function goToDashboard() {
+  router.push('/dashboard');
+}
+
+// Mostrar notificación si no tiene permiso
 onMounted(() => {
+  if (!isAdminOrAssistant.value) {
+    notificationsStore.addNotification({
+      type: 'error',
+      message: 'No tienes permiso para acceder a la gestión de FAQs.',
+      timeout: 5000
+    });
+  }
   faqStore.fetchFaqs();
 });
 
@@ -993,5 +1030,39 @@ const addNewCategory = () => {
 .warning-text {
   color: var(--danger-color);
   font-weight: 500;
+}
+
+/* Estilos para el mensaje de error de permisos */
+.permission-error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 120px);
+  padding: 2rem;
+}
+
+.error-container {
+  max-width: 500px;
+  text-align: center;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.error-container i {
+  font-size: 3rem;
+  color: #f59e0b;
+  margin-bottom: 1rem;
+}
+
+.error-container h2 {
+  margin-bottom: 1rem;
+  color: #334155;
+}
+
+.error-container p {
+  margin-bottom: 2rem;
+  color: #64748b;
 }
 </style>

@@ -1,93 +1,105 @@
 /* eslint-disable */
 <template>
   <div class="admin-section">
-    <!-- Sección del encabezado con fondo de gradiente y forma ondulada -->
-    <div class="hero-section">
-      <div class="hero-content">
-        <h1 class="hero-title">Gestión de Categorías</h1>
-        <p class="hero-subtitle">Administre las categorías para la clasificación de tickets</p>
+    <div v-if="!isAdmin" class="authorization-error">
+      <div class="alert alert-danger">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>No tienes permisos suficientes para acceder a esta página</span>
       </div>
-      <div class="wave-shape"></div>
+      <button @click="redirectToDashboard" class="btn btn-primary">
+        <i class="pi pi-home"></i> Volver al Dashboard
+      </button>
     </div>
     
-    <div class="content-wrapper">
-      <div v-if="loading" class="loading">
-        <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
-        <p>Cargando categorías...</p>
-      </div>
-      <div v-else-if="error" class="alert alert-danger">
-        <i class="pi pi-exclamation-circle"></i> {{ error }}
+    <template v-else>
+      <!-- Sección del encabezado con fondo de gradiente y forma ondulada -->
+      <div class="hero-section">
+        <div class="hero-content">
+          <h1 class="hero-title">Gestión de Categorías</h1>
+          <p class="hero-subtitle">Administre las categorías para la clasificación de tickets</p>
+        </div>
+        <div class="wave-shape"></div>
       </div>
       
-      <div v-else class="admin-form-row">
-        <div class="admin-form-col">
-          <div class="admin-card">
-            <h2 class="admin-card-title">Categorías Existentes</h2>
-            <div v-if="categories.length === 0" class="empty-list">
-              <p>No hay categorías disponibles</p>
-            </div>
-            <ul v-else class="category-list">
-              <li v-for="category in categories" :key="category.id" class="category-item">
-                <div class="category-info">
-                  <span class="category-name">{{ category.name }}</span>
-                  <div class="category-actions">
-                    <button @click="editCategory(category)" class="btn btn-sm btn-outline-primary">
-                      <i class="pi pi-pencil"></i>
-                    </button>
-                    <button @click="deleteCategory(category.id)" class="btn btn-sm btn-outline-danger">
-                      <i class="pi pi-trash"></i>
-                    </button>
-                  </div>
-                </div>
-                <p v-if="category.description" class="category-description">
-                  {{ category.description }}
-                </p>
-              </li>
-            </ul>
-          </div>
+      <div class="content-wrapper">
+        <div v-if="loading" class="loading">
+          <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+          <p>Cargando categorías...</p>
+        </div>
+        <div v-else-if="error" class="alert alert-danger">
+          <i class="pi pi-exclamation-circle"></i> {{ error }}
         </div>
         
-        <div class="admin-form-col">
-          <div class="admin-card">
-            <h2 class="admin-card-title">{{ isEditing ? 'Editar Categoría' : 'Añadir Nueva Categoría' }}</h2>
-            <form @submit.prevent="saveCategory" class="admin-form">
-              <div class="form-group">
-                <label for="categoryName" class="form-label">Nombre</label>
-                <input 
-                  type="text" 
-                  id="categoryName" 
-                  v-model="currentCategory.name" 
-                  required
-                  class="form-control"
-                  placeholder="Nombre de la categoría"
-                />
+        <div v-else class="admin-form-row">
+          <div class="admin-form-col">
+            <div class="admin-card">
+              <h2 class="admin-card-title">Categorías Existentes</h2>
+              <div v-if="categories.length === 0" class="empty-list">
+                <p>No hay categorías disponibles</p>
               </div>
-              
-              <div class="form-group">
-                <label for="categoryDescription" class="form-label">Descripción</label>
-                <textarea 
-                  id="categoryDescription" 
-                  v-model="currentCategory.description" 
-                  class="form-control"
-                  rows="4"
-                  placeholder="Descripción de la categoría"
-                ></textarea>
-              </div>
-              
-              <div class="form-actions">
-                <button type="submit" class="btn btn-primary">
-                  <i class="pi" :class="isEditing ? 'pi-check' : 'pi-plus'"></i>
-                  {{ isEditing ? 'Actualizar' : 'Guardar' }}
-                </button>
-                <button v-if="isEditing" @click="cancelEdit" type="button" class="btn btn-outline-secondary">
-                  <i class="pi pi-times"></i> Cancelar
-                </button>
-              </div>
-            </form>
+              <ul v-else class="category-list">
+                <li v-for="category in categories" :key="category.id" class="category-item">
+                  <div class="category-info">
+                    <span class="category-name">{{ category.name }}</span>
+                    <div class="category-actions">
+                      <button @click="editCategory(category)" class="btn btn-sm btn-outline-primary">
+                        <i class="pi pi-pencil"></i>
+                      </button>
+                      <button @click="deleteCategory(category.id)" class="btn btn-sm btn-outline-danger">
+                        <i class="pi pi-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <p v-if="category.description" class="category-description">
+                    {{ category.description }}
+                  </p>
+                </li>
+              </ul>
+            </div>
+          </div>
+          
+          <div class="admin-form-col">
+            <div class="admin-card">
+              <h2 class="admin-card-title">{{ isEditing ? 'Editar Categoría' : 'Añadir Nueva Categoría' }}</h2>
+              <form @submit.prevent="saveCategory" class="admin-form">
+                <div class="form-group">
+                  <label for="categoryName" class="form-label">Nombre</label>
+                  <input 
+                    type="text" 
+                    id="categoryName" 
+                    v-model="currentCategory.name" 
+                    required
+                    class="form-control"
+                    placeholder="Nombre de la categoría"
+                  />
+                </div>
+                
+                <div class="form-group">
+                  <label for="categoryDescription" class="form-label">Descripción</label>
+                  <textarea 
+                    id="categoryDescription" 
+                    v-model="currentCategory.description" 
+                    class="form-control"
+                    rows="4"
+                    placeholder="Descripción de la categoría"
+                  ></textarea>
+                </div>
+                
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="pi" :class="isEditing ? 'pi-check' : 'pi-plus'"></i>
+                    {{ isEditing ? 'Actualizar' : 'Guardar' }}
+                  </button>
+                  <button v-if="isEditing" @click="cancelEdit" type="button" class="btn btn-outline-secondary">
+                    <i class="pi pi-times"></i> Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </template>
   </div>
 </template>
 
@@ -95,10 +107,27 @@
 import { ref, onMounted, computed } from 'vue';
 import { useCategoriesStore } from '@/stores/categories';
 import { storeToRefs } from 'pinia';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import { useNotificationsStore } from '@/stores/notifications';
 
 // Store
 const categoryStore = useCategoriesStore();
 const { categories, loading, error } = storeToRefs(categoryStore);
+const authStore = useAuthStore();
+const notificationsStore = useNotificationsStore();
+const router = useRouter();
+
+// Verificar permisos
+const isAdmin = computed(() => {
+  return authStore.isAdmin;
+});
+
+// Función para redirigir al dashboard
+const redirectToDashboard = () => {
+  notificationsStore.warning('Has sido redirigido al Dashboard debido a permisos insuficientes');
+  router.push('/dashboard');
+};
 
 // Estado local
 const isEditing = ref(false);
@@ -110,7 +139,13 @@ const currentCategory = ref({
 
 // Cargar categorías al montar el componente
 onMounted(() => {
-  categoryStore.fetchCategories();
+  // Solo cargamos datos si el usuario es administrador
+  if (isAdmin.value) {
+    categoryStore.fetchCategories();
+  } else {
+    // Si no es admin, redirigimos al dashboard
+    redirectToDashboard();
+  }
 });
 
 // Métodos
