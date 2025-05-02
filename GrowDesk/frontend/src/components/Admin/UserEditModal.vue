@@ -173,25 +173,11 @@ const handleSubmit = async () => {
     console.log('Datos que se enviarán al servidor:', userData);
     console.log('ID del usuario a actualizar:', props.user.id);
     
-    // Actualizar directamente en el estado local
-    const index = userStore.users.findIndex((u: any) => u.id === props.user?.id);
-    if (index !== -1) {
-      userStore.users[index] = {
-        ...userStore.users[index],
-        ...userData,
-        updatedAt: new Date().toISOString()
-      };
-      console.log('Usuario actualizado manualmente en el store');
-    }
+    // Intentar actualizar usando el método del store
+    const updatedUser = await userStore.updateUser(props.user.id, userData);
     
-    // Simular una respuesta exitosa
-    const updatedUser = {
-      ...props.user,
-      ...userData,
-      updatedAt: new Date().toISOString()
-    };
-    
-    console.log('Usuario actualizado exitosamente:', updatedUser);
+    console.log('Respuesta de la actualización:', updatedUser);
+    console.log('Usuario actualizado exitosamente en el store');
     
     // Emitir evento para actualizar la lista
     console.log('Emitiendo evento updated');

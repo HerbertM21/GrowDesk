@@ -2,6 +2,9 @@ import { defineStore } from 'pinia';
 import apiClient from '@/api/client';
 import { ref } from 'vue';
 
+// Nombre clave para localStorage
+const STORAGE_KEY = 'growdesk-users';
+
 // Interfaces
 export interface User {
   id: string;
@@ -79,6 +82,27 @@ export const useUsersStore = defineStore('users', () => {
   const loading = ref<boolean>(false);
   const error = ref<string | null>(null);
 
+  // Guardar usuarios en localStorage
+  function saveUsersToLocalStorage() {
+    console.log('Guardando usuarios en localStorage:', users.value);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(users.value));
+  }
+
+  // Cargar usuarios desde localStorage
+  function loadUsersFromLocalStorage(): User[] {
+    try {
+      const storedData = localStorage.getItem(STORAGE_KEY);
+      if (storedData) {
+        console.log('Usuarios cargados desde localStorage');
+        return JSON.parse(storedData);
+      }
+    } catch (err) {
+      console.error('Error al cargar usuarios desde localStorage:', err);
+    }
+    console.log('No se encontraron usuarios en localStorage, usando datos iniciales');
+    return [];
+  }
+
   // Getters
   const getUsersByRole = (roleFilter: string) => {
     return users.value.filter((user: User) => user.role === roleFilter);
@@ -101,9 +125,25 @@ export const useUsersStore = defineStore('users', () => {
     
     try {
       console.log('Obteniendo usuarios...');
-      const response = await apiClient.get('/users');
-      users.value = response.data;
-      console.log('Usuarios cargados:', users.value);
+      
+      // Intentar cargar desde localStorage primero
+      const storedUsers = loadUsersFromLocalStorage();
+      
+      if (storedUsers.length > 0) {
+        users.value = storedUsers;
+        console.log('Usuarios cargados desde localStorage:', users.value);
+      } else {
+        // Intentar cargar desde la API
+        try {
+          const response = await apiClient.get('/users');
+          users.value = response.data;
+          // Guardar en localStorage
+          saveUsersToLocalStorage();
+        } catch (apiErr) {
+          console.log('Error al cargar desde API, cargando datos mock');
+          initMockUsers();
+        }
+      }
     } catch (err: unknown) {
       error.value = 'Error al cargar usuarios';
       console.error('Error al cargar usuarios:', err);
@@ -125,6 +165,15 @@ export const useUsersStore = defineStore('users', () => {
     
     try {
       console.log(`Obteniendo perfil de usuario para ID: ${userId}`);
+      
+      // Primero, buscar en el array de usuarios
+      const userFromArray = users.value.find(u => u.id === userId);
+      if (userFromArray) {
+        currentProfile.value = userFromArray;
+        return currentProfile.value;
+      }
+      
+      // Si no se encuentra, intentar obtenerlo de la API
       const response = await apiClient.get(`/users/${userId}`);
       currentProfile.value = response.data;
       return currentProfile.value;
@@ -145,6 +194,8 @@ export const useUsersStore = defineStore('users', () => {
       const response = await apiClient.post('/users', userData);
       // Añadir a la lista local
       users.value.push(response.data);
+      // Guardar en localStorage
+      saveUsersToLocalStorage();
       return response.data;
     } catch (err: unknown) {
       console.error('Error al crear usuario:', err);
@@ -165,6 +216,8 @@ export const useUsersStore = defineStore('users', () => {
       
       // Añadir a la lista local
       users.value.push(newUser);
+      // Guardar en localStorage
+      saveUsersToLocalStorage();
       return newUser;
     } finally {
       loading.value = false;
@@ -191,6 +244,9 @@ export const useUsersStore = defineStore('users', () => {
       if (currentProfile.value?.id === userId) {
         currentProfile.value = { ...currentProfile.value, ...response.data };
       }
+      
+      // Guardar en localStorage
+      saveUsersToLocalStorage();
       
       return response.data;
     } catch (err: unknown) {
@@ -229,6 +285,9 @@ export const useUsersStore = defineStore('users', () => {
           currentProfile.value = { ...currentProfile.value, ...userData };
         }
         
+        // Guardar en localStorage
+        saveUsersToLocalStorage();
+        
         return users.value[index];
       }
       throw err;
@@ -265,6 +324,8 @@ export const useUsersStore = defineStore('users', () => {
       if (currentProfile.value && currentProfile.value.id === userId) {
         currentProfile.value = null;
       }
+      // Guardar en localStorage
+      saveUsersToLocalStorage();
       return true;
     } catch (err: unknown) {
       console.error('Error al eliminar usuario:', err);
@@ -278,6 +339,9 @@ export const useUsersStore = defineStore('users', () => {
         currentProfile.value = null;
       }
       
+      // Guardar en localStorage
+      saveUsersToLocalStorage();
+      
       return true;
     } finally {
       loading.value = false;
@@ -286,39 +350,22 @@ export const useUsersStore = defineStore('users', () => {
 
   // Para desarrollo rápido - inicializar con usuarios de ejemplo
   const initMockUsers = () => {
-    if (users.value.length > 0) return;
+    // Cargar desde localStorage primero
+    const storedUsers = loadUsersFromLocalStorage();
     
-    users.value = [
-      {
-        id: '1',
-        firstName: 'Admin',
-        lastName: 'Usuario',
-        email: 'admin@example.com',
-        role: 'admin',
-        department: 'Tecnología',
-        active: true
-      },
-      {
-        id: '2',
-        firstName: 'Asistente',
-        lastName: 'Soporte',
-        email: 'asistente@example.com',
-        role: 'assistant',
-        department: 'Soporte',
-        active: true
-      },
-      {
-        id: '3',
-        firstName: 'Empleado',
-        lastName: 'Regular',
-        email: 'empleado@example.com',
-        role: 'employee',
-        department: 'Ventas',
-        active: true
-      }
-    ];
+    if (storedUsers.length > 0) {
+      users.value = storedUsers;
+      console.log('Usuarios cargados desde localStorage:', users.value);
+      return;
+    }
     
-    console.log('Usuarios mock inicializados:', users.value);
+    // Si no hay datos en localStorage, usar datos mock
+    if (users.value.length === 0) {
+      users.value = [...mockUsers];
+      // Guardar en localStorage
+      saveUsersToLocalStorage();
+      console.log('Usuarios mock inicializados y guardados en localStorage:', users.value);
+    }
   };
 
   // Obtener perfil del usuario actual (desde auth)
@@ -400,6 +447,9 @@ export const useUsersStore = defineStore('users', () => {
         users.value.push(userData);
       }
       
+      // Guardar en localStorage
+      saveUsersToLocalStorage();
+      
       return userData;
     } catch (err) {
       console.error(`Error al obtener usuario con ID ${userId}:`, err);
@@ -439,6 +489,9 @@ export const useUsersStore = defineStore('users', () => {
       loading.value = false;
     }
   };
+
+  // Inicializar automáticamente el store
+  initMockUsers();
 
   return {
     // Estado
