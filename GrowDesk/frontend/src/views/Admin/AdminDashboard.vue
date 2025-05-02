@@ -157,10 +157,12 @@ import { ref, onMounted, computed } from 'vue';
 import AdminLayout from './AdminLayout.vue';
 import { useUsersStore } from '@/stores/users';
 import { useTicketStore } from '@/stores/tickets';
+import { useCategoriesStore } from '@/stores/categories';
 
 // Referencias a los stores
 const usersStore = useUsersStore();
 const ticketStore = useTicketStore();
+const categoriesStore = useCategoriesStore();
 
 // Estados de carga
 const loadingActivity = ref(false);
@@ -207,34 +209,69 @@ const recentActivity = ref([
   }
 ]);
 
-// Categorías de tickets
-const categories = ref([
-  {
-    name: 'Soporte técnico',
-    count: 48,
-    percentage: 37.8
-  },
-  {
-    name: 'Consultas',
-    count: 32,
-    percentage: 25.2
-  },
-  {
-    name: 'Facturación',
-    count: 21,
-    percentage: 16.5
-  },
-  {
-    name: 'Errores',
-    count: 15,
-    percentage: 11.8
-  },
-  {
-    name: 'Otros',
-    count: 11,
-    percentage: 8.7
-  }
-]);
+// Función para calcular tickets por categoría con datos reales
+const getCategoriesWithTicketCounts = () => {
+  const allTickets = ticketStore.tickets;
+  const categoriesWithCounts = [];
+  
+  // Obtener las categorías disponibles
+  const categoriesMap = new Map();
+  
+  // Primero añadir todas las categorías del store de categorías
+  categoriesStore.categories.forEach(category => {
+    categoriesMap.set(category.name, { 
+      name: category.name, 
+      count: 0,
+      percentage: 0
+    });
+  });
+  
+  // Añadir categorías que aparecen en tickets pero no están en el store
+  allTickets.forEach(ticket => {
+    if (ticket.category && !categoriesMap.has(ticket.category)) {
+      categoriesMap.set(ticket.category, { 
+        name: ticket.category, 
+        count: 0,
+        percentage: 0
+      });
+    }
+  });
+  
+  // Contar tickets por categoría
+  allTickets.forEach(ticket => {
+    const categoryName = ticket.category || 'Sin categoría';
+    
+    if (categoriesMap.has(categoryName)) {
+      const category = categoriesMap.get(categoryName);
+      category.count++;
+    } else {
+      categoriesMap.set(categoryName, { 
+        name: categoryName, 
+        count: 1,
+        percentage: 0
+      });
+    }
+  });
+  
+  // Convertir el Map a Array
+  const categoriesArray = Array.from(categoriesMap.values());
+  
+  // Calcular el total de tickets
+  const totalTickets = categoriesArray.reduce((total, category) => total + category.count, 0);
+  
+  // Calcular porcentajes
+  categoriesArray.forEach(category => {
+    category.percentage = totalTickets > 0 
+      ? Math.round((category.count / totalTickets) * 100) 
+      : 0;
+  });
+  
+  // Ordenar por cantidad (descendente)
+  return categoriesArray.sort((a, b) => b.count - a.count);
+};
+
+// Convertir a computed para mantener reactividad
+const categories = computed(() => getCategoriesWithTicketCounts());
 
 // Función para obtener el icono de actividad según el tipo
 const getActivityIcon = (type: string): string => {
@@ -249,17 +286,20 @@ const getActivityIcon = (type: string): string => {
   return iconMap[type] || 'pi pi-check';
 };
 
-// Función para actualizar los datos
+// Reemplazar la función refreshData existente para cargar todos los datos necesarios
 const refreshData = async () => {
   loadingActivity.value = true;
   loadingCategories.value = true;
   
   try {
     // Cargar datos de usuarios y tickets actualizados
-    await usersStore.fetchUsers();
-    await ticketStore.fetchTickets();
+    await Promise.all([
+      usersStore.fetchUsers(),
+      ticketStore.fetchTickets(),
+      categoriesStore.fetchCategories()
+    ]);
     
-    // Actualizar categorías de tickets (aquí se podría implementar lógica para obtener categorías reales)
+    // Datos cargados correctamente
     loadingCategories.value = false;
   } catch (error) {
     console.error('Error al actualizar datos:', error);
