@@ -1,0 +1,28 @@
+{
+  "id": "5da93711-f0b2-4eb0-be50-74d2d8e68786",
+  "title": "Support request from Herbert",
+  "description": "test",
+  "status": "new",
+  "createdBy": "test@test.com",
+  "createdAt": "2025-05-02T19:27:36.078330384Z",
+  "updatedAt": "2025-05-02T19:27:36.078330436Z",
+  "messages": [
+    {
+      "id": "2ac5c2ba-0802-47ad-b6f4-b201af2331f1",
+      "content": "test",
+      "isClient": true,
+      "createdAt": "2025-05-02T19:27:36.078329801Z",
+      "userName": "Herbert",
+      "userEmail": "test@test.com"
+    }
+  ],
+  "userEmail": "test@test.com",
+  "userName": "Herbert",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+    "screenSize": "2133x1015",
+    "externalId": ""
+  }
+}

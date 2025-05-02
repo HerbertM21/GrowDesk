@@ -1,150 +1,188 @@
 <template>
   <div>
-    <!-- Chat bubble -->
+    <!-- Chat bubble con animación de pulso restaurada -->
     <div 
-      class="fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-all z-50"
+      class="fixed bottom-6 right-6 w-20 h-20 rounded-full flex items-center justify-center cursor-pointer shadow-xl transition-all z-50 hover:scale-110 animate-pulse-slow"
       :style="{ backgroundColor: primaryColor }"
       @click="toggleChat"
     >
-      <i class="pi pi-comments text-white" v-if="!isOpen"></i>
-      <i class="pi pi-times text-white" v-else></i>
+      <i class="pi pi-comments text-white text-3xl" v-if="!isOpen"></i>
+      <i class="pi pi-times text-white text-3xl" v-else></i>
     </div>
 
-    <!-- Chat interface -->
+    <!-- Chat interface con sombras restauradas -->
     <div 
       v-if="isOpen" 
-      class="fixed bottom-24 right-6 w-80 h-96 bg-white rounded-lg shadow-xl flex flex-col overflow-hidden border border-gray-200 z-40"
+      class="fixed bottom-24 right-6 w-[420px] h-[600px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 z-40 transition-all duration-300 ease-in-out animate-slide-up"
     >
-      <!-- Chat header -->
-      <div :style="{ backgroundColor: primaryColor }" class="text-white p-4 flex justify-between items-center">
-        <h3 class="font-medium">{{ brandName }}</h3>
+      <!-- Chat header - Diseño plano (sin gradiente) -->
+      <div 
+        class="p-5 flex justify-between items-center shadow-sm"
+        :style="{ backgroundColor: primaryColor }"
+      >
         <div class="flex items-center">
-          <i v-if="isRegistered" class="pi pi-sign-out cursor-pointer mr-3" @click.stop="logout" title="Cerrar sesión"></i>
-          <i class="pi pi-times cursor-pointer" @click="toggleChat"></i>
+          <h3 class="font-semibold text-white text-lg">{{ brandName }}</h3>
+        </div>
+        <div class="flex items-center space-x-3">
+          <i v-if="isRegistered" class="pi pi-sign-out cursor-pointer text-white hover:scale-110 transition-transform" @click.stop="logout" title="Cerrar sesión"></i>
+          <i class="pi pi-times cursor-pointer text-white hover:scale-110 transition-transform" @click="toggleChat"></i>
         </div>
       </div>
       
-      <!-- Registration form (displayed before chat) -->
-      <div v-if="!isRegistered" class="flex-1 p-4 overflow-y-auto bg-gray-50 flex flex-col">
-        <div class="text-center text-gray-700 mb-4">
-          {{ welcomeMessage }}
+      <!-- Registration form sin efectos de sombra -->
+      <div v-if="!isRegistered" class="flex-1 p-8 overflow-y-auto bg-white flex flex-col animate-fade-in">
+        <div class="text-center text-gray-700 mb-8">
+          <div class="text-2xl font-semibold mb-2" :style="{ color: primaryColor }">Bienvenido</div>
+          <p>{{ welcomeMessage }}</p>
         </div>
-        <form @submit.prevent="submitRegistration" class="flex flex-col gap-4">
+        <form @submit.prevent="submitRegistration" class="flex flex-col gap-6">
           <div class="flex flex-col">
-            <label for="name" class="text-sm text-gray-600 mb-1">Nombre</label>
+            <label for="name" class="text-sm font-medium text-gray-700 mb-2">Nombre</label>
             <input 
               v-model="userData.name" 
               type="text" 
               id="name" 
-              class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2"
-              :style="{ '--tw-ring-color': primaryColor }"
+              class="border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-2 transition-all"
+              :style="{ '--tw-border-opacity': 1, borderColor: primaryColor }"
               required
             />
           </div>
           <div class="flex flex-col">
-            <label for="email" class="text-sm text-gray-600 mb-1">Email</label>
+            <label for="email" class="text-sm font-medium text-gray-700 mb-2">Email</label>
             <input 
               v-model="userData.email" 
               type="email" 
               id="email" 
-              class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2"
-              :style="{ '--tw-ring-color': primaryColor }"
+              class="border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-2 transition-all"
+              :style="{ '--tw-border-opacity': 1, borderColor: primaryColor }"
               required
             />
           </div>
           <div class="flex flex-col">
-            <label for="firstMessage" class="text-sm text-gray-600 mb-1">¿En qué podemos ayudarte?</label>
+            <label for="firstMessage" class="text-sm font-medium text-gray-700 mb-2">¿En qué podemos ayudarte?</label>
             <textarea 
               v-model="userData.initialMessage" 
               id="firstMessage" 
-              rows="3"
-              class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2"
-              :style="{ '--tw-ring-color': primaryColor }"
+              rows="5"
+              class="border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-2 transition-all"
+              :style="{ '--tw-border-opacity': 1, borderColor: primaryColor }"
               required
               placeholder="Describe brevemente tu consulta..."
             ></textarea>
           </div>
           <button 
             type="submit" 
-            class="mt-2 text-white rounded-md py-2 font-medium focus:outline-none"
+            class="mt-2 text-white rounded-lg py-4 font-medium focus:outline-none transition-all hover:shadow-lg flex items-center justify-center"
             :style="{ backgroundColor: primaryColor }"
             :disabled="loading"
           >
-            <span v-if="!loading">Iniciar chat</span>
-            <span v-else>
-              <i class="pi pi-spin pi-spinner"></i> Procesando...
+            <span v-if="!loading" class="flex items-center"><i class="pi pi-send mr-2"></i> Iniciar chat</span>
+            <span v-else class="flex items-center">
+              <i class="pi pi-spin pi-spinner mr-2"></i> Procesando...
             </span>
           </button>
         </form>
       </div>
       
       <!-- FAQ and Chat sections (displayed after registration) -->
-      <div v-else class="flex-1 overflow-y-auto bg-gray-50">
-        <!-- Chat View -->
-        <div v-if="showChatView" class="p-4 chat-messages">
-          <div v-if="messages.length === 0" class="text-center text-gray-500 mt-20">
-            Inicia una conversación escribiendo un mensaje.
+      <div v-else class="flex-1 overflow-y-auto bg-white">
+        <!-- Chat View con mensajes mejorados -->
+        <div v-if="showChatView" class="p-6 chat-messages">
+          <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full">
+            <div class="text-center text-gray-500">
+              <i class="pi pi-comments text-5xl mb-4" :style="{ color: primaryColor }"></i>
+              <p>Inicia una conversación escribiendo un mensaje.</p>
+            </div>
           </div>
-          <div v-for="(message, index) in messages" :key="index" class="mb-3">
+          <div v-for="(message, index) in messages" :key="index" class="mb-5 animate-fade-in">
             <div 
               :class="[
-                'max-w-[80%] p-3 rounded-lg', 
-                message.isUser ? 'text-white ml-auto rounded-br-none' : 'bg-gray-200 text-gray-800 rounded-bl-none'
+                'max-w-[90%] p-5 rounded-lg', 
+                message.isUser ? 'text-white ml-auto' : 'bg-gray-100 text-gray-800'
               ]"
               :style="message.isUser ? { backgroundColor: primaryColor } : {}"
             >
-              {{ message.text }}
+              <div class="flex items-start">
+                <!-- Avatar solo para mensajes que no son del usuario -->
+                <div v-if="!message.isUser" class="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center mr-3 flex-shrink-0">
+                  <i class="pi pi-user text-gray-500"></i>
+                </div>
+                <div class="flex-1">
+                  <div v-if="!message.isUser" class="font-semibold text-sm mb-1 text-gray-600">Soporte</div>
+                  <div class="text-base">{{ message.text }}</div>
+                  <div class="text-right text-xs mt-2" :class="message.isUser ? 'text-white opacity-70' : 'text-gray-500'">
+                    {{ message.timestamp ? formatMessageTime(message.timestamp) : '' }}
+                  </div>
+                </div>
+              </div>
+              <!-- Indicador de estado del mensaje -->
+              <div v-if="message.pending" class="text-right mt-1">
+                <i class="pi pi-spin pi-spinner text-white text-xs"></i>
+              </div>
+              <div v-if="message.error" class="text-right mt-1 text-xs text-red-500">
+                Error al enviar
+              </div>
             </div>
           </div>
         </div>
         
-        <!-- FAQ View -->
-        <div v-else class="p-4">
-          <div class="text-center mb-4">
+        <!-- FAQ View mejorado -->
+        <div v-else class="p-6">
+          <div class="text-center mb-6">
             <button 
               @click="showChatView = true" 
-              class="text-white rounded-md py-2 px-4 font-medium focus:outline-none w-full"
+              class="text-white rounded-lg py-3 px-5 font-medium focus:outline-none w-full transition-all hover:opacity-90 flex items-center justify-center"
               :style="{ backgroundColor: primaryColor }"
             >
               <i class="pi pi-comments mr-2"></i>Iniciar chat
             </button>
           </div>
           
-          <h3 class="text-lg font-semibold mb-3 text-gray-700">Preguntas Frecuentes</h3>
+          <h3 class="text-xl font-bold mb-5 text-gray-700 flex items-center">
+            <i class="pi pi-question-circle mr-2" :style="{ color: primaryColor }"></i>
+            Preguntas Frecuentes
+          </h3>
           
-          <div v-if="loadingFaqs" class="text-center py-4">
-            <i class="pi pi-spin pi-spinner text-gray-500"></i>
-            <p class="text-sm text-gray-500 mt-2">Cargando preguntas frecuentes...</p>
+          <div v-if="loadingFaqs" class="text-center py-6">
+            <i class="pi pi-spin pi-spinner text-3xl" :style="{ color: primaryColor }"></i>
+            <p class="text-sm text-gray-500 mt-3">Cargando preguntas frecuentes...</p>
           </div>
           
-          <div v-else-if="faqs.length === 0" class="text-center py-4 text-gray-500">
-            No hay preguntas frecuentes disponibles.
+          <div v-else-if="faqs.length === 0" class="text-center py-6 text-gray-500">
+            <i class="pi pi-inbox text-3xl mb-3" :style="{ color: primaryColor }"></i>
+            <p>No hay preguntas frecuentes disponibles.</p>
           </div>
           
-          <div v-else>
-            <div v-for="(category, index) in faqCategories" :key="index" class="mb-4">
-              <h4 class="font-medium text-gray-700 mb-2">{{ category }}</h4>
-              <div class="space-y-2">
+          <div v-else class="space-y-6">
+            <div v-for="(category, index) in faqCategories" :key="index" class="mb-6 animate-fade-in"
+                 :style="{ animationDelay: `${index * 0.1}s` }">
+              <h4 class="font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200">{{ category }}</h4>
+              <div class="space-y-4">
                 <div 
                   v-for="faq in getFaqsByCategory(category)" 
                   :key="faq.id" 
-                  class="border border-gray-200 rounded-lg overflow-hidden"
+                  class="border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 transition-all"
                 >
                   <div 
-                    class="p-3 bg-gray-100 cursor-pointer flex justify-between items-center"
+                    class="p-4 bg-white cursor-pointer flex justify-between items-center"
                     @click="toggleFaq(faq.id)"
+                    :style="expandedFaqs.includes(faq.id) ? { borderLeft: `4px solid ${primaryColor}` } : {}"
                   >
-                    <span class="font-medium text-gray-800">{{ faq.question }}</span>
-                    <i class="pi" :class="expandedFaqs.includes(faq.id) ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
+                    <span class="font-medium text-gray-800 flex-1">{{ faq.question }}</span>
+                    <i class="pi transition-transform" 
+                       :class="expandedFaqs.includes(faq.id) ? 'pi-chevron-up' : 'pi-chevron-down'"
+                       :style="{ color: primaryColor }"></i>
                   </div>
-                  <div v-if="expandedFaqs.includes(faq.id)" class="p-3 bg-white">
+                  <div v-if="expandedFaqs.includes(faq.id)" 
+                       class="p-4 bg-gray-50 animate-fade-in">
                     <p class="text-gray-700">{{ faq.answer }}</p>
-                    <div class="mt-2 flex justify-end">
+                    <div class="mt-4 flex justify-end">
                       <button 
                         @click="setInitialQuestion(faq.question)" 
-                        class="text-xs text-white rounded-md py-1 px-2 focus:outline-none"
+                        class="text-sm text-white rounded-lg py-2 px-4 focus:outline-none flex items-center transition-all hover:opacity-90"
                         :style="{ backgroundColor: primaryColor }"
                       >
+                        <i class="pi pi-comments mr-2"></i>
                         Consultar más
                       </button>
                     </div>
@@ -156,42 +194,42 @@
         </div>
       </div>
       
-      <!-- Chat input (displayed after registration and when in chat view) -->
-      <div v-if="isRegistered && showChatView" class="p-3 border-t border-gray-200 bg-white">
+      <!-- Chat input (displayed after registration and when in chat view) mejorado -->
+      <div v-if="isRegistered && showChatView" class="p-5 border-t border-gray-200 bg-white">
         <div class="flex items-center">
           <input 
             v-model="newMessage" 
             type="text" 
             placeholder="Escribe un mensaje..." 
-            class="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2"
-            :style="{ '--tw-ring-color': primaryColor }"
+            class="flex-1 border border-gray-300 rounded-lg px-5 py-4 focus:outline-none focus:border-2 transition-all"
+            :style="{ '--tw-border-opacity': 1, borderColor: primaryColor }"
             @keyup.enter="sendMessage"
           />
           <button 
             @click="sendMessage" 
-            class="ml-2 text-white rounded-full p-2 focus:outline-none"
-            :style="{ backgroundColor: primaryColor }"
+            class="ml-3 text-white rounded-lg p-4 focus:outline-none transition-all hover:opacity-90"
+            :style="{ backgroundColor: primaryColor, border: '2px solid #000' }"
           >
             <i class="pi pi-send"></i>
           </button>
         </div>
       </div>
       
-      <!-- Bottom navigation when in FAQ view -->
-      <div v-if="isRegistered && !showChatView" class="p-3 border-t border-gray-200 bg-white">
+      <!-- Bottom navigation when in FAQ view mejorado -->
+      <div v-if="isRegistered && !showChatView" class="p-5 border-t border-gray-200 bg-white">
         <div class="flex justify-between items-center">
           <button 
             @click="refreshFaqs" 
-            class="text-xs text-gray-600 focus:outline-none flex items-center"
+            class="text-sm text-gray-600 focus:outline-none flex items-center hover:text-gray-800 transition-colors"
           >
-            <i class="pi pi-refresh mr-1"></i> Actualizar
+            <i class="pi pi-refresh mr-1"></i> Actualizar FAQs
           </button>
           <button 
             @click="showChatView = true" 
-            class="text-white rounded-md py-1 px-4 text-sm focus:outline-none"
-            :style="{ backgroundColor: primaryColor }"
+            class="text-white rounded-lg py-2 px-4 text-sm focus:outline-none transition-all hover:opacity-90"
+            :style="{ backgroundColor: primaryColor, border: '2px solid #000' }"
           >
-            <i class="pi pi-comments mr-1"></i> Chat
+            <i class="pi pi-comments mr-2"></i> Ir al chat
           </button>
         </div>
       </div>
@@ -223,11 +261,48 @@ const props = defineProps({
   }
 });
 
+// Función para oscurecer un color (para gradientes)
+const darkenColor = (color: string, amount: number): string => {
+  // Convertir a formato rgb
+  let usePound = false;
+  
+  if (color[0] === "#") {
+    color = color.slice(1);
+    usePound = true;
+  }
+  
+  const num = parseInt(color, 16);
+  
+  let r = (num >> 16) - amount;
+  if (r > 255) r = 255;
+  else if (r < 0) r = 0;
+  
+  let g = ((num >> 8) & 0x00FF) - amount;
+  if (g > 255) g = 255;
+  else if (g < 0) g = 0;
+  
+  let b = (num & 0x0000FF) - amount;
+  if (b > 255) b = 255;
+  else if (b < 0) b = 0;
+  
+  return (usePound ? "#" : "") + (g | (r << 8) | (b << 16)).toString(16).padStart(6, '0');
+};
+
+// Formateador de tiempo para mensajes
+const formatMessageTime = (timestamp: string): string => {
+  try {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch (error) {
+    return '';
+  }
+};
+
 const isOpen = ref(false);
 const isRegistered = ref(false);
 const loading = ref(false);
 const currentTicketId = ref('');
-const messages = ref<Array<{text: string, isUser: boolean, id?: string, pending?: boolean, error?: boolean}>>([]);
+const messages = ref<Array<{text: string, isUser: boolean, id?: string, pending?: boolean, error?: boolean, timestamp?: string}>>([]);
 const newMessage = ref('');
 const webSocket = ref<WebSocket | null>(null);
 
@@ -257,13 +332,13 @@ const hasSession = computed(() => {
 // Categorías de FAQs (computed)
 const faqCategories = computed(() => {
   const categories = new Set<string>();
-  faqs.value.forEach(faq => categories.add(faq.category));
+  faqs.value.forEach((faq: FAQ) => categories.add(faq.category));
   return Array.from(categories);
 });
 
 // Filtrar FAQs por categoría
 const getFaqsByCategory = (category: string) => {
-  return faqs.value.filter(faq => faq.category === category);
+  return faqs.value.filter((faq: FAQ) => faq.category === category);
 };
 
 // Toggle expandir/colapsar FAQ
@@ -753,12 +828,116 @@ const sendMessage = async () => {
 </script>
 
 <style>
-/* Los estilos se manejan con Tailwind CSS */
+/* Los estilos base se manejan con Tailwind CSS */
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+/* Estilos para iconos */
 .pi {
   font-size: 1.25rem;
+}
+
+/* Animaciones personalizadas */
+@keyframes pulse-slow {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+}
+
+@keyframes slide-up {
+  0% {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s infinite ease-in-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2s infinite ease-in-out;
+}
+
+/* Mejoras para la experiencia en dispositivos móviles */
+@media (max-width: 640px) {
+  .fixed.bottom-24.right-6 {
+    bottom: 5rem;
+    right: 1rem;
+    width: calc(100vw - 2rem) !important;
+    max-width: 100% !important;
+    height: calc(85vh - 5rem) !important;
+  }
+}
+
+/* Mejoras para scroll en mensajes y FAQs */
+.chat-messages {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+}
+
+/* Transiciones suaves para todos los elementos interactivos */
+button, 
+input, 
+textarea {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Efecto hover para FAQs */
+.faq-item:hover {
+  transform: translateX(3px);
 }
 </style>

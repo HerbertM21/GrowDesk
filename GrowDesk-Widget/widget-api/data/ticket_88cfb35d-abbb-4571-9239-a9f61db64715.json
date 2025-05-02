@@ -1,0 +1,36 @@
+{
+  "id": "88cfb35d-abbb-4571-9239-a9f61db64715",
+  "title": "Support request from Herbert",
+  "description": "asd",
+  "status": "new",
+  "createdBy": "herbert.mayorga.jbs@gmail.com",
+  "createdAt": "2025-05-02T19:44:48.22757432Z",
+  "updatedAt": "2025-05-02T19:44:52.726320003Z",
+  "messages": [
+    {
+      "id": "f5019ff8-523c-4da2-b62c-f5d269817252",
+      "content": "asd",
+      "isClient": true,
+      "createdAt": "2025-05-02T19:44:48.2275736Z",
+      "userName": "Herbert",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    },
+    {
+      "id": "MSG-1746215092726310753",
+      "content": "¿Cómo puedo contactar con soporte?",
+      "isClient": true,
+      "createdAt": "2025-05-02T19:44:52.726319501Z",
+      "userName": "Herbert",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    }
+  ],
+  "userEmail": "herbert.mayorga.jbs@gmail.com",
+  "userName": "Herbert",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+    "screenSize": "2133x1015",
+    "externalId": ""
+  }
+}

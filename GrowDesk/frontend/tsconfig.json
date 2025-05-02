@@ -10,5 +10,6 @@
     "noImplicitThis": false
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"],
+  "exclude": ["src/views/ticket/TicketDetails.vue"],
   "references": [{ "path": "./tsconfig.node.json" }]
 } 

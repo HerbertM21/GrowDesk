@@ -23,6 +23,19 @@ const initializeWidget = () => {
   // Obtener configuración del script
   initializeFromScript();
 
+  // Configurar la API con la URL proporcionada en GrowDeskConfig
+  if (window.GrowDeskConfig?.apiUrl) {
+    console.log('Configurando API URL desde GrowDeskConfig:', window.GrowDeskConfig.apiUrl);
+    
+    // Asegurarnos de que la URL esté correctamente formateada
+    let apiUrl = window.GrowDeskConfig.apiUrl;
+    // No añadimos '/widget' porque lo hacemos en cada llamada específica
+    
+    configureWidgetApi({
+      apiUrl: apiUrl
+    });
+  }
+
   // Crear el store global
   const pinia = createPinia();
 
@@ -90,11 +103,13 @@ const initializeWidget = () => {
 declare global {
   interface Window {
     GrowDeskConfig?: {
+      apiUrl?: string;
       brandName?: string;
       welcomeMessage?: string;
       primaryColor?: string;
       position?: string;
       logoUrl?: string;
+      ticketApiKey?: string;
     };
     GrowDeskWidget?: any;
   }

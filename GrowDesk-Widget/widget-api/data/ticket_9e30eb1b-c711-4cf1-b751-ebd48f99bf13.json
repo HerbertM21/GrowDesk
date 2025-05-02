@@ -1,0 +1,44 @@
+{
+  "id": "9e30eb1b-c711-4cf1-b751-ebd48f99bf13",
+  "title": "Support request from Herbert",
+  "description": "test",
+  "status": "new",
+  "createdBy": "herbertmm12@gmail.com",
+  "createdAt": "2025-05-02T19:32:23.861738496Z",
+  "updatedAt": "2025-05-02T19:34:01.676597483Z",
+  "messages": [
+    {
+      "id": "6b279318-36dc-4474-85c7-4702de6d302b",
+      "content": "test",
+      "isClient": true,
+      "createdAt": "2025-05-02T19:32:23.861737369Z",
+      "userName": "Herbert",
+      "userEmail": "herbertmm12@gmail.com"
+    },
+    {
+      "id": "MSG-1746214362020765991",
+      "content": "ads",
+      "isClient": true,
+      "createdAt": "2025-05-02T19:32:42.020770517Z",
+      "userName": "Herbert",
+      "userEmail": "herbertmm12@gmail.com"
+    },
+    {
+      "id": "MSG-1746214441676590547",
+      "content": "asd",
+      "isClient": true,
+      "createdAt": "2025-05-02T19:34:01.676595687Z",
+      "userName": "Herbert",
+      "userEmail": "herbertmm12@gmail.com"
+    }
+  ],
+  "userEmail": "herbertmm12@gmail.com",
+  "userName": "Herbert",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+    "screenSize": "2133x1015",
+    "externalId": ""
+  }
+}

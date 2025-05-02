@@ -382,7 +382,7 @@ const averageTicketsPerDay = computed(() => {
   // Tarjetas de métricas
   .metric-card {
     background-color: var(--card-bg);
-    border-radius: 24px; /* Aumentando el radio de las esquinas para que sean más redondeadas */
+    border-radius: 24px; 
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     padding: 1.5rem;
     border: 1px solid var(--border-color);
@@ -448,7 +448,7 @@ const averageTicketsPerDay = computed(() => {
   // Tarjetas de rendimiento
   .performance-card {
     background-color: var(--card-bg);
-    border-radius: 24px; /* Aumentando el radio de las esquinas para que sean más redondeadas */
+    border-radius: 24px; 
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     padding: 1.75rem;
     border: 1px solid var(--border-color);

@@ -1,0 +1,28 @@
+{
+  "id": "c34585a0-20e6-43c2-9888-4a7a47f64456",
+  "title": "Support request from PyGeo",
+  "description": "awwww",
+  "status": "new",
+  "createdBy": "herbert.mayorga.jbs@gmail.com",
+  "createdAt": "2025-05-02T19:45:04.693416269Z",
+  "updatedAt": "2025-05-02T19:45:04.693416324Z",
+  "messages": [
+    {
+      "id": "43f9580d-337e-4e90-9b0e-090f80cc7995",
+      "content": "awwww",
+      "isClient": true,
+      "createdAt": "2025-05-02T19:45:04.693415617Z",
+      "userName": "PyGeo",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    }
+  ],
+  "userEmail": "herbert.mayorga.jbs@gmail.com",
+  "userName": "PyGeo",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+    "screenSize": "2133x1015",
+    "externalId": ""
+  }
+}

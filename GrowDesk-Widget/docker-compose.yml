@@ -1,6 +1,20 @@
 version: '3.8'
 
 services:
+  widget-core:
+    build:
+      context: ./widget-core
+      dockerfile: Dockerfile
+    ports:
+      - "5174:3000"
+    volumes:
+      - ./widget-core:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:8082
+    restart: unless-stopped
+
   widget-api:
     build:
       context: ./widget-api
@@ -24,31 +38,16 @@ services:
 
   demo-site:
     build:
-      context: ./demo-site
+      context: ./examples/simple-demo
       dockerfile: Dockerfile
     ports:
-      - "8090:3000"
+      - "8090:8090"
     environment:
-      - PORT=3000
+      - PORT=8090
       - NODE_ENV=development
-      - WIDGET_API_URL=http://widget-api:3000
     volumes:
-      - ./demo-site:/app
+      - ./examples/simple-demo:/app
       - /app/node_modules
-    restart: unless-stopped
-
-  widget-src:
-    build:
-      context: ./widget-src
-      dockerfile: Dockerfile
-    ports:
-      - "5174:5173"
-    volumes:
-      - ./widget-src:/app
-      - /app/node_modules
-    environment:
-      - NODE_ENV=development
-      - VITE_API_URL=http://localhost:8082
     restart: unless-stopped
 
   postgres:

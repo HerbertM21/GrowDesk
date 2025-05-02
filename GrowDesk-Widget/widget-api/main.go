@@ -300,7 +300,7 @@ func main() {
 	// Iniciar el servidor
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // Puerto por defecto
+		port = "8080"
 	}
 
 	log.Printf("Servidor iniciado en el puerto %s\n", port)
@@ -321,8 +321,8 @@ func sendToGrowDesk(url string, jsonData []byte, apiKey string, ticketID string)
 	// Añadir cabeceras
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+apiKey)
-	req.Header.Set("X-Message-Source", "widget-client") // Añadir cabecera para identificar fuente
-	req.Header.Set("X-Widget-ID", "true")               // Añadir cabecera para identificar widget
+	req.Header.Set("X-Message-Source", "widget-client")
+	req.Header.Set("X-Widget-ID", "true")
 
 	// Crear cliente HTTP con timeout
 	client := &http.Client{
@@ -406,9 +406,9 @@ func generateEmbedCode(widgetId, widgetToken, brandName, welcomeMessage, primary
 </script>`
 }
 
-// SaveTicket saves a ticket to the data store
+// SaveTicket guarda un ticket en el almacenamiento local
 func SaveTicket(ticket Ticket) error {
-	// Check if data directory exists
+	// Verificar si el directorio data existe
 	if _, err := os.Stat("data"); os.IsNotExist(err) {
 		log.Printf("El directorio data no existe, creándolo...")
 		if err := os.Mkdir("data", 0755); err != nil {
@@ -417,21 +417,21 @@ func SaveTicket(ticket Ticket) error {
 		}
 	}
 
-	// Marshall ticket to JSON with indentation
+	// Serializar ticket a JSON con indentación
 	data, err := json.MarshalIndent(ticket, "", "  ")
 	if err != nil {
 		log.Printf("Error al serializar ticket a JSON: %v", err)
 		return err
 	}
 
-	// Get absolute path for ticket file
+	// Obtener ruta absoluta para el archivo de ticket
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Printf("Error al obtener directorio de trabajo: %v", err)
 		wd = "."
 	}
 
-	// Save to file
+	// Guardar en archivo
 	filename := fmt.Sprintf("data/ticket_%s.json", ticket.ID)
 	absFilename := path.Join(wd, filename)
 	log.Printf("Guardando ticket en archivo: %s", absFilename)
@@ -454,7 +454,7 @@ func SaveTicket(ticket Ticket) error {
 	return nil
 }
 
-// LoadTicket loads a ticket from the data store
+// LoadTicket carga un ticket desde el almacenamiento local
 func LoadTicket(ticketID string) (Ticket, error) {
 	filename := fmt.Sprintf("data/ticket_%s.json", ticketID)
 	data, err := ioutil.ReadFile(filename)
@@ -479,7 +479,7 @@ func LoadTicket(ticketID string) (Ticket, error) {
 	return ticket, err
 }
 
-// getMessages retrieves all messages for a ticket
+// getMessages obtiene todos los mensajes para un ticket
 func getMessages(c *gin.Context) {
 	ticketID := c.Param("ticketId")
 	if ticketID == "" {
@@ -677,7 +677,7 @@ func getTicketFromGrowDesk(ticketID string) (Ticket, error) {
 	return ticket, nil
 }
 
-// createTicket creates a new support ticket
+// createTicket crea un nuevo ticket de soporte
 func createTicket(c *gin.Context) {
 	var req TicketRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -687,16 +687,16 @@ func createTicket(c *gin.Context) {
 
 	log.Printf("Creating ticket for user %s (%s) with message: %s", req.Name, req.Email, req.Message)
 
-	// Get user info from request and headers
+	// Obtener información del usuario desde la solicitud y headers
 	userName, userEmail := GetUserInfo(c, &req)
 
-	// Generate a new ID (UUID)
+	// Generar un nuevo ID (UUID)
 	ticketID := uuid.New().String()
 
 	// Registro adicional para depuración
 	log.Printf("Utilizando ID de ticket: %s (formato UUID)", ticketID)
 
-	// Create first message
+	// Crear primer mensaje
 	firstMessage := Message{
 		ID:        uuid.New().String(),
 		Content:   req.Message,
@@ -706,10 +706,10 @@ func createTicket(c *gin.Context) {
 		UserEmail: userEmail,
 	}
 
-	// Create ticket
+	// Crear ticket
 	ticket := Ticket{
 		ID:          ticketID,
-		Title:       fmt.Sprintf("Support request from %s", req.Name),
+		Title:       fmt.Sprintf("Solicitud de soporte de %s", req.Name),
 		Description: req.Message,
 		Status:      "new",
 		CreatedBy:   req.Email,
@@ -721,13 +721,13 @@ func createTicket(c *gin.Context) {
 		Metadata:    req.Metadata,
 	}
 
-	// Save ticket locally
+	// Guardar ticket localmente
 	if err := SaveTicket(ticket); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save ticket"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al guardar el ticket"})
 		return
 	}
 
-	log.Printf("Ticket created successfully: %s", ticketID)
+	log.Printf("Ticket creado correctamente: %s", ticketID)
 
 	// Verificación adicional
 	_, err := LoadTicket(ticketID)
@@ -774,10 +774,10 @@ func createTicket(c *gin.Context) {
 		}
 	}
 
-	// Return success response
+	// Respuesta de éxito
 	c.JSON(http.StatusOK, TicketResponse{
 		TicketID: ticketID,
-		Message:  "Ticket created successfully",
+		Message:  "Ticket creado correctamente",
 	})
 }
 
@@ -1108,7 +1108,7 @@ func handleWebSocketConnection(c *gin.Context) {
 		log.Printf("Mensaje recibido de tipo %d: %s", messageType, string(message))
 
 		// Procesamiento del mensaje si es necesario
-		// ...
+		// proximamente
 	}
 }
 
@@ -1226,7 +1226,7 @@ func handleAgentMessage(c *gin.Context) {
 			// Crear ticket
 			ticket = Ticket{
 				ID:          req.TicketID,
-				Title:       fmt.Sprintf("Support request from Agent"),
+				Title:       fmt.Sprintf("Solicitud de soporte de agente"),
 				Description: "Este ticket fue creado automáticamente al recibir un mensaje de un agente.",
 				Status:      "new",
 				CreatedBy:   "agent",
@@ -1274,7 +1274,7 @@ func handleAgentMessage(c *gin.Context) {
 	growDeskMessage := GrowDeskMessage{
 		TicketID: req.TicketID,
 		Content:  req.Content,
-		IsClient: false, // EXPLÍCITAMENTE FALSE para mensajes de agente
+		IsClient: false, // FALSE para mensajes de agente
 		UserID:   req.UserID,
 	}
 

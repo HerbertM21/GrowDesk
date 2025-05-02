@@ -1,0 +1,28 @@
+{
+  "id": "a2116406-4b75-4a3b-a3c0-118d77e77730",
+  "title": "Support request from Herbert",
+  "description": "test",
+  "status": "new",
+  "createdBy": "admin@growdesk.com",
+  "createdAt": "2025-05-02T19:30:38.516516717Z",
+  "updatedAt": "2025-05-02T19:30:38.51651676Z",
+  "messages": [
+    {
+      "id": "fd766165-2097-4243-aa2c-ce896bee4ecc",
+      "content": "test",
+      "isClient": true,
+      "createdAt": "2025-05-02T19:30:38.51651623Z",
+      "userName": "Herbert",
+      "userEmail": "admin@growdesk.com"
+    }
+  ],
+  "userEmail": "admin@growdesk.com",
+  "userName": "Herbert",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+    "screenSize": "2133x1015",
+    "externalId": ""
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "fc24d670-a1c5-45bd-b4c2-7c8d27d77b3e",
+  "title": "Support request from Herbert",
+  "description": "asds",
+  "status": "new",
+  "createdBy": "test@test.com",
+  "createdAt": "2025-05-02T19:34:07.088962987Z",
+  "updatedAt": "2025-05-02T19:34:07.088963041Z",
+  "messages": [
+    {
+      "id": "219cea1f-99e5-4978-9d33-47e040f24133",
+      "content": "asds",
+      "isClient": true,
+      "createdAt": "2025-05-02T19:34:07.08896229Z",
+      "userName": "Herbert",
+      "userEmail": "test@test.com"
+    }
+  ],
+  "userEmail": "test@test.com",
+  "userName": "Herbert",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+    "screenSize": "2133x1015",
+    "externalId": ""
+  }
+}

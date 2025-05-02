@@ -1,0 +1,36 @@
+{
+  "id": "06343e66-c41e-43cd-8d83-2607db593397",
+  "title": "Support request from Test User",
+  "description": "This is a test message",
+  "status": "new",
+  "createdBy": "test@example.com",
+  "createdAt": "2025-05-02T19:05:59.654817963Z",
+  "updatedAt": "2025-05-02T19:06:18.069749311Z",
+  "messages": [
+    {
+      "id": "81db1321-a83d-469b-bb5a-2814662e4145",
+      "content": "This is a test message",
+      "isClient": true,
+      "createdAt": "2025-05-02T19:05:59.654816672Z",
+      "userName": "Test User",
+      "userEmail": "test@example.com"
+    },
+    {
+      "id": "MSG-1746212778069744845",
+      "content": "This is a response message",
+      "isClient": true,
+      "createdAt": "2025-05-02T19:06:18.06974896Z",
+      "userName": "",
+      "userEmail": ""
+    }
+  ],
+  "userEmail": "test@example.com",
+  "userName": "Test User",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}
