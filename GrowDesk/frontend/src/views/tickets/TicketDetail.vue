@@ -2594,4 +2594,37 @@ body .dropdown-content.show {
 .category-indicator.soporte {
   background-color: #38c172;
 }
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-align: left;
+  background-color: var(--bg-tertiary);
+  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid var(--primary-color);
+  
+  .title-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    background-color: var(--primary-color);
+    border-radius: 10px;
+    margin-right: 1rem;
+    color: white;
+    box-shadow: 0 4px 10px rgba(var(--primary-rgb), 0.25);
+    
+    i {
+      font-size: 1.2rem;
+    }
+  }
+}
 </style>

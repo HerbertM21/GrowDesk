@@ -33,7 +33,12 @@
         <div v-else class="admin-form-row">
           <div class="admin-form-col">
             <div class="admin-card">
-              <h2 class="admin-card-title">Categorías Existentes</h2>
+              <div class="section-title">
+                <div class="title-icon">
+                  <i class="pi pi-tags"></i>
+                </div>
+                <h2>Categorías Existentes</h2>
+              </div>
               <div v-if="categories.length === 0" class="empty-list">
                 <p>No hay categorías disponibles</p>
               </div>
@@ -60,7 +65,12 @@
           
           <div class="admin-form-col">
             <div class="admin-card">
-              <h2 class="admin-card-title">{{ isEditing ? 'Editar Categoría' : 'Añadir Nueva Categoría' }}</h2>
+              <div class="section-title">
+                <div class="title-icon">
+                  <i class="pi pi-plus-circle"></i>
+                </div>
+                <h2>{{ isEditing ? 'Editar Categoría' : 'Añadir Nueva Categoría' }}</h2>
+              </div>
               <form @submit.prevent="saveCategory" class="admin-form">
                 <div class="form-group">
                   <label for="categoryName" class="form-label">Nombre</label>
@@ -473,6 +483,44 @@ const deleteCategory = async (id: number) => {
   
   i {
     font-size: 0.9em;
+  }
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: left;
+  background-color: var(--bg-tertiary);
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid var(--primary-color);
+  
+  .title-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background-color: var(--primary-color);
+    border-radius: 8px;
+    margin-right: 0.75rem;
+    color: white;
+    box-shadow: 0 4px 10px rgba(var(--primary-rgb), 0.25);
+    
+    i {
+      font-size: 1rem;
+    }
+  }
+  
+  h2 {
+    margin: 0;
+    font-size: 1.1rem;
   }
 }
 </style>

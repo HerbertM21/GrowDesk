@@ -106,7 +106,10 @@
       
       <!-- Sección de tickets -->
       <div class="profile-section">
-        <div class="section-header">
+        <div class="section-title">
+          <div class="title-icon">
+            <i class="pi pi-ticket"></i>
+          </div>
           <h2>Mis Tickets</h2>
         </div>
         
@@ -160,7 +163,12 @@
       </div>
       
       <div class="profile-section">
-        <h2>Actividad Reciente</h2>
+        <div class="section-title">
+          <div class="title-icon">
+            <i class="pi pi-clock"></i>
+          </div>
+          <h2>Actividad Reciente</h2>
+        </div>
         
         <div class="activity-timeline">
           <div v-if="!userActivity || userActivity.length === 0" class="empty-activity">
@@ -853,19 +861,40 @@ const handleProfileUpdated = async (updatedUser: any) => {
   box-shadow: var(--card-shadow);
   border: 1px solid var(--border-color);
   
-  .section-header {
+  .section-title {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: flex-start;
     margin-bottom: 1.5rem;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-align: left;
+    background-color: var(--bg-tertiary);
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid var(--primary-color);
+    
+    .title-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      background-color: var(--primary-color);
+      border-radius: 10px;
+      margin-right: 1rem;
+      color: white;
+      box-shadow: 0 4px 10px rgba(var(--primary-rgb), 0.25);
+      
+      i {
+        font-size: 1.2rem;
+      }
+    }
     
     h2 {
       margin: 0;
-      margin-bottom: 0;
-      color: var(--text-primary);
-      font-size: 1.5rem;
-      padding-bottom: 0.75rem;
-      border-bottom: none;
     }
   }
   
