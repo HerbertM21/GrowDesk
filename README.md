@@ -1,16 +1,13 @@
-# GrowDesk
+# GrowDeskV2
 
-## Guía de Instalación y Ejecución
+## Sistema Integrado de Gestión de Tickets y Soporte al Cliente
 
-Este documento proporciona las instrucciones detalladas para instalar y ejecutar el proyecto GrowDesk, un sistema completo de gestión de tickets de soporte con un widget embebible para sitios web.
+GrowDeskV2 es una plataforma moderna de help desk y gestión de tickets de soporte, diseñada para simplificar la comunicación con clientes y la gestión eficiente de solicitudes de soporte.
 
 ## Requisitos Previos
 
-Antes de comenzar, asegúrate de tener instalado lo siguiente:
-
-- **Node.js**: versión 16.0.0 o superior
-- **npm**: versión 8.0.0 o superior
-- **Go**: versión 1.18 o superior
+- **Docker**: versión 20.10.0 o superior
+- **Docker Compose**: versión 2.0.0 o superior
 - **Git**: para clonar el repositorio
 
 ## Estructura del Proyecto
@@ -20,123 +17,126 @@ El proyecto está organizado en dos componentes principales:
 - **GrowDesk**: Sistema principal de gestión de tickets
 - **GrowDesk-Widget**: Widget embebible para sitios web de clientes
 
-Para más detalles sobre la estructura del proyecto, consulta el archivo [ESTRUCTURA-PROYECTO.md](ESTRUCTURA-PROYECTO.md).
+## Inicio Rápido con Docker
 
-## Pasos para la Instalación
-
-### 1. Configuración del Backend
+### 1. Clonar el repositorio
 
 ```bash
-# Navegar al directorio del backend
-cd GrowDesk/backend
-
-# Instalar dependencias de Node.js para los servidores mock
-npm install
-
-# Instalar dependencias de Go
-go mod tidy
+git clone https://github.com/HerbertM21/GrowDeskV2.git
+cd GrowDeskV2
 ```
 
-### 2. Configuración del Frontend
+### 2. Iniciar el Sistema Principal (GrowDesk)
 
 ```bash
-# Navegar al directorio del frontend
-cd GrowDesk/frontend
+# Navegar al directorio GrowDesk
+cd GrowDesk
 
-# Instalar dependencias
-npm install
+# Iniciar todos los servicios con Docker Compose
+docker compose up -d
 ```
 
-### 3. Configuración del Widget
+Este comando iniciará todos los servicios necesarios:
+- **Frontend**: Interfaz de usuario Vue.js (accesible en http://localhost:3000)
+- **Backend**: API y servidor mock para desarrollo (accesible en http://localhost:8080)
+- **Base de datos**: PostgreSQL (puerto 5433)
+- **Redis**: Para caché y gestión de sesiones (puerto 6379)
+
+### 3. Iniciar el Widget (opcional)
 
 ```bash
-# Configuración de la API del Widget
-cd GrowDesk-Widget/widget-api
-go mod tidy
+# Navegar al directorio GrowDesk-Widget
+cd ../GrowDesk-Widget
 
-# Configuración del código fuente del Widget
-cd ../widget-src
-npm install
-
-# Configuración del sitio de demostración
-cd ../demo-site
-npm install
+# Iniciar todos los servicios para el widget
+docker compose up -d
 ```
 
-## Ejecución del Proyecto
+Este comando iniciará todos los servicios del widget:
+- **Widget Core**: Núcleo del widget (accesible en http://localhost:5174)
+- **Widget API**: API para la comunicación del widget (accesible en http://localhost:8082)
+- **Demo Site**: Sitio web de demostración con el widget integrado (accesible en http://localhost:8090)
+- **Base de datos**: PostgreSQL para el widget (puerto 5434)
 
-### Backend
+## Acceso a las Aplicaciones
 
-```bash
-# Desde el directorio GrowDesk/backend
-# Para iniciar el servidor mock (datos de prueba)
-node simple-mock-server.js
+Una vez que todos los contenedores estén en funcionamiento, puedes acceder a:
 
-# En otra terminal, para iniciar el servidor de autenticación mock
-node mock-auth-server.js
-```
-
-### Frontend
-
-```bash
-# Desde el directorio GrowDesk/frontend
-npm run dev
-```
-
-El panel de administración estará disponible en: http://localhost:3000
-
-### Widget API
-
-```bash
-# Desde el directorio GrowDesk-Widget/widget-api
-go run main.go
-```
-
-La API del widget estará disponible en: http://localhost:8082
-
-### Widget Demo Site
-
-```bash
-# Desde el directorio GrowDesk-Widget/demo-site
-npm run dev
-```
-
-El sitio de demostración estará disponible en: http://localhost:8090
+- **Panel de Administración**: http://localhost:3000
+- **API Backend (para pruebas)**: http://localhost:8080/api/health
+- **Demo del Widget**: http://localhost:8090
 
 ## Credenciales de Prueba
 
 Para acceder al sistema de administración, usa las siguientes credenciales:
 
 - **Administrador**:
-
   - Email: admin@example.com
   - Contraseña: password
+- **Asistente**:
+  - Email: asistente@example.com
+  - Contraseña: password
+- **Empleado**:
+  - Email: empleado@example.com
+  - Contraseña: password
+
+## Gestión de los Contenedores
+
+### Detener los servicios
+
+```bash
+# Para el sistema principal
+cd GrowDesk
+docker compose down
+
+# Para el widget
+cd ../GrowDesk-Widget
+docker compose down
+```
+
+### Ver logs
+
+```bash
+# Logs del frontend
+docker logs growdesk-frontend
+
+# Logs del backend
+docker logs growdesk-backend
+```
+
+### Reiniciar servicios específicos
+
+```bash
+# Reiniciar solo el frontend
+docker compose restart frontend
+
+# Reiniciar solo el backend
+docker compose restart backend
+```
+
+### Limpieza completa
+
+Para eliminar todos los contenedores, redes y volúmenes:
+
+```bash
+# Sistema principal
+cd GrowDesk
+docker compose down -v
+
+# Widget
+cd ../GrowDesk-Widget
+docker compose down -v
+```
 
 ## Configuración de Puertos
 
 | Componente            | Puerto | Descripción                          |
 | --------------------- | ------ | ------------------------------------- |
-| Backend (Mock Server) | 8000   | Servidor mock para datos de prueba    |
-| Backend (Auth Server) | 8001   | Servidor mock de autenticación       |
 | Frontend              | 3000   | Panel de administración de GrowDesk  |
+| Backend               | 8080   | Servidor mock para datos de prueba    |
+| PostgreSQL (GrowDesk) | 5433   | Base de datos para el sistema principal |
+| Redis                 | 6379   | Caché y gestión de sesiones          |
+| Widget Core           | 5174   | Interfaz del widget                  |
 | Widget API            | 8082   | API para la comunicación del widget  |
 | Demo Site             | 8090   | Sitio web de demostración con widget |
-
-## Desarrollo del Widget
-
-Si necesitas modificar y compilar el widget:
-
-```bash
-# Desde el directorio GrowDesk-Widget/widget-src
-# Iniciar en modo desarrollo
-npm run dev
-
-# Compilar para producción
-npm run build
-```
-
-Los archivos compilados se generarán en el directorio `dist` y deberán copiarse a la carpeta `demo-site/assets/` para probar los cambios.
-
-## Licencia
-
-Este proyecto está bajo la licencia MIT. Para más detalles, consulta el archivo LICENSE.
+| PostgreSQL (Widget)   | 5434   | Base de datos para el widget         |

@@ -1,13 +1,11 @@
 #!/bin/sh
 
-# Configurar variables de entorno
 echo "Configurando variables de entorno..."
 
 # Verificar el entorno
 if [ "$NODE_ENV" = "production" ]; then
   echo "Iniciando en modo PRODUCCIÓN"
   
-  # En producción, utilizamos Nginx para servir los archivos estáticos
   # Instalamos Nginx si no está instalado
   apk add --no-cache nginx
   
