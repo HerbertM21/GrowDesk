@@ -184,8 +184,9 @@ onMounted(() => {
     text-decoration: none;
     
     .logo-image {
-      height: 50px;
+      height: 45px;
       width: auto;
+      margin-left: 10px;
     }
   }
 }
