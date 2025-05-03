@@ -323,7 +323,7 @@ const selectedTagId = ref('');
 // Estado para arrastrar columnas
 const draggedColumnIndex = ref(null);
 
-// Columns with localStorage persistence
+// Columnas con persistencia en localStorage
 const columnsData = ref([
   { id: 'assigned', name: 'Por Hacer', color: '#3498db', isEditing: false },
   { id: 'in_progress', name: 'En Progreso', color: '#9b59b6', isEditing: false },
@@ -356,23 +356,23 @@ const colorOptions = ref([
   '#27ae60'  // dark green
 ]);
 
-// Load column names from localStorage if available
+// Cargar columnas desde localStorage si están disponibles
 onMounted(() => {
   const savedColumns = localStorage.getItem('kanbanColumns');
   if (savedColumns) {
     try {
       const parsed = JSON.parse(savedColumns);
-      // Merge saved names with default structure
+      // Unir nombres guardados con la estructura predeterminada
       columnsData.value = columnsData.value.map(col => {
         const savedColumn = parsed.find(c => c.id === col.id);
         return savedColumn ? {
           ...col,
           name: savedColumn.name || col.name,
-          isEditing: false // Always start not editing
+          isEditing: false // Siempre comienza sin editar
         } : col;
       });
     } catch (e) {
-      console.error('Error loading saved column names:', e);
+      console.error('Error al cargar los nombres de las columnas guardadas:', e);
     }
   }
 });
@@ -549,7 +549,7 @@ const getUserInitials = (userId) => {
 const getUserName = (userId) => {
   if (!userId) return 'Sin asignar';
   
-  // En un escenario real, esto obtendría datos del usuario desde el store
+  // esto obtendría datos del usuario desde el store
   // Para demostración, usamos el ID como nombre
   return userId === authStore.user?.id ? authStore.userFullName || 'Usuario actual' : 'Usuario ' + userId;
 };
@@ -592,32 +592,32 @@ const handleDrop = async (event, columnId) => {
   if (originalStatus === newStatus) return;
   
   try {
-    // Find the ticket to ensure we have the current tags before updating
+    // Encontrar el ticket para asegurarse de tener las etiquetas actuales antes de actualizar
     const ticketIndex = ticketStore.tickets.findIndex(t => t.id === ticketId);
     
     if (ticketIndex !== -1) {
-      // Get the current ticket with all its properties including tags
+      // Obtener el ticket actual con todas sus propiedades incluyendo etiquetas
       const currentTicket = ticketStore.tickets[ticketIndex];
       const currentTags = currentTicket.tags ? [...currentTicket.tags] : [];
       
-      // Update the ticket in the store
+      // Actualizar el ticket en el store
       const updatedTicket = await ticketStore.updateTicketStatus(ticketId, newStatus);
       
-      // Force refresh the ticket's tags in the local view to prevent visual disappearance
+      // Forzar actualización de las etiquetas del ticket en la vista local para evitar desaparición visual
       if (updatedTicket) {
-        // Make sure tags property exists and has the correct tags
+        // Asegurarse de que la propiedad tags exista y tenga las etiquetas correctas
         if (!updatedTicket.tags && currentTags.length > 0) {
           updatedTicket.tags = currentTags;
         }
         
-        // Update the ticket in the store.tickets array to ensure consistent view
+        // Actualizar el ticket en el array ticketStore.tickets para garantizar una vista consistente
         const updatedIndex = ticketStore.tickets.findIndex(t => t.id === ticketId);
         if (updatedIndex !== -1 && !ticketStore.tickets[updatedIndex].tags) {
           ticketStore.tickets[updatedIndex].tags = currentTags;
         }
       }
     } else {
-      console.error('Ticket not found:', ticketId);
+      console.error('Ticket no encontrado:', ticketId);
       errorMessage.value = 'No se encontró el ticket para actualizar';
       hasError.value = true;
     }
@@ -626,7 +626,7 @@ const handleDrop = async (event, columnId) => {
     errorMessage.value = 'No se pudo actualizar el estado del ticket';
     hasError.value = true;
   } finally {
-    // Reset the dragged ticket reference
+    // Reiniciar la referencia del ticket arrastrado
     draggedTicket.value = null;
   }
 };
@@ -727,12 +727,12 @@ const resetTagForm = () => {
   isEditing.value = false;
 };
 
-// Function to enable editing of column title
+// Función para habilitar la edición del título de la columna
 const editColumnTitle = (columnId) => {
   const column = columnsData.value.find(col => col.id === columnId);
   if (column) {
     column.isEditing = true;
-    // Using nextTick to ensure the input is focused after the DOM update
+    // Usando nextTick para asegurarse de que el input esté enfocado después de la actualización del DOM
     nextTick(() => {
       const input = document.getElementById(`column-title-${columnId}`);
       if (input) {
@@ -743,20 +743,20 @@ const editColumnTitle = (columnId) => {
   }
 };
 
-// Function to save column title on blur or Enter key
+// Función para guardar el título de la columna al perder el enfoque o presionar Enter
 const saveColumnTitle = (columnId) => {
   const column = columnsData.value.find(col => col.id === columnId);
   if (column) {
-    // Trim the title and ensure it's not empty
+    // Recortar el título y asegurarse de que no esté vacío
     column.name = column.name.trim() || getDefaultName(columnId);
     column.isEditing = false;
     
-    // Save to localStorage
+    // Guardar en localStorage
     localStorage.setItem('kanbanColumns', JSON.stringify(columnsData.value));
   }
 };
 
-// Function to get default name for a column if title is empty
+// Función para obtener el nombre predeterminado para una columna si el título está vacío
 const getDefaultName = (columnId) => {
   switch (columnId) {
     case 'assigned': return 'Por Hacer';
@@ -766,12 +766,12 @@ const getDefaultName = (columnId) => {
   }
 };
 
-// Function to handle key press events while editing
+// Función para manejar eventos de tecla presionada mientras se edita
 const handleTitleKeydown = (event, columnId) => {
   if (event.key === 'Enter') {
     saveColumnTitle(columnId);
   } else if (event.key === 'Escape') {
-    // Revert to original title and exit editing mode
+    // Revertir al título original y salir del modo de edición
     const column = columnsData.value.find(col => col.id === columnId);
     if (column) {
       column.name = getDefaultName(columnId);
@@ -859,7 +859,7 @@ const handleColumnDrop = (event, dropIndex) => {
 </script>
 
 <style scoped>
-/* Basic styles */
+/* Estilos básicos */
 .kanban-board {
   width: 100%;
   height: 100%;
@@ -989,7 +989,7 @@ const handleColumnDrop = (event, dropIndex) => {
   min-height: 300px;
 }
 
-/* Kanban cards */
+/* Tarjetas de Kanban */
 .kanban-card {
   background-color: white;
   border-radius: 8px;
@@ -1113,7 +1113,7 @@ const handleColumnDrop = (event, dropIndex) => {
   margin: 0.5rem 0;
 }
 
-/* Status message styles */
+/* Estilos de mensaje de estado */
 .status-message {
   display: flex;
   flex-direction: column;
@@ -1178,7 +1178,7 @@ const handleColumnDrop = (event, dropIndex) => {
   background-position: center;
 }
 
-/* Ticket Preview Modal */
+/* Modal de vista previa de ticket */
 .ticket-preview-modal {
   position: fixed;
   top: 0;
@@ -1447,7 +1447,7 @@ const handleColumnDrop = (event, dropIndex) => {
   }
 }
 
-/* Responsive styles */
+/* Estilos responsivos */
 @media (max-width: 768px) {
   .kanban-container {
     flex-direction: column;
