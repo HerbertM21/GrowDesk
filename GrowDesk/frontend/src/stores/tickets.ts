@@ -3,6 +3,12 @@ import apiClient from '@/api/client'
 import { useActivityStore } from './activity'
 import { useAuthStore } from './auth'
 
+// Constante para almacenar las etiquetas en el localStorage
+const TAGS_STORAGE_KEY = 'growdesk_tags'
+
+// añade el key para los tickets
+const TICKETS_STORAGE_KEY = 'growdesk_tickets'
+
 export interface Ticket {
   id: string
   title: string
@@ -14,6 +20,14 @@ export interface Ticket {
   assignedTo: string | null
   createdAt: string
   updatedAt: string
+  tags?: Tag[] | string[]
+}
+
+export interface Tag {
+  id: string
+  name: string
+  color: string
+  category?: string
 }
 
 interface TicketState {
@@ -21,6 +35,57 @@ interface TicketState {
   currentTicket: Ticket | null
   loading: boolean
   error: string | null
+  tags: Tag[]
+}
+
+// Helper function to save tags to localStorage
+const saveTagsToStorage = (tags: Tag[]) => {
+  try {
+    localStorage.setItem(TAGS_STORAGE_KEY, JSON.stringify(tags))
+    console.log('Tags saved to localStorage:', tags.length)
+  } catch (error) {
+    console.error('Error saving tags to localStorage:', error)
+  }
+}
+
+// Helper function to load tags from localStorage
+const loadTagsFromStorage = (): Tag[] => {
+  try {
+    const tagsJson = localStorage.getItem(TAGS_STORAGE_KEY)
+    if (tagsJson) {
+      const tags = JSON.parse(tagsJson)
+      console.log('Tags loaded from localStorage:', tags.length)
+      return tags
+    }
+  } catch (error) {
+    console.error('Error loading tags from localStorage:', error)
+  }
+  return []
+}
+
+// Helper function to save tickets to localStorage
+const saveTicketsToStorage = (tickets: Ticket[]) => {
+  try {
+    localStorage.setItem(TICKETS_STORAGE_KEY, JSON.stringify(tickets))
+    console.log('Tickets saved to localStorage:', tickets.length)
+  } catch (error) {
+    console.error('Error saving tickets to localStorage:', error)
+  }
+}
+
+// Helper function to load tickets from localStorage
+const loadTicketsFromStorage = (): Ticket[] => {
+  try {
+    const ticketsJson = localStorage.getItem(TICKETS_STORAGE_KEY)
+    if (ticketsJson) {
+      const tickets = JSON.parse(ticketsJson)
+      console.log('Tickets loaded from localStorage:', tickets.length)
+      return tickets
+    }
+  } catch (error) {
+    console.error('Error loading tickets from localStorage:', error)
+  }
+  return []
 }
 
 export const useTicketStore = defineStore('tickets', {
@@ -28,7 +93,8 @@ export const useTicketStore = defineStore('tickets', {
     tickets: [],
     currentTicket: null,
     loading: false,
-    error: null
+    error: null,
+    tags: []
   }),
 
   getters: {
@@ -55,28 +121,25 @@ export const useTicketStore = defineStore('tickets', {
   actions: {
     async fetchTickets() {
       this.loading = true
-      this.error = null
+      
       try {
-        console.log('Obteniendo todos los tickets del sistema');
-        const response = await apiClient.get('/tickets')
+        // First try to load tickets from localStorage
+        const savedTickets = loadTicketsFromStorage()
         
-        // Asegurarse de que tenemos una respuesta válida
-        if (response.data && Array.isArray(response.data)) {
-          console.log(`API devolvió ${response.data.length} tickets`);
-          
-          this.tickets = response.data.map((ticket: any) => ({
-            ...ticket,
-            status: ticket.status || 'open',
-            priority: ticket.priority || 'MEDIUM'
-          }))
-        } else {
-          console.warn('La API no devolvió tickets o la respuesta no es un array');
-          this.tickets = [];
+        if (savedTickets && savedTickets.length > 0) {
+          this.tickets = savedTickets
+          this.loading = false
+          return
         }
+        
+        const response = await apiClient.get('/tickets')
+        this.tickets = response.data
+        
+        // Save to localStorage
+        saveTicketsToStorage(this.tickets)
       } catch (error) {
-        this.error = 'Error al cargar los tickets'
         console.error('Error fetching tickets:', error)
-        this.tickets = [];
+        this.error = 'Error al cargar los tickets'
       } finally {
         this.loading = false
       }
@@ -507,91 +570,322 @@ export const useTicketStore = defineStore('tickets', {
       const originalTicket = this.tickets.find((t: Ticket) => t.id === id);
       const oldStatus = originalTicket?.status;
       
-      // Actualizar el ticket
-      const updatedTicket = await this.updateTicket(id, { status });
-      
-      // Si la actualización fue exitosa y hubo un cambio de estado, registrar la actividad
-      if (updatedTicket && oldStatus !== status) {
-        const activityStore = useActivityStore();
-        const authStore = useAuthStore();
-        const currentUserId = authStore.user?.id;
+      try {
+        // Añade el index del ticket en el array
+        const index = this.tickets.findIndex((t: Ticket) => t.id === id);
         
-        if (currentUserId) {
-          let activityType: 'ticket_status_changed' | 'ticket_closed' | 'ticket_reopened' = 'ticket_status_changed';
-          
-          // Determinar tipo de actividad según el cambio de estado
-          if (status === 'closed') {
-            activityType = 'ticket_closed';
-          } else if (oldStatus === 'closed') {
-            activityType = 'ticket_reopened';
-          }
-          
-          await activityStore.logActivity({
-            userId: currentUserId,
-            type: activityType,
-            targetId: id,
-            description: `Cambió el estado del ticket #${id} de ${this.translateStatus(oldStatus || 'desconocido')} a ${this.translateStatus(status)}`,
-            metadata: {
-              oldStatus,
-              newStatus: status
-            }
-          });
+        if (index === -1) {
+          throw new Error('Ticket not found');
         }
+        
+        // Crea un nuevo objeto de ticket con el estado actualizado mientras se preservan todas las demás propiedades
+        const updatedTicket = {
+          ...this.tickets[index],
+          status,
+          updatedAt: new Date().toISOString()
+        };
+        
+        // Actualiza el ticket en el array
+        this.tickets[index] = updatedTicket;
+        
+        // Guarda los tickets en el localStorage para persistir los cambios
+        saveTicketsToStorage(this.tickets);
+        
+        // Intenta actualizar el ticket via API
+        try {
+          await this.updateTicket(id, { status });
+        } catch (apiError) {
+          console.error('API update failed, but local changes were preserved:', apiError);
+          // Continúa la ejecución incluso si la llamada a la API falla - ya hemos actualizado localmente
+        }
+        
+        // Si la actualización fue exitosa y hubo un cambio de estado, registra la actividad
+        if (oldStatus !== status) {
+          const activityStore = useActivityStore();
+          const authStore = useAuthStore();
+          const currentUserId = authStore.user?.id;
+          
+          if (currentUserId) {
+            let activityType: 'ticket_status_changed' | 'ticket_closed' | 'ticket_reopened' = 'ticket_status_changed';
+            
+            // Determina el tipo de actividad basado en el cambio de estado
+            if (status === 'closed') {
+              activityType = 'ticket_closed';
+            } else if (oldStatus === 'closed') {
+              activityType = 'ticket_reopened';
+            }
+            
+            await activityStore.logActivity({
+              userId: currentUserId,
+              type: activityType,
+              targetId: id,
+              description: `Cambió el estado del ticket #${id} de ${this.translateStatus(oldStatus || 'desconocido')} a ${this.translateStatus(status)}`,
+              metadata: {
+                oldStatus,
+                newStatus: status
+              }
+            });
+          }
+        }
+        
+        return updatedTicket;
+      } catch (error) {
+        console.error('Error updating ticket status:', error);
+        throw error;
       }
-      
-      return updatedTicket;
     },
 
     // Función para normalizar la prioridad (asegurarse de que esté en mayúsculas)
     normalizePriority(priority: string): string {
-      if (!priority) {
-        return 'MEDIUM';
-      }
-      
-      // Convertir a string en caso de que no lo sea
-      const priorityStr = String(priority).trim().toUpperCase();
-      
-      // Validar que el valor es una prioridad válida
-      const validPriorities = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
-      
-      if (validPriorities.includes(priorityStr)) {
-        return priorityStr;
-      }
-      
-      // Manejar variaciones en minúsculas
-      const lowerMap: Record<string, string> = {
-        'low': 'LOW',
-        'medium': 'MEDIUM',
-        'high': 'HIGH',
-        'urgent': 'URGENT',
-        'baja': 'LOW',
-        'media': 'MEDIUM',
-        'alta': 'HIGH',
-        'urgente': 'URGENT'
-      };
-      
-      // Intentar normalizar desde minúsculas
-      const normalizedValue = lowerMap[priority.toLowerCase()];
-      
-      if (normalizedValue) {
-        return normalizedValue;
-      }
-      
-      // Si no se encuentra una coincidencia, usar MEDIUM como valor predeterminado
-      console.warn(`Prioridad no reconocida: "${priority}". Usando MEDIUM como valor predeterminado.`);
-      return 'MEDIUM';
+      const p = String(priority).toLowerCase()
+      if (p === 'high' || p === 'alta') return 'HIGH'
+      if (p === 'medium' || p === 'media' || p === 'normal') return 'MEDIUM'
+      if (p === 'low' || p === 'baja') return 'LOW'
+      if (p === 'urgent' || p === 'urgente' || p === 'crítica' || p === 'critical') return 'URGENT'
+      return 'MEDIUM'
     },
     
     // Método de ayuda para traducir estados
     translateStatus(status: string): string {
-      const statuses: Record<string, string> = {
+      const statusMap: Record<string, string> = {
         'open': 'Abierto',
         'assigned': 'Asignado',
         'in_progress': 'En Progreso',
         'resolved': 'Resuelto',
         'closed': 'Cerrado'
-      };
-      return statuses[status] || status;
+      }
+      
+      return statusMap[status] || status
+    },
+    
+    // Gestión de etiquetas
+    async fetchTags() {
+      this.loading = true
+      
+      try {
+        // Primero intenta cargar desde localStorage
+        const savedTags = loadTagsFromStorage()
+        
+        if (savedTags && savedTags.length > 0) {
+          this.tags = savedTags
+          return
+        }
+        
+        // En un entorno real, esto haría una llamada a la API para obtener las etiquetas
+        // En este caso, vamos a simular la llamada con datos de ejemplo
+        console.log('No tags found in localStorage, loading example tags...')
+        
+        // En un entorno de desarrollo, podemos crear algunas etiquetas de ejemplo
+        if (import.meta.env.DEV && this.tags.length === 0) {
+          this.tags = [
+            { id: '1', name: 'Bug', color: '#ff0000', category: 'technical' },
+            { id: '2', name: 'Mejora', color: '#00ff00', category: 'feature' },
+            { id: '3', name: 'Consulta', color: '#0000ff', category: 'general' },
+            { id: '4', name: 'Documentación', color: '#ffff00', category: 'documentation' },
+            { id: '5', name: 'Crítico', color: '#ff00ff', category: 'technical' }
+          ]
+          
+          // Guarda las etiquetas de ejemplo en localStorage
+          saveTagsToStorage(this.tags)
+        }
+      } catch (error) {
+        console.error('Error al obtener etiquetas:', error)
+        this.error = 'Error al cargar las etiquetas'
+      } finally {
+        this.loading = false
+      }
+    },
+    
+    async createTag(tagData: Omit<Tag, 'id'>) {
+      try {
+        // En un entorno real, esto haría una llamada a la API para crear una etiqueta
+        console.log('Creando etiqueta:', tagData)
+        
+        // Generar un ID único para la nueva etiqueta
+        const id = Date.now().toString()
+        
+        // Crear la nueva etiqueta
+        const newTag: Tag = {
+          id,
+          ...tagData
+        }
+        
+        // Añadir la etiqueta a la lista
+        this.tags.push(newTag)
+        
+        // Guarda en localStorage
+        saveTagsToStorage(this.tags)
+        
+        return newTag
+      } catch (error) {
+        console.error('Error al crear etiqueta:', error)
+        this.error = 'Error al crear la etiqueta'
+        throw error
+      }
+    },
+    
+    async updateTag(id: string, tagData: Partial<Tag>) {
+      try {
+        // En un entorno real, esto haría una llamada a la API para actualizar una etiqueta
+        console.log('Actualizando etiqueta:', id, tagData)
+        
+        // Buscar la etiqueta a actualizar
+        const index = this.tags.findIndex((tag: Tag) => tag.id === id)
+        if (index === -1) {
+          throw new Error('Etiqueta no encontrada')
+        }
+        
+        // Actualizar la etiqueta
+        this.tags[index] = {
+          ...this.tags[index],
+          ...tagData
+        }
+        
+        // Update tag references in all tickets that use this tag
+        this.tickets.forEach((ticket: Ticket) => {
+          if (ticket.tags && Array.isArray(ticket.tags)) {
+            ticket.tags = ticket.tags.map((tag: Tag | string) => {
+              if (typeof tag === 'string') {
+                return tag === id ? this.tags[index] : tag
+              } else {
+                // If it's a tag object, update it if the ID matches
+                return tag.id === id ? this.tags[index] : tag
+              }
+            })
+          }
+        })
+        
+        // Guarda las etiquetas en localStorage
+        saveTagsToStorage(this.tags)
+        
+        // Guarda los tickets en localStorage para persistir los cambios
+        saveTicketsToStorage(this.tickets)
+        
+        return this.tags[index]
+      } catch (error) {
+        console.error('Error al actualizar etiqueta:', error)
+        this.error = 'Error al actualizar la etiqueta'
+        throw error
+      }
+    },
+    
+    async deleteTag(id: string) {
+      try {
+        // En un entorno real, esto haría una llamada a la API para eliminar una etiqueta
+        console.log('Eliminando etiqueta:', id)
+        
+        // Eliminar la etiqueta de la lista
+        this.tags = this.tags.filter((tag: Tag) => tag.id !== id)
+        
+        // También eliminar la etiqueta de todos los tickets que la tengan
+        this.tickets.forEach((ticket: Ticket) => {
+          if (ticket.tags) {
+            // Crea un array correctamente tipado basado en lo que detectamos
+            const newTags = ticket.tags.filter((tagId: Tag | string) => 
+              typeof tagId === 'string' ? tagId !== id : tagId.id !== id
+            );
+            
+            // Comprueba si el primer elemento es una cadena o un objeto Tag para determinar el tipo de array
+            if (newTags.length > 0 && typeof newTags[0] === 'string') {
+              // Es un array de cadenas
+              ticket.tags = newTags as string[];
+            } else {
+              // Es un array de objetos Tag o un array vacío
+              ticket.tags = newTags as Tag[];
+            }
+          }
+        })
+        
+        // Guarda en localStorage
+        saveTagsToStorage(this.tags)
+        saveTicketsToStorage(this.tickets)
+        
+        return true
+      } catch (error) {
+        console.error('Error al eliminar etiqueta:', error)
+        this.error = 'Error al eliminar la etiqueta'
+        throw error
+      }
+    },
+    
+    async addTagToTicket(ticketId: string, tagId: string) {
+      try {
+        // En un entorno real, esto haría una llamada a la API para añadir una etiqueta a un ticket
+        console.log('Añadiendo etiqueta a ticket:', ticketId, tagId)
+        
+        // Buscar el ticket
+        const ticketIndex = this.tickets.findIndex((ticket: Ticket) => ticket.id === ticketId)
+        if (ticketIndex === -1) {
+          throw new Error('Ticket no encontrado')
+        }
+        
+        // Buscar la etiqueta
+        const tag = this.tags.find((tag: Tag) => tag.id === tagId)
+        if (!tag) {
+          throw new Error('Etiqueta no encontrada')
+        }
+        
+        // Verificar si la etiqueta ya está en el ticket
+        const ticket = this.tickets[ticketIndex]
+        if (!ticket.tags) {
+          ticket.tags = []
+        }
+        
+        // Si la etiqueta ya está en el ticket, no hacer nada
+        const hasTag = ticket.tags.some((t: Tag | string) => 
+          typeof t === 'string' ? t === tagId : t.id === tagId
+        )
+        
+        if (!hasTag) {
+          // Añadir la etiqueta al ticket
+          ticket.tags.push(tag)
+          
+          // Guarda las etiquetas en localStorage
+          saveTagsToStorage(this.tags)
+          
+          // Guarda los tickets en localStorage para persistir la relación
+          saveTicketsToStorage(this.tickets)
+        }
+        
+        return ticket
+      } catch (error) {
+        console.error('Error al añadir etiqueta a ticket:', error)
+        this.error = 'Error al añadir la etiqueta al ticket'
+        throw error
+      }
+    },
+    
+    async removeTagFromTicket(ticketId: string, tagId: string) {
+      try {
+        // En un entorno real, esto haría una llamada a la API para eliminar una etiqueta de un ticket
+        console.log('Eliminando etiqueta de ticket:', ticketId, tagId)
+        
+        // Buscar el ticket
+        const ticketIndex = this.tickets.findIndex((ticket: Ticket) => ticket.id === ticketId)
+        if (ticketIndex === -1) {
+          throw new Error('Ticket no encontrado')
+        }
+        
+        // Verificar si la etiqueta está en el ticket
+        const ticket = this.tickets[ticketIndex]
+        if (!ticket.tags) {
+          return ticket
+        }
+        
+        // Eliminar la etiqueta del ticket
+        ticket.tags = ticket.tags.filter((tag: Tag | string) => 
+          typeof tag === 'string' ? tag !== tagId : tag.id !== tagId
+        )
+        
+        // Guarda los tickets en localStorage para persistir los cambios
+        saveTicketsToStorage(this.tickets)
+        
+        return ticket
+      } catch (error) {
+        console.error('Error al eliminar etiqueta de ticket:', error)
+        this.error = 'Error al eliminar la etiqueta del ticket'
+        throw error
+      }
     }
   }
 })

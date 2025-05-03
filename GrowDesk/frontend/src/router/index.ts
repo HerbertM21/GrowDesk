@@ -32,6 +32,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/tickets-board',
+    name: 'tickets-board',
+    component: () => import('../views/tickets/KanbanBoard.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/tickets/:id',
     name: 'ticket-detail',
     component: () => import('../views/tickets/TicketDetail.vue'),

@@ -8,10 +8,17 @@
           <h1 class="hero-title">Gestión de Tickets</h1>
           <p class="hero-subtitle">Visualiza y gestiona todos tus tickets de soporte</p>
           
-          <router-link to="/tickets/new" class="create-ticket-btn">
-            <i class="pi pi-plus"></i>
-            Nuevo Ticket
-          </router-link>
+          <div class="hero-actions">
+            <router-link to="/tickets/new" class="create-ticket-btn">
+              <i class="pi pi-plus"></i>
+              Nuevo Ticket
+            </router-link>
+            
+            <router-link to="/tickets-board" class="kanban-board-btn">
+              <i class="pi pi-th-large"></i>
+              Ver Panel de Gestión
+            </router-link>
+          </div>
         </div>
         <div class="wave-shape"></div>
       </div>
@@ -518,28 +525,46 @@ const formatDate = (dateString: string): string => {
       opacity: 0.9;
     }
     
-    .create-ticket-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.75rem;
-      background-color: white;
-      color: var(--primary-color);
-      border: none;
-      padding: 0.85rem 1.75rem;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
       
-      &:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      .create-ticket-btn,
+      .kanban-board-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        background-color: white;
+        color: var(--primary-color);
+        border: none;
+        padding: 0.85rem 1.75rem;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        
+        &:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+        
+        i {
+          font-size: 1rem;
+        }
       }
       
-      i {
-        font-size: 1rem;
+      .kanban-board-btn {
+        background-color: white;
+        color: var(--primary-color);
+        border: 1px solid var(--border-color);
+        
+        &:hover {
+          background-color: white;
+          border-color: var(--border-color);
+        }
       }
     }
     

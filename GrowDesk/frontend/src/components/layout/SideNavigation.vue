@@ -12,6 +12,11 @@
           <i class="pi pi-ticket"></i>
           <span>Tickets</span>
         </router-link>
+        
+        <router-link to="/tickets-board" class="nav-item" :class="{ 'active': isActive('/tickets-board') }">
+          <i class="pi pi-th-large"></i>
+          <span>Panel de Gestión</span>
+        </router-link>
       </div>
     </div>
     

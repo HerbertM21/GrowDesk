@@ -109,10 +109,12 @@
           </h2>
           
           <div class="section-header">
-            <router-link to="/tickets" class="view-all-btn">
-              <i class="pi pi-external-link"></i>
-              Ver todos los tickets
-            </router-link>
+            <div class="section-actions">
+              <router-link to="/tickets" class="view-all-btn">
+                <i class="pi pi-external-link"></i>
+                Ver todos los tickets
+              </router-link>
+            </div>
           </div>
           
           <div v-if="loading" class="status-message loading">
@@ -496,30 +498,28 @@ const averageTicketsPerDay = computed(() => {
   .section-header {
     display: flex;
     justify-content: flex-end;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1rem;
     
-    .view-all-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      background-color: var(--bg-tertiary);
-      color: var(--primary-color);
-      border: 1px solid var(--border-color);
-      padding: 0.65rem 1.25rem;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      font-weight: 500;
-      text-decoration: none;
-      transition: all 0.2s ease;
-      
-      &:hover {
-        background-color: var(--card-bg);
-        transform: translateY(-2px);
-      }
-      
-      i {
-        font-size: 1rem;
-      }
+    .section-actions {
+      display: flex;
+      gap: 1rem;
+    }
+  }
+  
+  .view-all-btn {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.2s;
+    
+    i {
+      margin-right: 0.5rem;
+    }
+    
+    &:hover {
+      color: var(--primary-dark-color);
     }
   }
   
