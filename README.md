@@ -22,7 +22,7 @@ El proyecto está organizado en dos componentes principales:
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/HerbertM21/GrowDeskV2.git
+git clone https://github.com/HerbertM21/GrowDesk.git
 cd GrowDeskV2
 ```
 
