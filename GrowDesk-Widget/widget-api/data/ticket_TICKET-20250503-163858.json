@@ -1,0 +1,42 @@
+{
+  "id": "TICKET-20250503-163858",
+  "title": "Prueba desde curl",
+  "subject": "Prueba desde curl",
+  "description": "Este es un mensaje de prueba creado con curl",
+  "status": "open",
+  "priority": "MEDIUM",
+  "createdBy": "",
+  "createdAt": "2025-05-03T16:38:58.144838484Z",
+  "updatedAt": "2025-05-03T16:40:00.749361718Z",
+  "messages": [
+    {
+      "id": "MSG-1746290338144843814",
+      "content": "Este es un mensaje de prueba creado con curl",
+      "isClient": true,
+      "createdAt": "2025-05-03T16:38:58.144838484Z",
+      "userName": "Usuario Prueba",
+      "userEmail": "test@example.com"
+    },
+    {
+      "id": "MSG-1746290400749349707",
+      "content": "Este es un mensaje adicional para el ticket",
+      "isClient": true,
+      "createdAt": "2025-05-03T16:40:00.749360127Z",
+      "userName": "",
+      "userEmail": ""
+    }
+  ],
+  "userEmail": "test@example.com",
+  "userName": "Usuario Prueba",
+  "clientName": "Usuario Prueba",
+  "clientEmail": "test@example.com",
+  "widgetId": "",
+  "department": "Soporte",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}

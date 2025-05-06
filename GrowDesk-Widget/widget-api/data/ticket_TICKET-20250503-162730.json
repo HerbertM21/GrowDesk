@@ -1,0 +1,34 @@
+{
+  "id": "TICKET-20250503-162730",
+  "title": "Test Ticket",
+  "subject": "Test Ticket",
+  "description": "This is a test ticket",
+  "status": "open",
+  "priority": "high",
+  "createdBy": "",
+  "createdAt": "2025-05-03T16:27:30.880537428Z",
+  "updatedAt": "2025-05-03T16:27:30.880537428Z",
+  "messages": [
+    {
+      "id": "MSG-1746289650880583420",
+      "content": "This is a test ticket",
+      "isClient": true,
+      "createdAt": "2025-05-03T16:27:30.880537428Z",
+      "userName": "Test User",
+      "userEmail": "test@example.com"
+    }
+  ],
+  "userEmail": "test@example.com",
+  "userName": "Test User",
+  "clientName": "Client Test",
+  "clientEmail": "client@example.com",
+  "widgetId": "widget123",
+  "department": "support",
+  "metadata": {
+    "url": "http://example.com",
+    "referrer": "test referrer",
+    "userAgent": "test agent",
+    "screenSize": "1920x1080",
+    "externalId": ""
+  }
+}

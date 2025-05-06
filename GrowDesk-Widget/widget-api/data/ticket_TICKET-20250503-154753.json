@@ -1,0 +1,33 @@
+{
+  "id": "TICKET-20250503-154753",
+  "title": "Test Subject",
+  "subject": "Test Subject",
+  "description": "Test Message",
+  "status": "open",
+  "priority": "MEDIUM",
+  "createdBy": "",
+  "createdAt": "2025-05-03T15:47:53.033997067Z",
+  "updatedAt": "2025-05-03T15:47:53.033997067Z",
+  "messages": [
+    {
+      "id": "MSG-1746287273034002393",
+      "content": "Test Message",
+      "isClient": true,
+      "createdAt": "2025-05-03T15:47:53.033997067Z",
+      "userName": "Test User",
+      "userEmail": "test@example.com"
+    }
+  ],
+  "userEmail": "test@example.com",
+  "userName": "Test User",
+  "clientName": "Test User",
+  "clientEmail": "test@example.com",
+  "widgetId": "testwidget",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}

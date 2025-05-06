@@ -1,0 +1,34 @@
+{
+  "id": "TICKET-20250503-163204",
+  "title": "Test Ticket from curl",
+  "subject": "Test Ticket from curl",
+  "description": "This is a test message",
+  "status": "open",
+  "priority": "HIGH",
+  "createdBy": "",
+  "createdAt": "2025-05-03T16:32:04.304065883Z",
+  "updatedAt": "2025-05-03T16:32:04.304065883Z",
+  "messages": [
+    {
+      "id": "MSG-1746289924304093673",
+      "content": "This is a test message",
+      "isClient": true,
+      "createdAt": "2025-05-03T16:32:04.304065883Z",
+      "userName": "Test User",
+      "userEmail": "test@example.com"
+    }
+  ],
+  "userEmail": "test@example.com",
+  "userName": "Test User",
+  "clientName": "Test User",
+  "clientEmail": "test@example.com",
+  "widgetId": "",
+  "department": "",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}

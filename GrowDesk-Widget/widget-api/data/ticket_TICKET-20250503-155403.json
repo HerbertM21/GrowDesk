@@ -1,0 +1,41 @@
+{
+  "id": "TICKET-20250503-155403",
+  "title": "Nuevo Ticket 2",
+  "subject": "Nuevo Ticket 2",
+  "description": "Este es otro mensaje de prueba después de cambiar todas las URLs",
+  "status": "open",
+  "priority": "MEDIUM",
+  "createdBy": "",
+  "createdAt": "2025-05-03T15:54:03.04135304Z",
+  "updatedAt": "2025-05-03T15:55:10.241291387Z",
+  "messages": [
+    {
+      "id": "MSG-1746287643041361198",
+      "content": "Este es otro mensaje de prueba después de cambiar todas las URLs",
+      "isClient": true,
+      "createdAt": "2025-05-03T15:54:03.04135304Z",
+      "userName": "Test User",
+      "userEmail": "test@example.com"
+    },
+    {
+      "id": "MSG-1746287710241258815",
+      "content": "Este es un mensaje de prueba para el segundo ticket después de cambiar todas las URLs",
+      "isClient": true,
+      "createdAt": "2025-05-03T15:55:10.241289138Z",
+      "userName": "",
+      "userEmail": ""
+    }
+  ],
+  "userEmail": "test@example.com",
+  "userName": "Test User",
+  "clientName": "Test User",
+  "clientEmail": "test@example.com",
+  "widgetId": "testwidget",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}

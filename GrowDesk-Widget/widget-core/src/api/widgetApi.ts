@@ -242,22 +242,32 @@ export const useWidgetApi = () => {
       console.log('[WIDGET] Intentando crear ticket con los siguientes datos:', data);
       console.log('[WIDGET] URL de API configurada:', apiConfig.apiUrl);
       
+      // Preparar los datos en el formato que espera la API (TicketData)
+      const ticketData = {
+        subject: `Solicitud de soporte - ${data.name}`,  // Campo obligatorio
+        message: data.message,           // Mensaje inicial
+        name: data.name,                 // Nombre del cliente
+        email: data.email,               // Email del cliente
+        priority: 'MEDIUM',              // Prioridad predeterminada
+        department: 'Soporte',           // Departamento predeterminada
+        widgetId: apiConfig.widgetId,    // ID del widget
+        metadata: {                      // Datos adicionales como estructura anidada
+          url: window.location.href,
+          userAgent: navigator.userAgent,
+          referrer: document.referrer,
+          screenSize: `${window.innerWidth}x${window.innerHeight}`
+        }
+      };
+      
       // Intento estándar con axios
       let response;
       try {
-        // Asegurarnos de usar la ruta completa correcta con el prefijo '/widget'
+        // Asegurarnos de usar la ruta completa correcta
         const baseUrl = apiConfig.apiUrl;
-        // Construir URL correctamente
-        let fullUrl = baseUrl;
-        if (!fullUrl.endsWith('/')) {
-          fullUrl += '/';
-        }
-        if (!fullUrl.includes('/widget/')) {
-          fullUrl += 'widget/';
-        }
-        const url = `${fullUrl}tickets`;
+        // Corregido: Usar '/widget/tickets' directamente sin agregar 'widget' otra vez
+        const fullUrl = baseUrl.endsWith('/') ? baseUrl + 'widget/tickets' : baseUrl + '/widget/tickets';
         
-        console.log('[WIDGET] URL final:', url);
+        console.log('[WIDGET] URL final:', fullUrl);
         // Log detallado para depuración
         console.log('[WIDGET] Headers:', {
           'Content-Type': 'application/json',
@@ -266,7 +276,7 @@ export const useWidgetApi = () => {
         });
         
         // Usar axios directamente sin apiClient
-        response = await axios.post(url, data, {
+        response = await axios.post(fullUrl, ticketData, {
           headers: {
             'Content-Type': 'application/json',
             'X-Widget-ID': apiConfig.widgetId,
@@ -284,25 +294,18 @@ export const useWidgetApi = () => {
         
         // Si falla, intenta con fetch como respaldo usando la misma URL que antes
         const baseUrl = apiConfig.apiUrl;
-        // Construir URL correctamente
-        let fullUrl = baseUrl;
-        if (!fullUrl.endsWith('/')) {
-          fullUrl += '/';
-        }
-        if (!fullUrl.includes('/widget/')) {
-          fullUrl += 'widget/';
-        }
-        const fetchUrl = `${fullUrl}tickets`;
+        // Corregido: Usar '/widget/tickets' directamente sin agregar 'widget' otra vez
+        const fullUrl = baseUrl.endsWith('/') ? baseUrl + 'widget/tickets' : baseUrl + '/widget/tickets';
         
-        console.log('[WIDGET] Intentando fetch a:', fetchUrl);
-        const fetchResponse = await fetch(fetchUrl, {
+        console.log('[WIDGET] Intentando fetch a:', fullUrl);
+        const fetchResponse = await fetch(fullUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'X-Widget-ID': apiConfig.widgetId,
             'X-Widget-Token': apiConfig.widgetToken
           },
-          body: JSON.stringify(data)
+          body: JSON.stringify(ticketData)
         });
         
         if (!fetchResponse.ok) {
@@ -357,10 +360,8 @@ export const useWidgetApi = () => {
       // Verificar que la URL base sea correcta
       const baseUrl = apiConfig.apiUrl.endsWith('/') ? apiConfig.apiUrl : `${apiConfig.apiUrl}/`;
       
-      // Si la URL no contiene 'widget', añadirla
-      const adjustedBaseUrl = baseUrl.includes('widget') ? baseUrl : `${baseUrl}widget/`;
-      
-      const messagesUrl = `${adjustedBaseUrl}messages`;
+      // Corregido: Usar 'widget/messages' directamente
+      const messagesUrl = `${baseUrl}widget/messages`;
       
       console.log('[WIDGET] URL base ajustada para enviar mensaje:', messagesUrl);
       console.log('[WIDGET] Datos a enviar:', {
@@ -368,23 +369,40 @@ export const useWidgetApi = () => {
         message: data.message
       });
       
+      // Preparar payload con isClient para garantizar coherencia
+      const payload = {
+        ticketId: data.ticketId,
+        message: data.message,
+        isClient: true // Los mensajes enviados desde el widget siempre son del cliente
+      };
+      
+      console.log('[WIDGET] Payload completo:', payload);
+      
       // Intento estándar con axios
       let response;
       try {
         console.log('[WIDGET] Usando axios.post para enviar mensaje');
-        response = await axios.post(messagesUrl, {
-          ticketId: data.ticketId,
-          message: data.message
-        }, {
+        response = await axios.post(messagesUrl, payload, {
           headers: {
             'Content-Type': 'application/json',
             'X-Widget-ID': apiConfig.widgetId,
             'X-Widget-Token': apiConfig.widgetToken,
             'X-User-Name': data.userName || '',
-            'X-User-Email': data.userEmail || ''
+            'X-User-Email': data.userEmail || '',
+            'X-Is-Client': 'true', // Añadir cabecera adicional para asegurar que se respete isClient
+            'X-Message-Source': 'widget-client'
           }
         });
         console.log('[WIDGET] Mensaje enviado con éxito:', response.data);
+        
+        // Corregir inconsistencias en el valor de isClient
+        if (response.data && typeof response.data.isClient !== 'undefined') {
+          // Garantizar que isClient sea true para mensajes desde el widget
+          if (response.data.isClient !== true) {
+            console.log('[WIDGET] Corrigiendo isClient en respuesta:', response.data.isClient, '->', true);
+            response.data.isClient = true;
+          }
+        }
       } catch (axiosError) {
         console.warn('[WIDGET] Error al usar Axios para enviar mensaje, intentando con fetch:', axiosError);
         
@@ -397,12 +415,11 @@ export const useWidgetApi = () => {
             'X-Widget-ID': apiConfig.widgetId,
             'X-Widget-Token': apiConfig.widgetToken,
             'X-User-Name': data.userName || '',
-            'X-User-Email': data.userEmail || ''
+            'X-User-Email': data.userEmail || '',
+            'X-Is-Client': 'true', // Añadir cabecera adicional para asegurar que se respete isClient
+            'X-Message-Source': 'widget-client'
           },
-          body: JSON.stringify({
-            ticketId: data.ticketId,
-            message: data.message
-          })
+          body: JSON.stringify(payload)
         });
         
         if (!fetchResponse.ok) {
@@ -413,6 +430,15 @@ export const useWidgetApi = () => {
         const responseData = await fetchResponse.json();
         console.log('[WIDGET] Datos recibidos con fetch:', responseData);
         response = { data: responseData };
+        
+        // Corregir inconsistencias en el valor de isClient también para fetch
+        if (response.data && typeof response.data.isClient !== 'undefined') {
+          // Garantizar que isClient sea true para mensajes desde el widget
+          if (response.data.isClient !== true) {
+            console.log('[WIDGET] Corrigiendo isClient en respuesta (fetch):', response.data.isClient, '->', true);
+            response.data.isClient = true;
+          }
+        }
       }
       
       return response.data;
@@ -494,79 +520,33 @@ export const useWidgetApi = () => {
       console.log('[WIDGET] Intentando obtener FAQs');
       console.log('[WIDGET] URL de API configurada:', apiConfig.apiUrl);
       
+      // Verificar que la URL base sea correcta
+      const baseUrl = apiConfig.apiUrl.endsWith('/') ? apiConfig.apiUrl : `${apiConfig.apiUrl}/`;
+      
+      // Corregido: Usar 'widget/faqs' directamente
+      const faqsUrl = `${baseUrl}widget/faqs`;
+      
+      console.log('[WIDGET] Obteniendo FAQs de:', faqsUrl);
+      
       // Intento estándar con axios
       let response;
       try {
-        console.log('[WIDGET] Obteniendo FAQs de:', `${apiConfig.apiUrl}/widget/faqs`);
-        response = await axios.get(`${apiConfig.apiUrl}/widget/faqs`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Widget-ID': apiConfig.widgetId,
-            'X-Widget-Token': apiConfig.widgetToken
-          }
-        });
-        console.log('[WIDGET] FAQs obtenidas con éxito:', response.data);
-      } catch (axiosError) {
-        console.warn('[WIDGET] Error al usar Axios para obtener FAQs, intentando con fetch:', axiosError);
-        
-        // Si falla, intenta con fetch como respaldo
-        const fetchUrl = `${apiConfig.apiUrl}/widget/faqs`;
-        
-        console.log('[WIDGET] Intentando fetch a:', fetchUrl);
-        const fetchResponse = await fetch(fetchUrl, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Widget-ID': apiConfig.widgetId,
-            'X-Widget-Token': apiConfig.widgetToken
-          }
-        });
-        
-        if (!fetchResponse.ok) {
-          const statusText = fetchResponse.statusText || 'Error desconocido';
-          console.error(`[WIDGET] Error en fetch: ${fetchResponse.status} ${statusText}`);
-          throw new Error(`Error ${fetchResponse.status}: ${statusText}`);
-        }
-        
-        const responseData = await fetchResponse.json();
-        console.log('[WIDGET] Datos recibidos con fetch:', responseData);
-        response = { data: responseData };
+        response = await axios.get(faqsUrl);
+        return response.data;
+      } catch (error) {
+        console.log('[WIDGET] Error al usar Axios para obtener FAQs, intentando con fetch:', error);
       }
       
-      console.log('FAQs obtenidas correctamente:', response.data);
-      return response.data;
+      // Si falla, intenta con fetch como respaldo usando la misma URL
+      console.log('[WIDGET] Intentando fetch a:', faqsUrl);
+      const fetchResponse = await fetch(faqsUrl);
+      if (!fetchResponse.ok) {
+        throw new Error(`${fetchResponse.status} ${fetchResponse.statusText}`);
+      }
+      return await fetchResponse.json();
     } catch (error) {
-      console.error('Error obteniendo FAQs:', error);
-      
-      // Proporcionar información adicional de depuración
-      console.error('Configuración actual:', { 
-        apiUrl: apiConfig.apiUrl,
-        widgetId: apiConfig.widgetId
-      });
-      
-      // Devolver datos de ejemplo en entorno de desarrollo
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        console.warn('Devolviendo FAQs simuladas para entorno de desarrollo');
-        return [
-          {
-            id: 1,
-            question: '¿Cómo puedo usar este widget?',
-            answer: 'Este widget se puede integrar en cualquier sitio web añadiendo el script correspondiente.',
-            category: 'General',
-            isPublished: true
-          },
-          {
-            id: 2,
-            question: '¿Cómo puedo contactar con soporte?',
-            answer: 'Puedes hacerlo directamente a través de este chat.',
-            category: 'Soporte',
-            isPublished: true
-          }
-        ];
-      }
-      
-      // Retornar un array vacío en caso de error 
-      return [];
+      console.log('[WIDGET] Error al obtener FAQs:', error);
+      return []; // Devuelve array vacío en caso de error
     }
   };
   

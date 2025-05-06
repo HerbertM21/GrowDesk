@@ -1,0 +1,41 @@
+{
+  "id": "TICKET-20250503-160538",
+  "title": "Nuevo Ticket 4",
+  "subject": "Nuevo Ticket 4",
+  "description": "Prueba después de cambiar la configuración de red",
+  "status": "open",
+  "priority": "MEDIUM",
+  "createdBy": "",
+  "createdAt": "2025-05-03T16:05:38.862359656Z",
+  "updatedAt": "2025-05-03T16:06:02.12295764Z",
+  "messages": [
+    {
+      "id": "MSG-1746288338862365865",
+      "content": "Prueba después de cambiar la configuración de red",
+      "isClient": true,
+      "createdAt": "2025-05-03T16:05:38.862359656Z",
+      "userName": "Test User",
+      "userEmail": "test@example.com"
+    },
+    {
+      "id": "MSG-1746288362122939828",
+      "content": "Este es un mensaje de prueba para el cuarto ticket después de arreglar la red",
+      "isClient": true,
+      "createdAt": "2025-05-03T16:06:02.122956159Z",
+      "userName": "",
+      "userEmail": ""
+    }
+  ],
+  "userEmail": "test@example.com",
+  "userName": "Test User",
+  "clientName": "Test User",
+  "clientEmail": "test@example.com",
+  "widgetId": "testwidget",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}

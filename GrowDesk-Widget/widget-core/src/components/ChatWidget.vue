@@ -635,7 +635,8 @@ const submitRegistration = async () => {
     const ticketData = {
       name: userData.value.name,
       email: userData.value.email,
-      message: userData.value.initialMessage, // Usamos el mensaje inicial proporcionado por el usuario
+      subject: `Solicitud de soporte - ${userData.value.name}`,
+      message: userData.value.initialMessage,
       metadata: {
         url: window.location.href,
         referrer: document.referrer,

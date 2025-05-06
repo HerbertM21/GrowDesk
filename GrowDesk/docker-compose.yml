@@ -6,7 +6,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - NODE_ENV=development
+        - NODE_ENV=production
     container_name: growdesk-frontend
     ports:
       - "3000:3000"
@@ -14,7 +14,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - VITE_API_URL=http://localhost:8080/api
       - HOST=0.0.0.0
       - PORT=3000

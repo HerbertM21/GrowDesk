@@ -1,0 +1,33 @@
+{
+  "id": "TICKET-20250503-155125",
+  "title": "Nuevo Ticket",
+  "subject": "Nuevo Ticket",
+  "description": "Este es un mensaje de prueba después del cambio de IP",
+  "status": "open",
+  "priority": "MEDIUM",
+  "createdBy": "",
+  "createdAt": "2025-05-03T15:51:25.154417677Z",
+  "updatedAt": "2025-05-03T15:51:25.154417677Z",
+  "messages": [
+    {
+      "id": "MSG-1746287485154533736",
+      "content": "Este es un mensaje de prueba después del cambio de IP",
+      "isClient": true,
+      "createdAt": "2025-05-03T15:51:25.154417677Z",
+      "userName": "Test User",
+      "userEmail": "test@example.com"
+    }
+  ],
+  "userEmail": "test@example.com",
+  "userName": "Test User",
+  "clientName": "Test User",
+  "clientEmail": "test@example.com",
+  "widgetId": "testwidget",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}

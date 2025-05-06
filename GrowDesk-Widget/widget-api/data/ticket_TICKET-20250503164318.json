@@ -1,0 +1,74 @@
+{
+  "id": "TICKET-20250503164318",
+  "title": "Soporte Web - Test User",
+  "subject": "",
+  "description": "Test message",
+  "status": "open",
+  "priority": "",
+  "createdBy": "test@example.com",
+  "createdAt": "2025-05-03T16:43:18.862Z",
+  "updatedAt": "2025-05-03T16:46:44.33750517Z",
+  "messages": [
+    {
+      "id": "MSG-1746290598862",
+      "content": "Test message",
+      "isClient": true,
+      "createdAt": "2025-05-03T16:43:18.862Z",
+      "userName": "",
+      "userEmail": ""
+    },
+    {
+      "id": "MSG-1746290613833",
+      "content": "Respuesta de prueba al ticket",
+      "isClient": false,
+      "createdAt": "2025-05-03T16:43:33.833Z",
+      "userName": "",
+      "userEmail": ""
+    },
+    {
+      "id": "MSG-1746290619214637452",
+      "content": "Mensaje directo desde el widget",
+      "isClient": true,
+      "createdAt": "2025-05-03T16:43:39.214641744Z",
+      "userName": "",
+      "userEmail": ""
+    },
+    {
+      "id": "MSG-1746290653531746399",
+      "content": "Mensaje desde el cliente real",
+      "isClient": true,
+      "createdAt": "2025-05-03T16:44:13.531758939Z",
+      "userName": "",
+      "userEmail": ""
+    },
+    {
+      "id": "MSG-1746290771442251760",
+      "content": "Mensaje del cliente después de la corrección",
+      "isClient": true,
+      "createdAt": "2025-05-03T16:46:11.442445811Z",
+      "userName": "",
+      "userEmail": ""
+    },
+    {
+      "id": "MSG-1746290804337410104",
+      "content": "Mensaje del cliente después del reinicio",
+      "isClient": true,
+      "createdAt": "2025-05-03T16:46:44.337504992Z",
+      "userName": "",
+      "userEmail": ""
+    }
+  ],
+  "userEmail": "test@example.com",
+  "userName": "Test User",
+  "clientName": "",
+  "clientEmail": "",
+  "widgetId": "",
+  "department": "",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}

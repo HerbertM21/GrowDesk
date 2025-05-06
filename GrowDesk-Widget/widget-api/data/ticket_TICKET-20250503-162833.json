@@ -1,0 +1,34 @@
+{
+  "id": "TICKET-20250503-162833",
+  "title": "Another Test Ticket",
+  "subject": "Another Test Ticket",
+  "description": "This is another test ticket",
+  "status": "open",
+  "priority": "medium",
+  "createdBy": "",
+  "createdAt": "2025-05-03T16:28:33.581139688Z",
+  "updatedAt": "2025-05-03T16:28:33.581139688Z",
+  "messages": [
+    {
+      "id": "MSG-1746289713581144340",
+      "content": "This is another test ticket",
+      "isClient": true,
+      "createdAt": "2025-05-03T16:28:33.581139688Z",
+      "userName": "Jane Doe",
+      "userEmail": "jane@example.com"
+    }
+  ],
+  "userEmail": "jane@example.com",
+  "userName": "Jane Doe",
+  "clientName": "Client Company",
+  "clientEmail": "client@company.com",
+  "widgetId": "widget123",
+  "department": "technical",
+  "metadata": {
+    "url": "http://company.com",
+    "referrer": "company referrer",
+    "userAgent": "test agent",
+    "screenSize": "1440x900",
+    "externalId": ""
+  }
+}

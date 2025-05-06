@@ -1,0 +1,33 @@
+{
+  "id": "TICKET-20250503-161905",
+  "title": "Test desde curl",
+  "subject": "Test desde curl",
+  "description": "Este es un mensaje de prueba",
+  "status": "open",
+  "priority": "MEDIUM",
+  "createdBy": "",
+  "createdAt": "2025-05-03T16:19:05.719901642Z",
+  "updatedAt": "2025-05-03T16:19:05.719901642Z",
+  "messages": [
+    {
+      "id": "MSG-1746289145719916891",
+      "content": "Este es un mensaje de prueba",
+      "isClient": true,
+      "createdAt": "2025-05-03T16:19:05.719901642Z",
+      "userName": "Usuario Prueba",
+      "userEmail": "test@example.com"
+    }
+  ],
+  "userEmail": "test@example.com",
+  "userName": "Usuario Prueba",
+  "clientName": "Usuario Prueba",
+  "clientEmail": "test@example.com",
+  "widgetId": "test-widget-id",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "TICKET-20250503-155852",
+  "title": "Nuevo Ticket 3",
+  "subject": "Nuevo Ticket 3",
+  "description": "Prueba después de reiniciar todos los servicios",
+  "status": "open",
+  "priority": "MEDIUM",
+  "createdBy": "",
+  "createdAt": "2025-05-03T15:58:52.493219983Z",
+  "updatedAt": "2025-05-03T15:59:14.536053125Z",
+  "messages": [
+    {
+      "id": "MSG-1746287932493226398",
+      "content": "Prueba después de reiniciar todos los servicios",
+      "isClient": true,
+      "createdAt": "2025-05-03T15:58:52.493219983Z",
+      "userName": "Test User",
+      "userEmail": "test@example.com"
+    },
+    {
+      "id": "MSG-1746287954535810124",
+      "content": "Este es un mensaje de prueba para el tercer ticket para probar comunicación con GrowDesk",
+      "isClient": true,
+      "createdAt": "2025-05-03T15:59:14.536050595Z",
+      "userName": "",
+      "userEmail": ""
+    }
+  ],
+  "userEmail": "test@example.com",
+  "userName": "Test User",
+  "clientName": "Test User",
+  "clientEmail": "test@example.com",
+  "widgetId": "testwidget",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}

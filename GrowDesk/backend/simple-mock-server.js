@@ -581,20 +581,9 @@ const server = http.createServer(async (req, res) => {
           console.log('Header x-message-source:', req.headers['x-message-source']);
           console.log('Contenido del mensaje:', data);
           
-          // MEJORE LOGICA
-          // Por defecto, mensajes desde el panel admin son de agente (isClient=false)
-          // Mensajes con indicador de widget o from_client=true son del cliente (isClient=true)
-          let isClientMessage = false;
-          
-          if (req.url.includes('from_client=true') || 
-              req.headers['x-widget-id'] || 
-              req.headers['x-message-source'] === 'widget-client') {
-            console.log('Mensaje detectado como proveniente del WIDGET/CLIENTE');
-            isClientMessage = true;
-          } else {
-            console.log('Mensaje detectado como proveniente del PANEL/AGENTE');
-            isClientMessage = false;
-          }
+          // CORREGIDO: Utilizar el valor de isClient que viene en los datos directamente
+          // Si data.isClient está definido, respetar ese valor
+          let isClientMessage = data.isClient === true;
           
           console.log('DECISIÓN FINAL - isClient:', isClientMessage);
           
@@ -706,7 +695,7 @@ const server = http.createServer(async (req, res) => {
         const ticket = tickets.find(t => t.id === ticketId);
         
         if (ticket) {
-          console.log('========== MENSAJE DEL PANEL ADMIN ==========');
+          console.log('========== MENSAJE RECIBIDO ==========');
           console.log(`URL: ${req.url}`);
           console.log(`Ticket ID: ${ticketId}`);
           console.log(`Contenido: ${data.content}`);
@@ -714,16 +703,21 @@ const server = http.createServer(async (req, res) => {
           console.log(`Headers completos: ${JSON.stringify(req.headers)}`);
           console.log(`Datos completos: ${JSON.stringify(data)}`);
           
-          // CORRECCIÓN CRÍTICA: Los mensajes del panel de admin SIEMPRE tienen isClient=false
-          // Sin excepciones ni condiciones
+          // CORRECCIÓN: Respetar el valor de isClient que viene en el mensaje
+          // Si data.isClient está definido, usar ese valor directamente
+          let isClientMessage = data.isClient === true;
+          
+          console.log('DECISIÓN FINAL - isClient:', isClientMessage);
+          
+          // Crear nuevo mensaje respetando el origen (cliente o agente)
           const newMessage = {
             id: 'MSG-' + Date.now(),
             content: data.content,
-            isClient: false, // SIEMPRE false para los mensajes del panel admin
+            isClient: isClientMessage, // Usamos el valor determinado correctamente
             timestamp: new Date().toISOString(),
             created_at: new Date().toISOString(),
-            userName: data.userName || 'Agente de Soporte',
-            userEmail: data.userEmail || 'soporte@ejemplo.com'
+            userName: data.userName || (isClientMessage ? ticket.customer?.name || 'Cliente' : 'Agente de Soporte'),
+            userEmail: data.userEmail || (isClientMessage ? ticket.customer?.email || 'cliente@ejemplo.com' : 'soporte@ejemplo.com')
           };
           
           console.log(`Mensaje creado con isClient=${newMessage.isClient}`);
@@ -741,12 +735,26 @@ const server = http.createServer(async (req, res) => {
           console.log(`Enviando mensaje a conexiones WebSocket activas...`);
           broadcastMessage(ticketId, newMessage);
           
-          res.writeHead(201, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({
+          // CORREGIDO: Asegurar que la respuesta devuelve el valor correcto de isClient
+          // No invertir ni cambiar el valor de isClient en la respuesta
+          const response = {
             success: true,
             message: 'Mensaje añadido correctamente',
-            data: newMessage
-          }));
+            data: {
+              id: newMessage.id,
+              content: newMessage.content,
+              isClient: newMessage.isClient, // IMPORTANTE: Mantener el valor original
+              timestamp: newMessage.timestamp,
+              created_at: newMessage.created_at,
+              userName: newMessage.userName,
+              userEmail: newMessage.userEmail
+            }
+          };
+          
+          console.log('RESPUESTA FINAL:', JSON.stringify(response, null, 2));
+          
+          res.writeHead(201, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(response));
         } else {
           res.writeHead(404, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Ticket no encontrado' }));
