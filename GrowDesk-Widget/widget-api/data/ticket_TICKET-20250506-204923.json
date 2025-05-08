@@ -1,0 +1,34 @@
+{
+  "id": "TICKET-20250506-204923",
+  "title": "Ticket para Debuggear",
+  "subject": "Ticket para Debuggear",
+  "description": "Este es un mensaje de prueba para debuggear",
+  "status": "open",
+  "priority": "",
+  "createdBy": "",
+  "createdAt": "2025-05-06T20:49:23.092993687Z",
+  "updatedAt": "2025-05-06T20:49:23.092993687Z",
+  "messages": [
+    {
+      "id": "MSG-1746564563092998222",
+      "content": "Este es un mensaje de prueba para debuggear",
+      "isClient": true,
+      "createdAt": "2025-05-06T20:49:23.092993687Z",
+      "userName": "Usuario Test",
+      "userEmail": "test@example.com"
+    }
+  ],
+  "userEmail": "test@example.com",
+  "userName": "Usuario Test",
+  "clientName": "Usuario Test",
+  "clientEmail": "test@example.com",
+  "widgetId": "testwidget",
+  "department": "",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "id": "TICKET-20250507-223919",
+  "title": "Solicitud de soporte - Herbert",
+  "subject": "Solicitud de soporte - Herbert",
+  "description": "asd",
+  "status": "open",
+  "priority": "",
+  "createdBy": "",
+  "createdAt": "2025-05-07T22:39:19.294439067Z",
+  "updatedAt": "2025-05-07T22:39:19.294439067Z",
+  "messages": [
+    {
+      "id": "MSG-1746657559294446596",
+      "content": "asd",
+      "isClient": true,
+      "createdAt": "2025-05-07T22:39:19.294439067Z",
+      "userName": "Herbert",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    }
+  ],
+  "userEmail": "herbert.mayorga.jbs@gmail.com",
+  "userName": "Herbert",
+  "clientName": "Herbert",
+  "clientEmail": "herbert.mayorga.jbs@gmail.com",
+  "widgetId": "",
+  "department": "",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+    "screenSize": "2133x1015",
+    "externalId": ""
+  }
+}

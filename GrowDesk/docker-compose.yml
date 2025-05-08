@@ -29,22 +29,14 @@ services:
     container_name: growdesk-backend
     ports:
       - "8080:8080"
-    depends_on:
-      - postgres
-      - redis
     networks:
       - grow-network
     environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=growdesk
-      - DB_SSL_MODE=disable
       - PORT=8080
-      - JWT_SECRET=your-super-secret-key-change-in-production
+      - DATA_DIR=/app/data
+      - MOCK_AUTH=true
     volumes:
-      - backend_uploads:/root/uploads
+      - backend_data:/app/data
     restart: unless-stopped
 
   postgres:
@@ -77,5 +69,6 @@ networks:
 
 volumes:
   postgres_data:
+  backend_data:
   backend_uploads:
 

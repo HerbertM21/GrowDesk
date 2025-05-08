@@ -1,0 +1,34 @@
+{
+  "id": "TICKET-20250507-220229",
+  "title": "Solicitud de soporte - Martina Cristi",
+  "subject": "Solicitud de soporte - Martina Cristi",
+  "description": "asd",
+  "status": "open",
+  "priority": "",
+  "createdBy": "",
+  "createdAt": "2025-05-07T22:02:29.643861556Z",
+  "updatedAt": "2025-05-07T22:02:29.643861556Z",
+  "messages": [
+    {
+      "id": "MSG-1746655349643866273",
+      "content": "asd",
+      "isClient": true,
+      "createdAt": "2025-05-07T22:02:29.643861556Z",
+      "userName": "Martina Cristi",
+      "userEmail": "test@test.com"
+    }
+  ],
+  "userEmail": "test@test.com",
+  "userName": "Martina Cristi",
+  "clientName": "Martina Cristi",
+  "clientEmail": "test@test.com",
+  "widgetId": "",
+  "department": "",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+    "screenSize": "2132x844",
+    "externalId": ""
+  }
+}

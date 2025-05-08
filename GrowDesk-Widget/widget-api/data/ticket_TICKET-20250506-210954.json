@@ -1,0 +1,34 @@
+{
+  "id": "TICKET-20250506-210954",
+  "title": "Prueba de ticket API 3",
+  "subject": "Prueba de ticket API 3",
+  "description": "Tercera prueba de ticket desde curl con timeout aumentado",
+  "status": "open",
+  "priority": "",
+  "createdBy": "",
+  "createdAt": "2025-05-06T21:09:54.996708801Z",
+  "updatedAt": "2025-05-06T21:09:54.996708801Z",
+  "messages": [
+    {
+      "id": "MSG-1746565794996714044",
+      "content": "Tercera prueba de ticket desde curl con timeout aumentado",
+      "isClient": true,
+      "createdAt": "2025-05-06T21:09:54.996708801Z",
+      "userName": "Herbert-Test-3",
+      "userEmail": "test3@example.com"
+    }
+  ],
+  "userEmail": "test3@example.com",
+  "userName": "Herbert-Test-3",
+  "clientName": "Herbert-Test-3",
+  "clientEmail": "test3@example.com",
+  "widgetId": "",
+  "department": "",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}

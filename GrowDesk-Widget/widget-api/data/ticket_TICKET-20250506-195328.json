@@ -1,0 +1,25 @@
+{
+  "id": "TICKET-20250506-195328",
+  "title": "Test Subject",
+  "subject": "Test Subject",
+  "description": "",
+  "status": "open",
+  "priority": "",
+  "createdBy": "",
+  "createdAt": "2025-05-06T19:53:28.269516066Z",
+  "updatedAt": "2025-05-06T19:53:28.269516066Z",
+  "messages": [],
+  "userEmail": "user_1746561208@temporary.com",
+  "userName": "Anónimo",
+  "clientName": "Anónimo",
+  "clientEmail": "user_1746561208@temporary.com",
+  "widgetId": "",
+  "department": "",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}

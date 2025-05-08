@@ -77,7 +77,7 @@ const isAuthRoute = computed(() => {
 });
 
 // Verificar autenticación al montar el componente
-onMounted(() => {
+onMounted(async () => {
   // Configurar el tema inicial
   if (isDarkTheme.value) {
     document.documentElement.classList.add('dark-theme');
@@ -85,38 +85,17 @@ onMounted(() => {
     document.documentElement.classList.remove('dark-theme');
   }
   
-  const token = localStorage.getItem('token');
-  const userData = localStorage.getItem('user');
+  console.log('App.vue montado - verificando autenticación');
   
-  if (token && userData) {
-    try {
-      // Verificar que el usuario está correctamente inicializado
-      const parsedUser = JSON.parse(userData);
-      
-      // Asegurarnos de que el store tiene los datos correctos
-      if (!authStore.user) {
-        // Forzar una actualización del store con los datos guardados
-        authStore.$patch({
-          token,
-          user: parsedUser
-        });
-      }
-      
-      console.log('App montada, estado de autenticación: autenticado');
-
-      // Asegurar que el rol del usuario esté correctamente establecido
-      if (parsedUser && parsedUser.role) {
-        // Asegurarse de que el rol esté en localStorage
-        localStorage.setItem('userRole', parsedUser.role);
-        console.log('Rol de usuario actualizado al inicio:', parsedUser.role);
-      }
-    } catch (error) {
-      console.error('Error al analizar datos de usuario:', error);
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-    }
-  } else {
-    console.log('App montada, estado de autenticación: no autenticado');
+  // Inicializar el estado de autenticación
+  try {
+    // Intentar verificar si hay una sesión válida
+    const isAuthSuccess = await authStore.checkAuth();
+    console.log('Verificación de autenticación completada:', isAuthSuccess ? 'sesión válida' : 'no autenticado');
+  } catch (error) {
+    console.error('Error durante la verificación de autenticación:', error);
+    // Limpiar datos de autenticación en caso de error
+    authStore.logout();
   }
 });
 </script>

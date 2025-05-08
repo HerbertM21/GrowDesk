@@ -301,6 +301,8 @@ const formatMessageTime = (timestamp: string): string => {
 const isOpen = ref(false);
 const isRegistered = ref(false);
 const loading = ref(false);
+const isSubmitting = ref(false);
+const error = ref('');
 const currentTicketId = ref('');
 const messages = ref<Array<{text: string, isUser: boolean, id?: string, pending?: boolean, error?: boolean, timestamp?: string}>>([]);
 const newMessage = ref('');
@@ -394,19 +396,8 @@ const loadFaqs = async () => {
   } catch (error) {
     console.error('Error al cargar FAQs:', error);
     faqs.value = []; // Asegurarnos de que no hay FAQs antiguas
-    
-    // Si falla la carga de FAQs, mostrar el chat
-    if (isRegistered.value) {
-      showChatView.value = true;
-      console.log('Cambiando a vista de chat debido a error en FAQs');
-    }
   } finally {
     loadingFaqs.value = false;
-    console.log('Carga de FAQs finalizada. Estado:', { 
-      faqsCount: faqs.value.length, 
-      expandedFaqsCount: expandedFaqs.value.length,
-      showingChat: showChatView.value
-    });
   }
 };
 
@@ -626,29 +617,57 @@ const toggleChat = () => {
 
 // Enviar el formulario de registro y crear el ticket
 const submitRegistration = async () => {
-  if (!userData.value.name || !userData.value.email || !userData.value.initialMessage) return;
-  
-  loading.value = true;
-  
+  console.log('Intentando registrar usuario con:', {
+    name: userData.value.name, 
+    email: userData.value.email,
+    message: userData.value.initialMessage
+  });
+
   try {
-    // Crear el ticket con los datos del usuario
-    const ticketData = {
+    isSubmitting.value = true;
+    error.value = '';
+
+    // Validación
+    if (!userData.value.name || userData.value.name.trim() === '') {
+      console.error('Error de validación: nombre vacío');
+      error.value = 'Por favor ingresa tu nombre';
+      isSubmitting.value = false;
+      return;
+    }
+
+    if (!userData.value.email || !userData.value.email.includes('@')) {
+      console.error('Error de validación: email inválido:', userData.value.email);
+      error.value = 'Por favor ingresa un email válido';
+      isSubmitting.value = false;
+      return;
+    }
+
+    if (!userData.value.initialMessage || userData.value.initialMessage.trim() === '') {
+      console.error('Error de validación: mensaje vacío');
+      error.value = 'Por favor ingresa un mensaje';
+      isSubmitting.value = false;
+      return;
+    }
+
+    // Crear ticket en el servidor
+    console.log('Iniciando creación de ticket con datos validados');
+    const ticketResult = await api.createTicket({
       name: userData.value.name,
       email: userData.value.email,
-      subject: `Solicitud de soporte - ${userData.value.name}`,
       message: userData.value.initialMessage,
+      subject: `Solicitud de soporte - ${userData.value.name}`,
       metadata: {
-        url: window.location.href,
         referrer: document.referrer,
+        url: window.location.href,
         userAgent: navigator.userAgent,
         screenSize: `${window.innerWidth}x${window.innerHeight}`
       }
-    };
-    
-    const response = await api.createTicket(ticketData);
+    });
+
+    console.log('Ticket creado exitosamente:', ticketResult);
     
     // Guardar el ID del ticket
-    currentTicketId.value = response.ticketId;
+    currentTicketId.value = ticketResult.ticketId;
     
     // Marcar al usuario como registrado
     isRegistered.value = true;
@@ -674,7 +693,7 @@ const submitRegistration = async () => {
     });
     
     // Establecer conexión WebSocket con el nuevo ticket
-    connectWebSocket(response.ticketId);
+    connectWebSocket(ticketResult.ticketId);
     
     // Hacer scroll al final del chat
     scrollToBottom();
@@ -683,6 +702,7 @@ const submitRegistration = async () => {
     alert('Lo sentimos, hubo un problema al iniciar el chat. Por favor, inténtalo de nuevo más tarde.');
   } finally {
     loading.value = false;
+    isSubmitting.value = false;
   }
 };
 
@@ -740,19 +760,18 @@ const scrollToBottom = () => {
   }, 100);
 };
 
-// Cerrar sesión
-const logout = () => {
-  api.logout();
-  isRegistered.value = false;
-  currentTicketId.value = '';
-  messages.value = [];
-  faqs.value = [];
-  expandedFaqs.value = [];
-  userData.value = {
-    name: '',
-    email: '',
-    initialMessage: ''
-  };
+// Mejorar el método logout para recargar FAQs
+const logout = async () => {
+  try {
+    await api.logout();
+    isRegistered.value = false;
+    currentTicketId.value = '';
+    messages.value = [];
+    // Recargar FAQs después del logout
+    await loadFaqs();
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error);
+  }
 };
 
 const sendMessage = async () => {

@@ -26,24 +26,26 @@ app.use(router)
 // Configurar PrimeVue
 app.use(PrimeVue)
 
-// Inicializar stores con datos mock para desarrollo
+// Inicializar stores con datos mock para desarrollo, pero NO iniciar sesión automáticamente
 if (import.meta.env.DEV) {
   setTimeout(async () => {
+    // Inicializar usuarios mock para que estén disponibles para el login
     const userStore = useUsersStore()
     userStore.initMockUsers()
-    console.log('Usuarios mock inicializados desde main.ts')
+    console.log('Usuarios mock inicializados desde main.ts (solo para login)')
     
     // Proporcionar el router al auth store
     const authStore = useAuthStore()
     authStore.setRouter(router)
     console.log('Router proporcionado al auth store')
     
-    // Verificar si hay una sesión activa y cargar los datos del usuario
-    await authStore.checkAuth()
-    console.log('Estado de autenticación verificado:', authStore.isAuthenticated)
-    console.log('Roles de usuario - Admin:', authStore.isAdmin, 'Asistente:', authStore.isAssistant)
+    // Solo comprobar si hay una sesión activa (token válido existente)
+    // pero NO forzar una autenticación
+    const isAuthenticated = await authStore.checkAuth()
+    console.log('App inicializada, estado de autenticación:', isAuthenticated ? 'autenticado' : 'no autenticado')
   }, 100)
 }
 
 // Montar app
 app.mount('#app')
+console.log('App montada, estado de autenticación: no autenticado')

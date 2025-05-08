@@ -106,7 +106,7 @@
                         <i class="pi pi-trash"></i>
                       </button>
                       <button 
-                        @click="togglePublish(faq.id)" 
+                        @click="togglePublish(faq)" 
                         class="btn btn-icon" 
                         :class="faq.isPublished ? 'btn-warning' : 'btn-success'"
                         :title="faq.isPublished ? 'Despublicar' : 'Publicar'"
@@ -272,41 +272,30 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useFaqsStore } from '../../stores/faqs';
-import type { FAQ } from '../../types/faq.types';
-import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
+import { useFaqStore } from '@/stores/faqs';
 import { useNotificationsStore } from '@/stores/notifications';
+import { useAuthStore } from '@/stores/auth';
+import { storeToRefs } from 'pinia';
+import type { FAQ } from '@/types/faq.types';
 
-// Store para FAQs
-const faqStore = useFaqsStore();
-const { faqs, isLoading: loading, error } = storeToRefs(faqStore);
+const router = useRouter();
+const faqStore = useFaqStore();
+const notificationsStore = useNotificationsStore();
+const authStore = useAuthStore();
+const { faqs, loading, error } = storeToRefs(faqStore);
 
-// Estado para filtros
-const searchQuery = ref('');
-const categoryFilter = ref('all');
-const publishFilter = ref('all');
-
-// Estado para modales
-const showViewModal = ref(false);
+// Estado
+const currentFaq = ref<FAQ | null>(null);
+const isEditing = ref(false);
 const showEditModal = ref(false);
 const showDeleteConfirm = ref(false);
-const showNewCategoryInput = ref(false);
+const faqToDelete = ref<number | null>(null);
+const searchQuery = ref('');
+const categoryFilter = ref('');
+const publishFilter = ref('all');
+const newCategory = ref('');
 
-// Estado para formularios
-const isEditing = ref(false);
-const isSaving = ref(false);
-const isDeleting = ref(false);
-const currentFaq = ref<FAQ>({
-  id: 0,
-  question: '',
-  answer: '',
-  category: '',
-  isPublished: false,
-  createdAt: '',
-  updatedAt: ''
-});
 const formData = ref({
   question: '',
   answer: '',
@@ -318,68 +307,38 @@ const formErrors = ref({
   answer: '',
   category: ''
 });
-const newCategory = ref('');
-const faqToDelete = ref<number | null>(null);
 
-// Stores para la verificación de permisos
-const authStore = useAuthStore();
-const router = useRouter();
-const notificationsStore = useNotificationsStore();
-
-// Verificación de permisos
+// Computed properties
 const isAdminOrAssistant = computed(() => {
   return authStore.isAdmin || authStore.isAssistant;
 });
 
-// Función para redireccionar al dashboard
-function goToDashboard() {
-  router.push('/dashboard');
-}
-
-// Mostrar notificación si no tiene permiso
-onMounted(() => {
-  if (!isAdminOrAssistant.value) {
-    notificationsStore.addNotification({
-      type: 'error',
-      message: 'No tienes permiso para acceder a la gestión de FAQs.',
-      timeout: 5000
-    });
-  }
-  faqStore.fetchFaqs();
-});
-
-// Computed properties
 const categories = computed(() => {
-  return faqStore.getCategories();
+  const storeCategories = faqStore.getCategories();
+  return storeCategories;
 });
 
 const filteredFaqs = computed(() => {
   let filtered = [...faqs.value];
   
-  // Filtrar por búsqueda
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(faq => 
-      faq.question.toLowerCase().includes(query) || 
+      faq.question.toLowerCase().includes(query) ||
       faq.answer.toLowerCase().includes(query)
     );
   }
   
-  // Filtrar por categoría
-  if (categoryFilter.value !== 'all') {
+  if (categoryFilter.value) {
     filtered = filtered.filter(faq => faq.category === categoryFilter.value);
   }
   
-  // Filtrar por estado de publicación
   if (publishFilter.value !== 'all') {
     const isPublished = publishFilter.value === 'published';
     filtered = filtered.filter(faq => faq.isPublished === isPublished);
   }
   
-  // Ordenar por fecha de actualización más reciente
-  return filtered.sort((a, b) => {
-    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-  });
+  return filtered;
 });
 
 // Métodos
@@ -396,7 +355,7 @@ const formatDate = (dateString: string) => {
 
 const openViewModal = (faq: FAQ) => {
   currentFaq.value = { ...faq };
-  showViewModal.value = true;
+  showEditModal.value = true;
 };
 
 const openCreateModal = () => {
@@ -406,36 +365,36 @@ const openCreateModal = () => {
     category: '',
     isPublished: false
   };
-  formErrors.value = {
-    question: '',
-    answer: '',
-    category: ''
-  };
   isEditing.value = false;
   showEditModal.value = true;
 };
 
 const openEditModal = (faq: FAQ) => {
+  formData.value = { ...faq };
+  isEditing.value = true;
+  showEditModal.value = true;
+};
+
+const closeModal = () => {
+  showEditModal.value = false;
   formData.value = {
-    question: faq.question,
-    answer: faq.answer,
-    category: faq.category,
-    isPublished: faq.isPublished
-  };
-  currentFaq.value = { ...faq };
-  formErrors.value = {
     question: '',
     answer: '',
-    category: ''
+    category: '',
+    isPublished: false
   };
-  isEditing.value = true;
-  showViewModal.value = false;
-  showEditModal.value = true;
+  isEditing.value = false;
 };
 
 const cancelEdit = () => {
   showEditModal.value = false;
-  showNewCategoryInput.value = false;
+  formData.value = {
+    question: '',
+    answer: '',
+    category: '',
+    isPublished: false
+  };
+  isEditing.value = false;
 };
 
 const validateForm = () => {
@@ -466,63 +425,99 @@ const validateForm = () => {
 
 const saveFaq = async () => {
   if (!validateForm()) return;
-  
-  isSaving.value = true;
-  
+
   try {
-    if (isEditing.value) {
-      await faqStore.updateFaq({
-        id: currentFaq.value.id,
-        ...formData.value
-      });
+    if (isEditing.value && currentFaq.value?.id) {
+      await faqStore.updateFaq(currentFaq.value.id, formData.value);
+      showSuccess('Pregunta actualizada exitosamente');
     } else {
       await faqStore.addFaq(formData.value);
+      showSuccess('Pregunta creada exitosamente');
     }
     
-    showEditModal.value = false;
-    showNewCategoryInput.value = false;
-  } catch (error) {
-    console.error('Error al guardar la pregunta frecuente:', error);
-  } finally {
-    isSaving.value = false;
+    // Cerrar el modal y limpiar el formulario
+    closeModal();
+    
+    // Recargar la lista de FAQs
+    await faqStore.fetchFaqs();
+  } catch (error: any) {
+    showError(error.message || 'Error al guardar la pregunta');
   }
 };
 
 const confirmDelete = (faq: FAQ) => {
-  faqToDelete.value = faq.id;
-  showDeleteConfirm.value = true;
+  if (faq.id) {
+    faqToDelete.value = faq.id;
+    showDeleteConfirm.value = true;
+  }
 };
 
 const deleteFaq = async () => {
   if (!faqToDelete.value) return;
   
-  isDeleting.value = true;
-  
   try {
     await faqStore.deleteFaq(faqToDelete.value);
     showDeleteConfirm.value = false;
+    faqToDelete.value = null;
+    await faqStore.fetchFaqs();
   } catch (error) {
     console.error('Error al eliminar la pregunta frecuente:', error);
-  } finally {
-    isDeleting.value = false;
   }
 };
 
-const togglePublish = async (id: number) => {
+const togglePublish = async (faq: FAQ) => {
   try {
-    await faqStore.togglePublishStatus(id);
+    await faqStore.togglePublish(faq.id);
+    await faqStore.fetchFaqs();
   } catch (error) {
     console.error('Error al cambiar el estado de publicación:', error);
   }
 };
 
 const addNewCategory = () => {
-  if (newCategory.value.trim()) {
-    formData.value.category = newCategory.value.trim();
-    showNewCategoryInput.value = false;
+  if (newCategory.value && !categories.value.includes(newCategory.value)) {
+    categoryFilter.value = newCategory.value;
     newCategory.value = '';
   }
 };
+
+const showSuccess = (message: string) => {
+  notificationsStore.addNotification({
+    type: 'success',
+    message: message,
+    timeout: 5000
+  });
+};
+
+const showError = (message: string) => {
+  notificationsStore.addNotification({
+    type: 'error',
+    message: message,
+    timeout: 5000
+  });
+};
+
+// Función para redireccionar al dashboard
+function goToDashboard() {
+  router.push('/dashboard');
+}
+
+// Mostrar notificación si no tiene permiso
+onMounted(async () => {
+  if (!isAdminOrAssistant.value) {
+    notificationsStore.addNotification({
+      type: 'error',
+      message: 'No tienes permiso para acceder a la gestión de FAQs.',
+      timeout: 5000
+    });
+  } else {
+    try {
+      await faqStore.fetchFaqs();
+    } catch (err: any) {
+      console.error('Error al cargar FAQs:', err);
+    }
+  }
+});
 </script>
 
 <style scoped lang="scss">

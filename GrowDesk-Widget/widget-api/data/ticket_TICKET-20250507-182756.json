@@ -1,0 +1,42 @@
+{
+  "id": "TICKET-20250507-182756",
+  "title": "Solicitud de soporte - PyGeo",
+  "subject": "Solicitud de soporte - PyGeo",
+  "description": "asd",
+  "status": "open",
+  "priority": "",
+  "createdBy": "",
+  "createdAt": "2025-05-07T18:27:56.714511309Z",
+  "updatedAt": "2025-05-07T18:58:05.531766584Z",
+  "messages": [
+    {
+      "id": "MSG-1746642476714517116",
+      "content": "asd",
+      "isClient": true,
+      "createdAt": "2025-05-07T18:27:56.714511309Z",
+      "userName": "PyGeo",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    },
+    {
+      "id": "MSG-1746644285531733934",
+      "content": "test34?",
+      "isClient": true,
+      "createdAt": "2025-05-07T18:58:05.531765839Z",
+      "userName": "PyGeo",
+      "userEmail": "herbert.mayorga.jbs@gmail.com"
+    }
+  ],
+  "userEmail": "herbert.mayorga.jbs@gmail.com",
+  "userName": "PyGeo",
+  "clientName": "PyGeo",
+  "clientEmail": "herbert.mayorga.jbs@gmail.com",
+  "widgetId": "",
+  "department": "",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+    "screenSize": "2133x1015",
+    "externalId": ""
+  }
+}

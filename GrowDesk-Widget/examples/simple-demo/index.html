@@ -10,6 +10,20 @@
     
     <!-- Cargar estilos del widget - Usando ruta local -->
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Script para limpiar datos almacenados previos -->
+    <script>
+        // Limpiar datos de sesión anteriores al cargar la página
+        window.addEventListener('load', function() {
+            // Limpiar localStorage
+            localStorage.removeItem('growdesk_session_data');
+            
+            // Limpiar cookies relacionadas con el widget
+            document.cookie = 'growdesk_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            
+            console.log('Datos de sesión del widget eliminados');
+        });
+    </script>
 </head>
 <body>
     <h1>Demo Minimalista de GrowDesk Widget</h1>
@@ -18,12 +32,14 @@
     <!-- Configuración global del widget -->
     <script>
         window.GrowDeskConfig = {
-            // URL correcta con el prefijo /widget
-            apiUrl: 'http://localhost:8082/widget',
+            // URL correcta sin prefijo /widget
+            apiUrl: 'http://localhost:3001',
             brandName: "GrowDesk Support",
             primaryColor: "#6200ea",
             position: "bottom-right",
-            welcomeMessage: "¿En qué podemos ayudarte hoy?"
+            welcomeMessage: "¿En qué podemos ayudarte hoy?",
+            // Activar modo de depuración para ver más detalles en consola
+            debug: true
         };
     </script>
     
@@ -31,9 +47,11 @@
     <script 
         id="growdesk-widget"
         src="growdesk-widget.umd.js"
-        data-api-url="http://localhost:8082/widget"
+        data-api-url="http://localhost:3001"
         data-widget-id="testwidget"
         data-widget-token="testtoken"
+        data-default-name="Usuario de Prueba"
+        data-default-email="prueba@example.com"
         async>
     </script>
 </body>

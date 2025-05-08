@@ -1,21 +1,48 @@
-# Node.js stage for mock server
-FROM node:18-alpine
+FROM golang:1.21-alpine AS builder
 
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and install dependencies
-COPY package.json ./
-RUN npm install
+# Install build dependencies
+RUN apk add --no-cache git
 
-# Copy mock server files and data files
-COPY *.json ./
-COPY *.js ./
+# Copy module files
+COPY go.mod go.sum* ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -o backend ./cmd/server
+
+# Create minimal production image
+FROM alpine:latest
+
+# Install dependencies
+RUN apk --no-cache add tzdata ca-certificates
+
+# Set working directory
+WORKDIR /app
+
+# Copy binary from builder stage
+COPY --from=builder /app/backend /app/backend
+
+# Copy data files
+COPY *.json ./data/
+
+# Create data directory
+RUN mkdir -p /app/data
 
 # Expose port
 EXPOSE 8080
 
 # Set environment variables
 ENV PORT=8080
+ENV DATA_DIR=/app/data
+ENV MOCK_AUTH=true
 
-# Command to run
-CMD ["node", "simple-mock-server.js"] 
+# Run the application
+CMD ["/app/backend", "-port", "8080", "-data-dir", "/app/data", "-mock-auth", "true"] 

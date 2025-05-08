@@ -2,21 +2,17 @@ import axios from 'axios'
 import type { AxiosInstance, AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
 
 // Determinar la URL base del backend según el entorno
-// Dejamos que se use cualquiera de los dos puertos para evitar problemas de autenticación
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 console.log('API Base URL:', apiBaseUrl);
 
 const apiClient = axios.create({
   baseURL: apiBaseUrl,
+  timeout: 15000, // Reducido a 15 segundos
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000
+  validateStatus: (status) => status >= 200 && status < 500,
 })
-
-// Contador de intentos de actualización del token
-let refreshAttempts = 0;
-const maxRefreshAttempts = 2;
 
 // Interceptor para agregar token de autenticación
 apiClient.interceptors.request.use(
@@ -25,34 +21,67 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    console.log('Enviando petición a:', config.url, 'con datos:', config.data);
     return config
   },
   (error) => {
+    console.error('Error en la configuración de la petición:', error);
     return Promise.reject(error)
   }
 )
 
-// Interceptor para manejar errores comunes
+// Interceptor para manejar errores de respuesta
 apiClient.interceptors.response.use(
   (response) => {
-    return response
+    console.log('Respuesta recibida:', response.status, response.data);
+    return response;
   },
-  (error) => {
-    // Solo redirigir al login después de múltiples intentos fallidos
-    // o si el token está completamente ausente
-    if (error.response && error.response.status === 401) {
-      refreshAttempts++;
-      
-      if (refreshAttempts >= maxRefreshAttempts) {
-        console.log('Múltiples errores de autenticación, cerrando sesión...');
-        localStorage.removeItem('token')
-        localStorage.removeItem('userRole')
-        window.location.href = '/login'
-      } else {
-        console.log(`Error de autenticación (intento ${refreshAttempts}/${maxRefreshAttempts})`);
+  (error: AxiosError<{ message: string }>) => {
+    console.error('Error en la respuesta:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+      code: error.code,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        timeout: error.config?.timeout
       }
+    });
+
+    // Manejar errores de timeout
+    if (error.code === 'ECONNABORTED') {
+      return Promise.reject(new Error('El servidor está tardando demasiado en responder. Por favor, intente nuevamente.'));
     }
-    return Promise.reject(error)
+
+    // Manejar errores de red
+    if (!error.response) {
+      return Promise.reject(new Error('No se pudo conectar con el servidor. Por favor, verifique su conexión a internet.'));
+    }
+
+    // Manejar errores de autenticación
+    if (error.response.status === 401) {
+      const currentPath = window.location.pathname;
+      if (!currentPath.includes('/login')) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
+      return Promise.reject(new Error('Sesión expirada. Por favor, inicie sesión nuevamente.'));
+    }
+
+    // Manejar errores de permisos
+    if (error.response.status === 403) {
+      return Promise.reject(new Error('No tiene permisos para realizar esta acción.'));
+    }
+
+    // Manejar errores del servidor
+    if (error.response.status >= 500) {
+      return Promise.reject(new Error('El servidor está experimentando problemas. Por favor, intente nuevamente más tarde.'));
+    }
+
+    // Propagar el error con un mensaje más amigable
+    const errorMessage = error.response?.data?.message || error.message;
+    return Promise.reject(new Error(errorMessage));
   }
 )
 

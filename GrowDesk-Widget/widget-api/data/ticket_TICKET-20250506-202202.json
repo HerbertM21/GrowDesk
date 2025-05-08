@@ -1,0 +1,34 @@
+{
+  "id": "TICKET-20250506-202202",
+  "title": "Ticket final de prueba",
+  "subject": "Ticket final de prueba",
+  "description": "Última prueba para verificar el guardado de tickets",
+  "status": "open",
+  "priority": "HIGH",
+  "createdBy": "",
+  "createdAt": "2025-05-06T20:22:02.33882139Z",
+  "updatedAt": "2025-05-06T20:22:02.33882139Z",
+  "messages": [
+    {
+      "id": "MSG-1746562922338826039",
+      "content": "Última prueba para verificar el guardado de tickets",
+      "isClient": true,
+      "createdAt": "2025-05-06T20:22:02.33882139Z",
+      "userName": "Anónimo",
+      "userEmail": "user_1746562922@temporary.com"
+    }
+  ],
+  "userEmail": "user_1746562922@temporary.com",
+  "userName": "Anónimo",
+  "clientName": "Anónimo",
+  "clientEmail": "user_1746562922@temporary.com",
+  "widgetId": "testwidget",
+  "department": "Soporte",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}

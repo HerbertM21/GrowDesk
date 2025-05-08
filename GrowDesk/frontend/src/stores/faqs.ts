@@ -1,162 +1,132 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
-import faqService from '../services/faqService';
-import type { FAQ, FaqCreateData, FaqUpdateData } from '../types/faq.types';
+import { ref, computed } from 'vue';
+import type { FAQ } from '@/types/faq.types';
+import faqService from '@/services/faqService';
 
-export const useFaqsStore = defineStore('faqs', () => {
+export const useFaqStore = defineStore('faqs', () => {
   const faqs = ref<FAQ[]>([]);
-  const isLoading = ref(false);
+  const loading = ref(false);
   const error = ref<string | null>(null);
 
-  /**
-   * Carga todas las FAQs (alias para compatibilidad con FaqManagement)
-   */
+  const DEFAULT_CATEGORIES = [
+    'General',
+    'Cuenta',
+    'Pagos',
+    'Soporte',
+    'Técnico',
+    'Otros'
+  ];
+
   const fetchFaqs = async () => {
-    return loadFaqs();
-  };
-
-  /**
-   * Carga todas las FAQs
-   */
-  const loadFaqs = async () => {
-    isLoading.value = true;
-    error.value = null;
-    
     try {
-      faqs.value = await faqService.getAllFaqs();
-    } catch (err) {
-      error.value = 'Error al cargar preguntas frecuentes';
-      console.error(error.value, err);
+      loading.value = true;
+      error.value = null;
+      console.log('Iniciando fetch de FAQs...');
+      const data = await faqService.getAllFaqs();
+      console.log('FAQs obtenidas:', data);
+      faqs.value = data;
+    } catch (err: any) {
+      console.error('Error en fetchFaqs:', err);
+      error.value = err.message || 'Error al cargar las preguntas frecuentes';
+      throw err;
     } finally {
-      isLoading.value = false;
+      loading.value = false;
     }
   };
 
-  /**
-   * Añade una nueva FAQ
-   */
-  const addFaq = async (faq: FaqCreateData) => {
-    isLoading.value = true;
-    error.value = null;
-    
+  const addFaq = async (faq: Omit<FAQ, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
+      loading.value = true;
+      error.value = null;
+      console.log('Agregando nueva FAQ:', faq);
       const newFaq = await faqService.createFaq(faq);
-      faqs.value.push(newFaq);
+      console.log('FAQ creada:', newFaq);
+      faqs.value = [...faqs.value, newFaq];
       return newFaq;
-    } catch (err) {
-      error.value = 'Error al crear la pregunta frecuente';
-      console.error(error.value, err);
+    } catch (err: any) {
+      console.error('Error en addFaq:', err);
+      error.value = err.message || 'Error al crear la pregunta frecuente';
       throw err;
     } finally {
-      isLoading.value = false;
+      loading.value = false;
     }
   };
 
-  /**
-   * Actualiza una FAQ existente
-   */
-  const updateFaq = async (faq: FaqUpdateData) => {
-    isLoading.value = true;
-    error.value = null;
-    
+  const updateFaq = async (id: number, faq: Partial<FAQ>) => {
     try {
-      const updatedFaq = await faqService.updateFaq(faq);
-      const index = faqs.value.findIndex(f => f.id === faq.id);
-      if (index !== -1) {
-        faqs.value[index] = updatedFaq;
-      }
+      loading.value = true;
+      error.value = null;
+      console.log('Actualizando FAQ:', { id, faq });
+      const updatedFaq = await faqService.updateFaq(id, faq);
+      console.log('FAQ actualizada:', updatedFaq);
+      faqs.value = faqs.value.map(f => f.id === id ? updatedFaq : f);
       return updatedFaq;
-    } catch (err) {
-      error.value = 'Error al actualizar la pregunta frecuente';
-      console.error(error.value, err);
+    } catch (err: any) {
+      console.error('Error en updateFaq:', err);
+      error.value = err.message || 'Error al actualizar la pregunta frecuente';
       throw err;
     } finally {
-      isLoading.value = false;
+      loading.value = false;
     }
   };
 
-  /**
-   * Alias de updateFaq para mantener compatibilidad con FaqManagement
-   */
-  const editFaq = async (faq: FaqUpdateData) => {
-    return updateFaq(faq);
-  };
-
-  /**
-   * Elimina una FAQ
-   */
   const deleteFaq = async (id: number) => {
-    isLoading.value = true;
-    error.value = null;
-    
     try {
+      loading.value = true;
+      error.value = null;
+      console.log('Eliminando FAQ:', id);
       await faqService.deleteFaq(id);
       faqs.value = faqs.value.filter(f => f.id !== id);
-    } catch (err) {
-      error.value = 'Error al eliminar la pregunta frecuente';
-      console.error(error.value, err);
+    } catch (err: any) {
+      console.error('Error en deleteFaq:', err);
+      error.value = err.message || 'Error al eliminar la pregunta frecuente';
       throw err;
     } finally {
-      isLoading.value = false;
+      loading.value = false;
     }
   };
 
-  /**
-   * Cambia el estado de publicación de una FAQ
-   */
   const togglePublish = async (id: number) => {
-    isLoading.value = true;
-    error.value = null;
-    
     try {
+      loading.value = true;
+      error.value = null;
+      console.log('Cambiando estado de publicación de FAQ:', id);
       const updatedFaq = await faqService.togglePublishStatus(id);
-      const index = faqs.value.findIndex(f => f.id === id);
-      if (index !== -1) {
-        faqs.value[index] = updatedFaq;
-      }
+      console.log('Estado de publicación actualizado:', updatedFaq);
+      faqs.value = faqs.value.map(f => f.id === id ? updatedFaq : f);
       return updatedFaq;
-    } catch (err) {
-      error.value = 'Error al cambiar el estado de publicación';
-      console.error(error.value, err);
+    } catch (err: any) {
+      console.error('Error en togglePublish:', err);
+      error.value = err.message || 'Error al cambiar el estado de publicación';
       throw err;
     } finally {
-      isLoading.value = false;
+      loading.value = false;
     }
   };
 
-  /**
-   * Alias para togglePublish para mantener compatibilidad con FaqManagement
-   */
-  const togglePublishStatus = async (id: number) => {
-    return togglePublish(id);
-  };
-
-  /**
-   * Obtiene todas las categorías únicas de las FAQs
-   */
   const getCategories = () => {
+    if (!faqs.value || faqs.value.length === 0) return DEFAULT_CATEGORIES;
     const categories = new Set<string>();
     faqs.value.forEach(faq => {
-      if (faq.category) {
-        categories.add(faq.category);
-      }
+      if (faq.category) categories.add(faq.category);
     });
     return Array.from(categories);
   };
 
-  return { 
-    faqs, 
-    isLoading, 
-    error, 
-    loadFaqs,
+  const getFaqById = (id: number) => {
+    return faqs.value.find(faq => faq.id === id);
+  };
+
+  return {
+    faqs,
+    loading,
+    error,
     fetchFaqs,
-    addFaq, 
-    editFaq,
+    addFaq,
     updateFaq,
-    removeFaq: deleteFaq,
     deleteFaq,
     togglePublish,
-    togglePublishStatus,
-    getCategories
+    getCategories,
+    getFaqById
   };
 });

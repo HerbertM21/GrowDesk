@@ -1,0 +1,65 @@
+# GrowDesk Widget Docker Compose
+version: '3.8'
+
+services:
+  widget-core:
+    build:
+      context: ./widget-core
+      dockerfile: Dockerfile
+    ports:
+      - "3030:3030"
+    volumes:
+      - ./widget-core:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=3030
+    restart: unless-stopped
+    networks:
+      - growdesk-widget-network
+
+  widget-api:
+    build:
+      context: ./widget-api
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./widget-api:/app
+      - ./widget-api/data:/app/data
+    environment:
+      - PORT=3000
+      - GROWDESK_API_URL=http://host.docker.internal:8080
+      - GROWDESK_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiJhZG1pbi0xMjMiLCJlbWFpbCI6ImFkbWluQGdyb3dkZXNrLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTcyNDA4ODQwMH0.8J5ayPvA4B-1vF5NaqRXycW1pmIl9qjKP6Ddj4Ot_Cw
+      - WIDGET_BASE_URL=http://localhost:3030
+      - WIDGET_API_URL=http://localhost:3000
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - growdesk-widget-network
+
+  demo-site:
+    build:
+      context: ./examples/simple-demo
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./examples/simple-demo:/app
+      - /app/node_modules
+    depends_on:
+      - widget-core
+      - widget-api
+    environment:
+      - PORT=8090
+      - NODE_ENV=development
+      - WIDGET_CORE_URL=http://localhost:3030
+      - WIDGET_API_URL=http://localhost:3000
+    restart: unless-stopped
+    networks:
+      - growdesk-widget-network
+
+networks:
+  growdesk-widget-network:
+    driver: bridge 

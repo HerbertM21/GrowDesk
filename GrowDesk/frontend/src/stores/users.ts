@@ -167,7 +167,7 @@ export const useUsersStore = defineStore('users', () => {
       console.log(`Obteniendo perfil de usuario para ID: ${userId}`);
       
       // Primero, buscar en el array de usuarios
-      const userFromArray = users.value.find(u => u.id === userId);
+      const userFromArray = users.value.find((u: User) => u.id === userId);
       if (userFromArray) {
         currentProfile.value = userFromArray;
         return currentProfile.value;
@@ -427,7 +427,7 @@ export const useUsersStore = defineStore('users', () => {
       
       // Si hay usuarios cargados, intentar encontrarlo en la caché primero
       if (users.value.length > 0) {
-        const cachedUser = users.value.find(u => u.id === userId);
+        const cachedUser = users.value.find((u: User) => u.id === userId);
         if (cachedUser) {
           console.log('Usuario encontrado en caché:', cachedUser);
           return cachedUser;
@@ -439,7 +439,7 @@ export const useUsersStore = defineStore('users', () => {
       const userData = response.data;
       
       // Actualizar en la caché local si ya existe
-      const index = users.value.findIndex(u => u.id === userId);
+      const index = users.value.findIndex((u: User) => u.id === userId);
       if (index !== -1) {
         users.value[index] = userData;
       } else {
@@ -461,7 +461,7 @@ export const useUsersStore = defineStore('users', () => {
           initMockUsers();
         }
         
-        const mockUser = users.value.find(u => u.id === userId);
+        const mockUser = users.value.find((u: User) => u.id === userId);
         if (mockUser) {
           console.log('Usando usuario mock:', mockUser);
           return mockUser;
@@ -489,9 +489,6 @@ export const useUsersStore = defineStore('users', () => {
       loading.value = false;
     }
   };
-
-  // Inicializar automáticamente el store
-  initMockUsers();
 
   return {
     // Estado

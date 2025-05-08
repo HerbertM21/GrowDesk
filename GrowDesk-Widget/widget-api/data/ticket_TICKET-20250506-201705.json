@@ -1,0 +1,34 @@
+{
+  "id": "TICKET-20250506-201705",
+  "title": "Ticket de prueba post reinicio",
+  "subject": "Ticket de prueba post reinicio",
+  "description": "Probando después de reiniciar el backend",
+  "status": "open",
+  "priority": "HIGH",
+  "createdBy": "",
+  "createdAt": "2025-05-06T20:17:05.040205315Z",
+  "updatedAt": "2025-05-06T20:17:05.040205315Z",
+  "messages": [
+    {
+      "id": "MSG-1746562625040213274",
+      "content": "Probando después de reiniciar el backend",
+      "isClient": true,
+      "createdAt": "2025-05-06T20:17:05.040205315Z",
+      "userName": "Anónimo",
+      "userEmail": "user_1746562625@temporary.com"
+    }
+  ],
+  "userEmail": "user_1746562625@temporary.com",
+  "userName": "Anónimo",
+  "clientName": "Anónimo",
+  "clientEmail": "user_1746562625@temporary.com",
+  "widgetId": "testwidget",
+  "department": "Soporte",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}

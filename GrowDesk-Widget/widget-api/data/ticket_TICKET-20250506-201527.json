@@ -1,0 +1,34 @@
+{
+  "id": "TICKET-20250506-201527",
+  "title": "Nuevo Ticket de Prueba",
+  "subject": "Nuevo Ticket de Prueba",
+  "description": "Probando si se guarda correctamente el ticket",
+  "status": "open",
+  "priority": "HIGH",
+  "createdBy": "",
+  "createdAt": "2025-05-06T20:15:27.707630306Z",
+  "updatedAt": "2025-05-06T20:15:27.707630306Z",
+  "messages": [
+    {
+      "id": "MSG-1746562527707639855",
+      "content": "Probando si se guarda correctamente el ticket",
+      "isClient": true,
+      "createdAt": "2025-05-06T20:15:27.707630306Z",
+      "userName": "Anónimo",
+      "userEmail": "user_1746562527@temporary.com"
+    }
+  ],
+  "userEmail": "user_1746562527@temporary.com",
+  "userName": "Anónimo",
+  "clientName": "Anónimo",
+  "clientEmail": "user_1746562527@temporary.com",
+  "widgetId": "testwidget",
+  "department": "Soporte",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}

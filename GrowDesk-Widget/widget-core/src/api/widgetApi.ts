@@ -12,7 +12,7 @@ console.log("[WIDGET] GrowDeskConfig al inicializar widgetApi:", window.GrowDesk
 
 // Configuración global de la API
 export let apiConfig = {
-  apiUrl: window.GrowDeskConfig?.apiUrl || 'http://localhost:8082',
+  apiUrl: window.GrowDeskConfig?.apiUrl || 'http://localhost:3001',
   widgetId: 'demo-widget',
   widgetToken: 'demo-token'
 };
@@ -85,6 +85,7 @@ interface TicketCreateRequest {
   name: string;
   email: string;
   message: string;
+  subject?: string;
   metadata?: any;
 }
 
@@ -242,9 +243,31 @@ export const useWidgetApi = () => {
       console.log('[WIDGET] Intentando crear ticket con los siguientes datos:', data);
       console.log('[WIDGET] URL de API configurada:', apiConfig.apiUrl);
       
+      // Validación básica de datos
+      if (!data.email || !data.email.includes('@')) {
+        console.error('[WIDGET] Error: email inválido', data.email);
+        throw new Error('El email es obligatorio y debe tener un formato válido');
+      }
+      
+      if (!data.name || data.name.trim() === '') {
+        console.error('[WIDGET] Error: nombre vacío', data.name);
+        throw new Error('El nombre es obligatorio');
+      }
+      
+      if (!data.message || data.message.trim() === '') {
+        console.error('[WIDGET] Error: mensaje vacío', data.message);
+        throw new Error('El mensaje es obligatorio');
+      }
+      
+      // Asegurarse de que siempre haya un subject
+      if (!data.subject || data.subject.trim() === '') {
+        console.log('[WIDGET] Sin asunto proporcionado, generando uno por defecto');
+        data.subject = `Solicitud de soporte - ${data.name}`;
+      }
+      
       // Preparar los datos en el formato que espera la API (TicketData)
       const ticketData = {
-        subject: `Solicitud de soporte - ${data.name}`,  // Campo obligatorio
+        subject: data.subject, // Usar el subject proporcionado o generado
         message: data.message,           // Mensaje inicial
         name: data.name,                 // Nombre del cliente
         email: data.email,               // Email del cliente
@@ -252,10 +275,10 @@ export const useWidgetApi = () => {
         department: 'Soporte',           // Departamento predeterminada
         widgetId: apiConfig.widgetId,    // ID del widget
         metadata: {                      // Datos adicionales como estructura anidada
-          url: window.location.href,
-          userAgent: navigator.userAgent,
-          referrer: document.referrer,
-          screenSize: `${window.innerWidth}x${window.innerHeight}`
+          url: window.location.href || "",
+          userAgent: navigator.userAgent || "",
+          referrer: document.referrer || "",
+          screenSize: `${window.innerWidth}x${window.innerHeight}` || "unknown"
         }
       };
       
@@ -274,6 +297,8 @@ export const useWidgetApi = () => {
           'X-Widget-ID': apiConfig.widgetId,
           'X-Widget-Token': apiConfig.widgetToken
         });
+        
+        console.log('[WIDGET] Datos JSON a enviar:', JSON.stringify(ticketData));
         
         // Usar axios directamente sin apiClient
         response = await axios.post(fullUrl, ticketData, {
@@ -298,6 +323,8 @@ export const useWidgetApi = () => {
         const fullUrl = baseUrl.endsWith('/') ? baseUrl + 'widget/tickets' : baseUrl + '/widget/tickets';
         
         console.log('[WIDGET] Intentando fetch a:', fullUrl);
+        console.log('[WIDGET] Datos JSON a enviar con fetch:', JSON.stringify(ticketData));
+        
         const fetchResponse = await fetch(fullUrl, {
           method: 'POST',
           headers: {
@@ -318,13 +345,20 @@ export const useWidgetApi = () => {
         response = { data: responseData };
       }
       
-      if (response.data && response.data.id) {
-        // Guardar datos de sesión
+      if (response.data && (response.data.id || response.data.ticketId)) {
+        // Guardar datos de sesión con el ID de ticket proporcionado por el servidor
+        const ticketId = response.data.id || response.data.ticketId;
+        console.log('[WIDGET] Guardando sesión con ticketId:', ticketId);
         saveSession({
           name: data.name,
           email: data.email,
-          ticketId: response.data.id
+          ticketId: ticketId
         });
+        
+        // Asegurarse de que el objeto de respuesta tenga un campo ticketId para mantener compatibilidad
+        if (!response.data.ticketId && response.data.id) {
+          response.data.ticketId = response.data.id;
+        }
       }
       
       return response.data;
@@ -334,16 +368,33 @@ export const useWidgetApi = () => {
       // Intentar crear un ticket simulado para pruebas si estamos en entorno de desarrollo
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         console.warn('Creando ticket simulado para entorno de desarrollo');
-        const mockTicketId = `MOCK-${Date.now()}`;
+        // Usar formato TICKET- que es compatible con el backend
+        const now = new Date();
+        const formattedDate = 
+          now.getFullYear().toString().substr(-2) +
+          ('0' + (now.getMonth() + 1)).slice(-2) +
+          ('0' + now.getDate()).slice(-2) +
+          '-' +
+          ('0' + now.getHours()).slice(-2) +
+          ('0' + now.getMinutes()).slice(-2) +
+          ('0' + now.getSeconds()).slice(-2);
+        
+        const simulatedTicketId = `TICKET-${formattedDate}`;
+        console.log('[WIDGET] Creando ticket simulado con ID:', simulatedTicketId);
+        
         saveSession({
           name: data.name,
           email: data.email,
-          ticketId: mockTicketId
+          ticketId: simulatedTicketId
         });
+        
         return {
-          ticketId: mockTicketId,
+          id: simulatedTicketId,
+          ticketId: simulatedTicketId,
           status: 'open',
-          message: 'Ticket simulado creado con éxito'
+          message: 'Ticket simulado creado con éxito',
+          success: true,
+          liveChatAvailable: true
         };
       }
       
@@ -501,7 +552,7 @@ export const useWidgetApi = () => {
         return { 
           messages: [
             {
-              id: 'mock-msg-1',
+              id: 'msg-simulado-1',
               content: 'Bienvenido al chat de soporte simulado.',
               isClient: false,
               timestamp: new Date().toISOString()

@@ -9,7 +9,7 @@
   // Configuración global
   window.GrowDeskConfig = {
     widgetId: 'demo-widget',
-    apiUrl: 'http://localhost:8082',
+    apiUrl: 'http://localhost:3001',
     brandName: 'GrowDesk Demo',
     welcomeMessage: '¡Hola! ¿En qué podemos ayudarte hoy?',
     position: 'bottom-right'

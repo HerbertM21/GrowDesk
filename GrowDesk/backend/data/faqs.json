@@ -1,0 +1,38 @@
+[
+  {
+    "id": 6,
+    "question": "¿Puedo cambiar el idioma de la plataforma?",
+    "answer": "Sí, puede cambiar el idioma de la plataforma accediendo a \"Configuración\" desde su perfil. Actualmente ofrecemos soporte para inglés y español.",
+    "category": "Configuración",
+    "isPublished": true,
+    "createdAt": "2025-04-26T00:36:50.201Z",
+    "updatedAt": "2025-04-26T00:36:50.201Z"
+  },
+  {
+    "id": 7,
+    "question": "test?",
+    "answer": "jeje",
+    "category": "Configuración",
+    "isPublished": false,
+    "createdAt": "2025-04-26T17:51:03.144Z",
+    "updatedAt": "2025-04-26T17:51:03.144Z"
+  },
+  {
+    "id": 8,
+    "question": "test34?",
+    "answer": "test",
+    "category": "Configuración",
+    "isPublished": true,
+    "createdAt": "2025-05-07T18:57:32.198522202Z",
+    "updatedAt": "2025-05-07T18:57:32.198522202Z"
+  },
+  {
+    "id": 9,
+    "question": "teseeeet",
+    "answer": "teasdas",
+    "category": "Configuración",
+    "isPublished": true,
+    "createdAt": "2025-05-07T22:02:06.966639208Z",
+    "updatedAt": "2025-05-07T22:02:06.966639208Z"
+  }
+]

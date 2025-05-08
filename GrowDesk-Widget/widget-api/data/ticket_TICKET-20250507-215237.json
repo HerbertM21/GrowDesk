@@ -1,0 +1,34 @@
+{
+  "id": "TICKET-20250507-215237",
+  "title": "Solicitud de soporte - Juan Lopez34",
+  "subject": "Solicitud de soporte - Juan Lopez34",
+  "description": "asdasd",
+  "status": "open",
+  "priority": "",
+  "createdBy": "",
+  "createdAt": "2025-05-07T21:52:37.621061164Z",
+  "updatedAt": "2025-05-07T21:52:37.621061164Z",
+  "messages": [
+    {
+      "id": "MSG-1746654757621065508",
+      "content": "asdasd",
+      "isClient": true,
+      "createdAt": "2025-05-07T21:52:37.621061164Z",
+      "userName": "Juan Lopez34",
+      "userEmail": "admin@example.com"
+    }
+  ],
+  "userEmail": "admin@example.com",
+  "userName": "Juan Lopez34",
+  "clientName": "Juan Lopez34",
+  "clientEmail": "admin@example.com",
+  "widgetId": "",
+  "department": "",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+    "screenSize": "2133x1015",
+    "externalId": ""
+  }
+}

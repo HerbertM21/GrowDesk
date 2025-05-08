@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
 )
@@ -72,7 +72,7 @@ type GrowDeskMessage struct {
 	UserEmail string `json:"userEmail,omitempty"`
 }
 
-// Ticket represents a support ticket
+// Ticket representa un ticket de soporte
 type Ticket struct {
 	ID          string    `json:"id"`
 	Title       string    `json:"title"`
@@ -93,7 +93,7 @@ type Ticket struct {
 	Metadata    Metadata  `json:"metadata"`
 }
 
-// Message represents a message in a ticket
+// Message representa un mensaje en un ticket
 type Message struct {
 	ID        string    `json:"id"`
 	Content   string    `json:"content"`
@@ -103,7 +103,7 @@ type Message struct {
 	UserEmail string    `json:"userEmail"`
 }
 
-// Metadata contains additional information
+// Metadata contiene información adicional
 type Metadata struct {
 	URL        string `json:"url"`
 	Referrer   string `json:"referrer"`
@@ -112,7 +112,7 @@ type Metadata struct {
 	ExternalID string `json:"externalId"`
 }
 
-// TicketRequest is used to create a new ticket
+// TicketRequest se utiliza para crear un nuevo ticket
 type TicketRequest struct {
 	Name     string   `json:"name"`
 	Email    string   `json:"email"`
@@ -120,13 +120,13 @@ type TicketRequest struct {
 	Metadata Metadata `json:"metadata"`
 }
 
-// TicketResponse is the server response after creating a ticket
+// TicketResponse es la respuesta del servidor después de crear un ticket
 type TicketResponse struct {
 	TicketID string `json:"ticketId"`
 	Message  string `json:"message"`
 }
 
-// MessageRequest is used to send a message to a ticket
+// MessageRequest se utiliza para enviar un mensaje a un ticket
 type MessageRequest struct {
 	TicketID  string `json:"ticketId"`
 	Message   string `json:"message"`
@@ -183,7 +183,7 @@ type TicketData struct {
 	} `json:"metadata"`
 }
 
-// GetUserInfo extracts user information from headers or request body
+// GetUserInfo extrae información de usuario de los headers o el cuerpo de la solicitud
 func GetUserInfo(c *gin.Context, req interface{}) (string, string) {
 	// Primero intentar obtener de los headers
 	userName := c.GetHeader("X-User-Name")
@@ -219,10 +219,25 @@ func main() {
 
 	// Middleware para CORS
 	router.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Widget-ID, X-Widget-Token, X-User-Name, X-User-Email, X-Source, X-Client-Created, X-Widget-Ticket-ID, X-Message-Source, X-From-Client, X-Client-Message")
+		// Obtener los orígenes permitidos desde variables de entorno
+		allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+		if allowedOrigins == "" {
+			allowedOrigins = "*" // Permitir todos los orígenes por defecto
+		}
+
+		// Establecer el origen en la respuesta
+		origin := c.Request.Header.Get("Origin")
+		if origin != "" && (allowedOrigins == "*" || strings.Contains(allowedOrigins, origin)) {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+		} else {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		}
+
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Widget-ID, X-Widget-Token, X-User-Name, X-User-Email, X-Source, X-Client-Created, X-Widget-Ticket-ID, X-Message-Source, X-From-Client, X-Client-Message, X-Ticket-ID, Origin, Accept")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length")
+		c.Writer.Header().Set("Access-Control-Max-Age", "86400")
 
 		// Manejar solicitudes OPTIONS
 		if c.Request.Method == "OPTIONS" {
@@ -238,6 +253,54 @@ func main() {
 		c.JSON(200, gin.H{
 			"status":  "OK",
 			"message": "GrowDesk Widget API está en funcionamiento",
+		})
+	})
+
+	// Endpoint para verificar la conexión con el backend
+	router.GET("/check-backend", func(c *gin.Context) {
+		// Obtener URL del backend
+		apiURL := os.Getenv("GROWDESK_API_URL")
+		if apiURL == "" {
+			apiURL = "http://localhost:8080"
+		}
+
+		// Normalizar URL
+		baseURL := strings.TrimSuffix(apiURL, "/")
+		healthURL := fmt.Sprintf("%s/health", baseURL)
+
+		// Realizar solicitud al backend
+		client := http.Client{Timeout: 5 * time.Second}
+		resp, err := client.Get(healthURL)
+
+		if err != nil {
+			log.Printf("Error al conectar con el backend: %v", err)
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"status":      "ERROR",
+				"message":     "No se pudo conectar con el backend: " + err.Error(),
+				"backend_url": apiURL,
+			})
+			return
+		}
+		defer resp.Body.Close()
+
+		// Leer respuesta
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("Error al leer respuesta del backend: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  "ERROR",
+				"message": "Error al leer respuesta del backend",
+			})
+			return
+		}
+
+		// Retornar información sobre la conexión
+		c.JSON(http.StatusOK, gin.H{
+			"status":           "OK",
+			"backend_url":      apiURL,
+			"backend_status":   resp.StatusCode,
+			"backend_response": string(body),
+			"message":          "Conexión exitosa con el backend",
 		})
 	})
 
@@ -277,9 +340,88 @@ func main() {
 
 // getFaqs retorna las preguntas frecuentes disponibles
 func getFaqs(c *gin.Context) {
-	// Intentar cargar FAQs desde alguna fuente (archivo, base de datos, etc.)
-	// Por ahora devolvemos FAQs de ejemplo
-	faqs := []gin.H{
+	log.Printf("Solicitando FAQs del backend")
+
+	// Obtener URL del backend
+	apiURL := os.Getenv("GROWDESK_API_URL")
+	apiKey := os.Getenv("GROWDESK_API_KEY")
+
+	if apiURL == "" {
+		apiURL = "http://localhost:8080"
+		log.Printf("GROWDESK_API_URL no definido, usando valor por defecto: %s", apiURL)
+	}
+
+	if apiKey == "" {
+		apiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiJhZG1pbi0xMjMiLCJlbWFpbCI6ImFkbWluQGdyb3dkZXNrLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTcyNDA4ODQwMH0.8J5ayPvA4B-1vF5NaqRXycW1pmIl9qjKP6Ddj4Ot_Cw"
+		log.Printf("GROWDESK_API_KEY no definido, usando valor por defecto")
+	}
+
+	// Widget ID para filtrar si está disponible
+	widgetID := c.GetHeader("X-Widget-ID")
+
+	// Construir URL
+	baseURL := strings.TrimSuffix(apiURL, "/")
+	faqsURL := fmt.Sprintf("%s/api/faqs", baseURL)
+
+	// Añadir parámetro de widget si está disponible
+	if widgetID != "" {
+		faqsURL = fmt.Sprintf("%s?widgetId=%s", faqsURL, widgetID)
+	}
+
+	// Crear la solicitud
+	req, err := http.NewRequest("GET", faqsURL, nil)
+	if err != nil {
+		log.Printf("Error al crear solicitud para FAQs: %v", err)
+		// Devolver FAQs fallback
+		c.JSON(http.StatusOK, getFallbackFaqs())
+		return
+	}
+
+	// Configurar cabeceras
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	req.Header.Set("Content-Type", "application/json")
+	if widgetID != "" {
+		req.Header.Set("X-Widget-ID", widgetID)
+	}
+
+	// Realizar solicitud
+	client := &http.Client{Timeout: time.Second * 5}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Error al obtener FAQs del backend: %v", err)
+		// Devolver FAQs fallback
+		c.JSON(http.StatusOK, getFallbackFaqs())
+		return
+	}
+	defer resp.Body.Close()
+
+	// Comprobar código de respuesta
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("Error del backend al obtener FAQs. Código: %d, Respuesta: %s",
+			resp.StatusCode, string(body))
+		// Devolver FAQs fallback
+		c.JSON(http.StatusOK, getFallbackFaqs())
+		return
+	}
+
+	// Leer y reenviar la respuesta
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Error al leer respuesta de FAQs: %v", err)
+		// Devolver FAQs fallback
+		c.JSON(http.StatusOK, getFallbackFaqs())
+		return
+	}
+
+	// Establecer el tipo de contenido y devolver la respuesta tal cual
+	c.Header("Content-Type", "application/json")
+	c.String(http.StatusOK, string(body))
+}
+
+// getFallbackFaqs devuelve FAQs predeterminadas cuando no se pueden obtener del backend
+func getFallbackFaqs() []gin.H {
+	return []gin.H{
 		{
 			"id":          1,
 			"question":    "¿Cómo puedo restablecer mi contraseña?",
@@ -294,9 +436,14 @@ func getFaqs(c *gin.Context) {
 			"category":    "Ayuda",
 			"isPublished": true,
 		},
+		{
+			"id":          3,
+			"question":    "¿Cuáles son los horarios de atención?",
+			"answer":      "Nuestro equipo está disponible de lunes a viernes de 9:00 a 18:00 horas.",
+			"category":    "Ayuda",
+			"isPublished": true,
+		},
 	}
-
-	c.JSON(http.StatusOK, faqs)
 }
 
 // sendToGrowDesk envía datos al sistema GrowDesk
@@ -345,11 +492,43 @@ func sendToGrowDesk(url string, jsonData []byte, apiKey string, ticketID string)
 
 // generateEmbedCode crea el código HTML para incrustar el widget
 func generateEmbedCode(widgetId, widgetToken, brandName, welcomeMessage, primaryColor, position string) string {
-	// URL base donde se aloja el JS del widget (puerto 3030)
-	baseUrl := "http://localhost:3030"
+	// Valores por defecto si no se proporcionan
+	if widgetId == "" {
+		widgetId = "widget-" + fmt.Sprintf("%d", time.Now().Unix())
+	}
 
-	// URL de la API del widget (puerto 8082)
-	apiUrl := "http://localhost:8082"
+	if widgetToken == "" {
+		widgetToken = "token-" + fmt.Sprintf("%d", time.Now().Unix())
+	}
+
+	if brandName == "" {
+		brandName = "GrowDesk"
+	}
+
+	if welcomeMessage == "" {
+		welcomeMessage = "¡Hola! ¿En qué podemos ayudarte hoy?"
+	}
+
+	if primaryColor == "" {
+		primaryColor = "#3498db"
+	}
+
+	if position == "" {
+		position = "right"
+	}
+
+	// URLs de producción
+	baseUrl := os.Getenv("WIDGET_BASE_URL")
+	apiUrl := os.Getenv("WIDGET_API_URL")
+
+	// URLs por defecto (desarrollo)
+	if baseUrl == "" {
+		baseUrl = "http://localhost:3030"
+	}
+
+	if apiUrl == "" {
+		apiUrl = "http://localhost:3000"
+	}
 
 	return `<script src="` + baseUrl + `/widget.js" id="growdesk-widget"
   data-widget-id="` + widgetId + `"
@@ -435,57 +614,109 @@ func LoadTicket(ticketID string) (Ticket, error) {
 	return ticket, err
 }
 
-// getMessages obtiene todos los mensajes para un ticket
+// getMessages obtiene los mensajes de un ticket
 func getMessages(c *gin.Context) {
-	ticketID := c.Param("ticketId")
-	if ticketID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Ticket ID is required"})
+	ticketId := c.Param("ticketId")
+	if ticketId == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de ticket no proporcionado", "success": false})
 		return
 	}
 
-	log.Printf("Obteniendo mensajes para ticket: %s", ticketID)
+	log.Printf("Solicitando mensajes para ticket: %s", ticketId)
 
-	// Intentar obtener mensajes directamente desde GrowDesk primero
+	// Intentar obtener mensajes del backend Go primero
 	apiURL := os.Getenv("GROWDESK_API_URL")
 	apiKey := os.Getenv("GROWDESK_API_KEY")
+	widgetID := c.GetHeader("X-Widget-ID")
 
-	if apiURL != "" && apiKey != "" {
-		log.Printf("Intentando obtener mensajes desde GrowDesk para ticket: %s", ticketID)
-
-		// Solicitar datos actualizados del ticket a GrowDesk
-		updatedTicket, err := getTicketFromGrowDesk(ticketID)
-		if err == nil {
-			// Si obtenemos correctamente el ticket actualizado, usar sus mensajes
-			log.Printf("Ticket actualizado correctamente desde GrowDesk, usando mensajes actualizados")
-
-			// Guardar el ticket actualizado localmente
-			if err := SaveTicket(updatedTicket); err != nil {
-				log.Printf("Error al guardar el ticket actualizado: %v", err)
-			}
-
-			// Devolver mensajes actualizados
-			c.JSON(http.StatusOK, gin.H{
-				"ticketId": updatedTicket.ID,
-				"messages": updatedTicket.Messages,
-			})
-			return
-		} else {
-			log.Printf("No se pudo obtener ticket desde GrowDesk: %v. Intentando cargar localmente.", err)
-		}
+	if apiURL == "" {
+		apiURL = "http://localhost:8080"
+		log.Printf("GROWDESK_API_URL no definido, usando valor por defecto: %s", apiURL)
 	}
 
-	// Si no se puede obtener desde GrowDesk, cargar ticket localmente
-	ticket, err := LoadTicket(ticketID)
+	if apiKey == "" {
+		apiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiJhZG1pbi0xMjMiLCJlbWFpbCI6ImFkbWluQGdyb3dkZXNrLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTcyNDA4ODQwMH0.8J5ayPvA4B-1vF5NaqRXycW1pmIl9qjKP6Ddj4Ot_Cw"
+	}
+
+	// Construir URL
+	baseURL := strings.TrimSuffix(apiURL, "/")
+	messagesURL := fmt.Sprintf("%s/api/tickets/%s/messages", baseURL, ticketId)
+
+	// Intenta obtener mensajes del backend
+	if gotMessagesFromBackend := tryGetMessagesFromBackend(c, messagesURL, apiKey, widgetID); gotMessagesFromBackend {
+		return // Si tuvo éxito, terminamos
+	}
+
+	// Si llegamos aquí, fallamos al obtener mensajes del backend
+	loadLocalMessages(c, ticketId)
+}
+
+// tryGetMessagesFromBackend intenta obtener mensajes del backend Go
+// Devuelve true si tuvo éxito y ya envió la respuesta al cliente
+func tryGetMessagesFromBackend(c *gin.Context, messagesURL, apiKey, widgetID string) bool {
+	// Crear la solicitud
+	req, err := http.NewRequest("GET", messagesURL, nil)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Ticket not found"})
+		log.Printf("Error al crear solicitud para mensajes: %v", err)
+		return false
+	}
+
+	// Configurar cabeceras
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	req.Header.Set("Content-Type", "application/json")
+	if widgetID != "" {
+		req.Header.Set("X-Widget-ID", widgetID)
+	}
+
+	// Realizar solicitud al backend Go
+	client := &http.Client{Timeout: time.Second * 5}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Error al obtener mensajes del backend: %v", err)
+		return false
+	}
+	defer resp.Body.Close()
+
+	// Verificar código de respuesta
+	if resp.StatusCode == http.StatusOK {
+		// Leer respuesta
+		body, err := io.ReadAll(resp.Body)
+		if err == nil {
+			// Enviar respuesta del backend directo al cliente
+			c.Header("Content-Type", "application/json")
+			c.String(http.StatusOK, string(body))
+			return true
+		}
+		log.Printf("Error al leer respuesta de mensajes: %v", err)
+	} else {
+		log.Printf("Error del backend al obtener mensajes. Código: %d", resp.StatusCode)
+	}
+
+	return false
+}
+
+// loadLocalMessages carga mensajes de un ticket almacenado localmente
+func loadLocalMessages(c *gin.Context, ticketId string) {
+	log.Printf("Usando fallback para cargar mensajes localmente")
+
+	// Cargar el ticket localmente
+	ticket, err := LoadTicket(ticketId)
+	if err != nil {
+		log.Printf("Error al cargar ticket localmente: %v", err)
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "Ticket no encontrado",
+			"success": false,
+		})
 		return
 	}
 
-	// Return messages from local storage
-	c.JSON(http.StatusOK, gin.H{
-		"ticketId": ticket.ID,
-		"messages": ticket.Messages,
-	})
+	// Devolver mensajes al cliente
+	messages := ticket.Messages
+	if messages == nil {
+		messages = []Message{} // Asegurar que devolvemos al menos un array vacío
+	}
+
+	c.JSON(http.StatusOK, messages)
 }
 
 // getTicketFromGrowDesk obtiene un ticket desde el sistema principal GrowDesk
@@ -497,7 +728,7 @@ func getTicketFromGrowDesk(ticketID string) (Ticket, error) {
 	apiKey := os.Getenv("GROWDESK_API_KEY")
 
 	if apiURL == "" {
-		apiURL = "http://172.21.0.5:8080"
+		apiURL = "http://localhost:8080"
 		log.Printf("GROWDESK_API_URL no definido, usando valor por defecto: %s", apiURL)
 	}
 
@@ -644,11 +875,136 @@ func createTicket(c *gin.Context) {
 	log.Printf("Widget ID: %s", widgetID)
 	log.Printf("Token recibido: %s", widgetToken)
 
+	// Obtener el cuerpo de la solicitud para depuración
+	bodyBytes, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		log.Printf("Error al leer el cuerpo de la solicitud: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error al leer la solicitud"})
+		return
+	}
+
+	// Restaurar el cuerpo para que pueda ser leído nuevamente
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	// Loguear el cuerpo para depuración
+	log.Printf("Cuerpo de la solicitud: %s", string(bodyBytes))
+
+	// Primero intentar unmarshall a una estructura intermedia más flexible
+	var dataRaw map[string]interface{}
+	if jsonErr := json.Unmarshal(bodyBytes, &dataRaw); jsonErr != nil {
+		log.Printf("Error al parsear JSON básico: %v", jsonErr)
+	} else {
+		// Verificar si falta el campo subject y añadirlo
+		if _, hasSubject := dataRaw["subject"]; !hasSubject {
+			log.Printf("SUBJECT NO ENCONTRADO en solicitud, añadiéndolo")
+
+			// Obtener el nombre para generar un subject
+			var name string
+			if nameVal, hasName := dataRaw["name"]; hasName {
+				name = fmt.Sprintf("%v", nameVal)
+			} else {
+				name = "Cliente"
+			}
+
+			// Añadir el subject al mapa
+			dataRaw["subject"] = fmt.Sprintf("Solicitud de soporte - %s", name)
+
+			// Reserializar a JSON
+			modifiedBytes, jsonErr := json.Marshal(dataRaw)
+			if jsonErr == nil {
+				log.Printf("Cuerpo de solicitud modificado con subject: %s", string(modifiedBytes))
+				// Reemplazar el body
+				c.Request.Body = io.NopCloser(bytes.NewBuffer(modifiedBytes))
+				// Actualizar bodyBytes para logging
+				bodyBytes = modifiedBytes
+			} else {
+				log.Printf("Error al reserializar JSON con subject: %v", jsonErr)
+			}
+		}
+	}
+
 	var ticketData TicketData
 	if err := c.ShouldBindJSON(&ticketData); err != nil {
-		log.Printf("Error en datos de entrada: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+		log.Printf("ERROR DETALLADO EN DATOS DE ENTRADA: %v", err)
+		log.Printf("Tipo de error: %T", err)
+
+		// Errores de validación mostrados más detalladamente
+		if ve, ok := err.(validator.ValidationErrors); ok {
+			errorDetails := []string{}
+			for _, e := range ve {
+				errorDetails = append(errorDetails, fmt.Sprintf("Campo '%s' falló validación '%s'", e.Field(), e.Tag()))
+				log.Printf("Campo con error: '%s', valor recibido: '%v', validación fallida: '%s'",
+					e.Field(), e.Value(), e.Tag())
+			}
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Validación fallida", "details": errorDetails})
+		} else {
+			// Otros tipos de errores
+			log.Printf("Error de JSON no validación: %v", err)
+
+			// Intentar realizar un parse manual como fallback
+			var rawData map[string]interface{}
+			if jsonErr := json.Unmarshal(bodyBytes, &rawData); jsonErr == nil {
+				log.Printf("Parse manual exitoso: %v", rawData)
+
+				// Crear una estructura TicketData mínima
+				ticketData = TicketData{
+					Subject: fmt.Sprintf("%v", rawData["subject"]),
+				}
+
+				// Extraer otros campos si existen
+				if name, ok := rawData["name"].(string); ok {
+					ticketData.Name = name
+				}
+
+				if email, ok := rawData["email"].(string); ok {
+					ticketData.Email = email
+				}
+
+				if message, ok := rawData["message"].(string); ok {
+					ticketData.Message = message
+				}
+
+				if priority, ok := rawData["priority"].(string); ok {
+					ticketData.Priority = priority
+				}
+
+				if dept, ok := rawData["department"].(string); ok {
+					ticketData.Department = dept
+				}
+
+				if widgetID, ok := rawData["widgetId"].(string); ok {
+					ticketData.WidgetID = widgetID
+				}
+
+				// Intenta extraer metadata si existe
+				if meta, ok := rawData["metadata"].(map[string]interface{}); ok {
+					if url, ok := meta["url"].(string); ok {
+						ticketData.Metadata.URL = url
+					}
+					if ua, ok := meta["userAgent"].(string); ok {
+						ticketData.Metadata.UserAgent = ua
+					}
+					if ref, ok := meta["referrer"].(string); ok {
+						ticketData.Metadata.Referrer = ref
+					}
+					if ss, ok := meta["screenSize"].(string); ok {
+						ticketData.Metadata.ScreenSize = ss
+					}
+				}
+
+				// Verificar que al menos tengamos un subject
+				if ticketData.Subject == "" {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "El campo 'subject' es obligatorio"})
+					return
+				}
+
+				// Continuar con el proceso normal
+				log.Printf("Recuperación exitosa con datos mínimos: %+v", ticketData)
+			} else {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+		}
 	}
 
 	// Verificar campos obligatorios
@@ -762,7 +1118,7 @@ func createTicket(c *gin.Context) {
 		apiKey := os.Getenv("GROWDESK_API_KEY")
 
 		if apiURL == "" {
-			apiURL = "http://172.21.0.5:8080"
+			apiURL = "http://localhost:8080"
 			log.Printf("GROWDESK_API_URL no definido, usando valor por defecto: %s", apiURL)
 		}
 
@@ -801,7 +1157,7 @@ func createTicket(c *gin.Context) {
 		baseURL := strings.TrimSuffix(apiURL, "/")
 
 		// Construir URL para la API de tickets
-		url := fmt.Sprintf("%s/api/tickets", baseURL)
+		url := fmt.Sprintf("%s/widget/tickets", baseURL)
 
 		log.Printf("Enviando ticket al sistema GrowDesk en URL: %s", url)
 		log.Printf("Payload JSON: %s", string(jsonData))
@@ -843,9 +1199,13 @@ func createTicket(c *gin.Context) {
 	}()
 
 	// Responder al cliente con el ID del ticket creado
+	// IMPORTANTE: incluir "id" en la respuesta ya que el widget lo espera
 	c.JSON(http.StatusCreated, gin.H{
-		"ticketId": ticketID,
-		"message":  "Ticket creado correctamente",
+		"ticketId":          ticketID,
+		"message":           "Ticket creado correctamente",
+		"success":           true,
+		"id":                ticketID, // Campo importante para el widget
+		"liveChatAvailable": true,
 	})
 
 	log.Printf("===== FIN CREACIÓN TICKET WIDGET =====")
@@ -871,7 +1231,7 @@ func sendHttpRequestWithRetry(url string, jsonData []byte, headers map[string]st
 
 		// Crear cliente con timeout
 		client := &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 30 * time.Second, // Aumentado de 10 a 30 segundos
 		}
 
 		// Enviar solicitud
@@ -904,10 +1264,9 @@ func handleWebSocketConnection(c *gin.Context) {
 	}
 
 	log.Printf("Intentando establecer conexión WebSocket para ticket: %s", ticketId)
-	log.Printf("Headers de la solicitud: %v", c.Request.Header)
 
 	// Verificar que el ticket existe antes de permitir una conexión WebSocket
-	_, err := LoadTicket(ticketId)
+	ticket, err := LoadTicket(ticketId)
 	if err != nil {
 		log.Printf("Error al cargar ticket para WebSocket: %v. Se intentará crear o utilizar un ticket existente.", err)
 
@@ -920,6 +1279,13 @@ func handleWebSocketConnection(c *gin.Context) {
 			c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("/api/ws/chat/%s", session.ticketId))
 			return
 		}
+	} else {
+		log.Printf("Ticket encontrado: %s - %s", ticket.ID, ticket.Title)
+	}
+
+	// Configuración para la actualización
+	upgrader.CheckOrigin = func(r *http.Request) bool {
+		return true // Permitir conexiones de cualquier origen para desarrollo
 	}
 
 	// Mejorar a WebSocket
@@ -938,6 +1304,21 @@ func handleWebSocketConnection(c *gin.Context) {
 	wsConnectionsMutex.Unlock()
 
 	log.Printf("Nueva conexión WebSocket establecida para ticket: %s", ticketId)
+
+	// Enviar mensaje de bienvenida/confirmación de conexión
+	welcomeMsg := map[string]interface{}{
+		"type": "connection_established",
+		"data": map[string]interface{}{
+			"message":  "Conexión establecida",
+			"ticketId": ticketId,
+			"status":   "connected",
+		},
+	}
+
+	welcomeBytes, _ := json.Marshal(welcomeMsg)
+	if err := ws.WriteMessage(websocket.TextMessage, welcomeBytes); err != nil {
+		log.Printf("Error al enviar mensaje de bienvenida: %v", err)
+	}
 
 	// Manejar desconexión
 	defer func() {
@@ -961,17 +1342,89 @@ func handleWebSocketConnection(c *gin.Context) {
 	// Mantener la conexión y escuchar mensajes
 	for {
 		// Leer mensaje (puede ser un ping o mensaje real)
-		messageType, message, err := ws.ReadMessage()
+		messageType, messageBytes, err := ws.ReadMessage()
 		if err != nil {
 			log.Printf("Error al leer mensaje WebSocket: %v", err)
 			break // Salir si hay un error (cliente desconectado)
 		}
 
-		// Log del mensaje recibido
-		log.Printf("Mensaje recibido de tipo %d: %s", messageType, string(message))
+		// Solo procesar mensajes de texto
+		if messageType != websocket.TextMessage {
+			continue
+		}
 
-		// Procesamiento del mensaje si es necesario
-		// proximamente
+		// Intentar parsear JSON
+		var message map[string]interface{}
+		if err := json.Unmarshal(messageBytes, &message); err != nil {
+			log.Printf("Mensaje no es JSON válido: %v", err)
+			continue
+		}
+
+		// Determinar tipo de mensaje
+		msgType, ok := message["type"].(string)
+		if !ok {
+			log.Printf("Mensaje sin tipo definido")
+			continue
+		}
+
+		log.Printf("Mensaje WebSocket recibido - Tipo: %s", msgType)
+
+		// Manejar diferentes tipos de mensajes
+		switch msgType {
+		case "ping":
+			// Responder con pong
+			pongMsg := map[string]interface{}{
+				"type": "pong",
+				"data": map[string]string{
+					"time": time.Now().Format(time.RFC3339),
+				},
+			}
+			pongBytes, _ := json.Marshal(pongMsg)
+			if err := ws.WriteMessage(websocket.TextMessage, pongBytes); err != nil {
+				log.Printf("Error al enviar pong: %v", err)
+			}
+
+		case "client_message":
+			// Extraer contenido del mensaje
+			var content string
+			data, ok := message["data"].(map[string]interface{})
+			if !ok {
+				data, ok = message["message"].(map[string]interface{})
+				if !ok {
+					log.Printf("Formato incorrecto para mensaje de cliente")
+					continue
+				}
+			}
+
+			// Obtener contenido del mensaje
+			if contentVal, ok := data["content"].(string); ok {
+				content = contentVal
+			} else if contentVal, ok := data["message"].(string); ok {
+				content = contentVal
+			} else {
+				log.Printf("Contenido del mensaje no encontrado")
+				continue
+			}
+
+			// Crear estructura para el mensaje
+			messageData := MessageData{
+				TicketID: ticketId,
+				Message:  content,
+			}
+
+			// Simular solicitud para procesamiento
+			mockContext := &gin.Context{}
+			reqBody, _ := json.Marshal(messageData)
+			mockContext.Request = &http.Request{
+				Body: io.NopCloser(bytes.NewBuffer(reqBody)),
+			}
+
+			// Usar la función existente para procesar el mensaje
+			sendMessage(mockContext)
+
+		default:
+			log.Printf("Tipo de mensaje no manejado: %s", msgType)
+		}
 	}
 }
 
@@ -1017,6 +1470,7 @@ func sendMessageToWebSocketClients(ticketId string, message Message) {
 
 	connections, exists := wsConnections[ticketId]
 	if !exists || len(connections) == 0 {
+		log.Printf("No hay conexiones WebSocket activas para el ticket: %s", ticketId)
 		return
 	}
 
@@ -1025,17 +1479,18 @@ func sendMessageToWebSocketClients(ticketId string, message Message) {
 	messageObj := map[string]interface{}{
 		"id":        message.ID,
 		"content":   message.Content,
-		"isClient":  message.IsClient, // Importante: mantener el nombre exacto del campo
+		"isClient":  message.IsClient,
 		"createdAt": message.CreatedAt.Format(time.RFC3339),
-		"timestamp": message.CreatedAt.Format(time.RFC3339), // Agregar timestamp para compatibilidad
+		"timestamp": message.CreatedAt.Format(time.RFC3339), // Para compatibilidad
 		"userName":  message.UserName,
 		"userEmail": message.UserEmail,
 	}
 
-	// Usar la estructura que espera GrowDesk (data en lugar de message)
+	// Estructura compatible con ambos backends (JS y Go)
 	wsMessage := map[string]interface{}{
 		"type":     "new_message",
-		"data":     messageObj,
+		"data":     messageObj, // Para compatibilidad con Go
+		"message":  messageObj, // Para compatibilidad con JS
 		"ticketId": ticketId,
 	}
 
@@ -1046,17 +1501,15 @@ func sendMessageToWebSocketClients(ticketId string, message Message) {
 		return
 	}
 
-	log.Printf("Enviando mensaje a los clientes del ticket: %s", ticketId)
-	log.Printf("Estructura del mensaje WebSocket: %+v", wsMessage)
-
-	// Imprimir JSON para depuración
-	prettyJson, _ := json.MarshalIndent(wsMessage, "", "  ")
-	log.Printf("JSON del mensaje a enviar: %s", string(prettyJson))
+	log.Printf("Enviando mensaje a %d cliente(s) del ticket: %s", len(connections), ticketId)
+	log.Printf("Mensaje: %s", message.Content)
 
 	// Enviar a todas las conexiones
 	for _, conn := range connections {
 		if err := conn.WriteMessage(websocket.TextMessage, msgBytes); err != nil {
 			log.Printf("Error al enviar mensaje WebSocket: %v", err)
+		} else {
+			log.Printf("Mensaje enviado con éxito")
 		}
 	}
 }
@@ -1106,13 +1559,22 @@ func handleAgentMessage(c *gin.Context) {
 		}
 	}
 
+	// Usar uuid o un ID de mensaje con formato adecuado
+	messageID := fmt.Sprintf("MSG-%d", time.Now().UnixNano())
+
+	// Si no se proporcionó nombre del agente, usar uno por defecto
+	agentName := req.AgentName
+	if agentName == "" {
+		agentName = "Soporte"
+	}
+
 	// Crear nuevo mensaje (desde agente, no cliente)
 	newMessage := Message{
-		ID:        uuid.New().String(),
+		ID:        messageID,
 		Content:   req.Content,
 		IsClient:  false, // Mensaje de agente - EXPLÍCITAMENTE FALSE
 		CreatedAt: time.Now(),
-		UserName:  req.AgentName, // Nombre del agente
+		UserName:  agentName, // Nombre del agente
 	}
 
 	// Agregar mensaje al ticket
@@ -1135,10 +1597,12 @@ func handleAgentMessage(c *gin.Context) {
 
 	// Enviar mensaje al sistema principal GrowDesk
 	growDeskMessage := GrowDeskMessage{
-		TicketID: req.TicketID,
-		Content:  req.Content,
-		IsClient: false, // FALSE para mensajes de agente
-		UserID:   req.UserID,
+		TicketID:  req.TicketID,
+		Content:   req.Content,
+		IsClient:  false, // FALSE para mensajes de agente
+		UserID:    req.UserID,
+		UserName:  agentName,
+		UserEmail: "agent@growdesk.com",
 	}
 
 	// Serializar los datos a JSON
@@ -1146,24 +1610,76 @@ func handleAgentMessage(c *gin.Context) {
 	if err != nil {
 		log.Printf("Error al serializar mensaje de agente para GrowDesk: %v", err)
 	} else {
-		// Enviar mensaje al sistema GrowDesk
-		url := fmt.Sprintf("http://172.21.0.5:8080/api/tickets/%s/messages", req.TicketID)
-		go sendToGrowDesk(url, jsonData, "", req.TicketID)
+		// Obtener API URL
+		apiURL := os.Getenv("GROWDESK_API_URL")
+		apiKey := os.Getenv("GROWDESK_API_KEY")
+
+		if apiURL == "" {
+			apiURL = "http://localhost:8080"
+			log.Printf("GROWDESK_API_URL no definido, usando valor por defecto: %s", apiURL)
+		}
+
+		if apiKey == "" {
+			apiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiJhZG1pbi0xMjMiLCJlbWFpbCI6ImFkbWluQGdyb3dkZXNrLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTcyNDA4ODQwMH0.8J5ayPvA4B-1vF5NaqRXycW1pmIl9qjKP6Ddj4Ot_Cw"
+		}
+
+		// Normalizar URL base
+		baseURL := strings.TrimSuffix(apiURL, "/")
+
+		// Construir URL para la API de mensajes
+		url := fmt.Sprintf("%s/widget/tickets/%s/messages?from_client=true", baseURL, req.TicketID)
+
+		log.Printf("Enviando mensaje al sistema GrowDesk en la URL: %s", url)
+
+		headers := map[string]string{
+			"Content-Type":       "application/json",
+			"Authorization":      "Bearer " + apiKey,
+			"X-Message-Source":   "widget-client",
+			"X-Widget-ID":        req.TicketID,
+			"X-Client-Message":   "true",
+			"X-Widget-Ticket-ID": req.TicketID,
+			"X-From-Client":      "true",
+		}
+
+		// Enviar con reintentos
+		resp, err := sendHttpRequestWithRetry(url, jsonData, headers, 3)
+		if err != nil {
+			log.Printf("Error al enviar mensaje a GrowDesk: %v", err)
+		} else if resp != nil {
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			log.Printf("Respuesta al enviar mensaje a GrowDesk: Status %d, Body: %s", resp.StatusCode, string(body))
+		}
 	}
 
 	// Devolver respuesta de éxito
 	c.JSON(http.StatusOK, gin.H{
 		"messageId": newMessage.ID,
 		"message":   "Agent message sent successfully",
+		"success":   true,
 	})
 }
 
-// sendMessage adds a message to an existing ticket
+// sendMessage agrega un mensaje a un ticket existente
 func sendMessage(c *gin.Context) {
 	var messageData MessageData
 
+	// Capturar el cuerpo original para depuración si es necesario
+	var bodyBytes []byte
+	if c.Request != nil && c.Request.Body != nil {
+		bodyBytes, _ = io.ReadAll(c.Request.Body)
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+		// Loguear el cuerpo para depuración
+		log.Printf("Cuerpo original de la solicitud: %s", string(bodyBytes))
+	}
+
 	if err := c.ShouldBindJSON(&messageData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		log.Printf("Error al procesar JSON del mensaje: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Formato de mensaje inválido: " + err.Error(),
+			"success": false,
+		})
 		return
 	}
 
@@ -1174,10 +1690,31 @@ func sendMessage(c *gin.Context) {
 	log.Printf("Ticket ID: %s", ticketID)
 	log.Printf("Contenido: %s", messageContent)
 
+	// Validaciones básicas
+	if ticketID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Se requiere el ID del ticket",
+			"success": false,
+		})
+		return
+	}
+
+	if messageContent == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "El mensaje no puede estar vacío",
+			"success": false,
+		})
+		return
+	}
+
 	// Cargar el ticket existente
 	ticket, err := LoadTicket(ticketID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Ticket no encontrado"})
+		log.Printf("Error al cargar ticket: %v", err)
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "Ticket no encontrado",
+			"success": false,
+		})
 		return
 	}
 
@@ -1187,6 +1724,21 @@ func sendMessage(c *gin.Context) {
 	// Obtener información del usuario
 	userName, userEmail := GetUserInfo(c, &messageData)
 	log.Printf("Usuario: %s (%s)", userName, userEmail)
+
+	// Si no hay nombre o email, intentar usar la información del ticket
+	if userName == "" {
+		userName = ticket.UserName
+		if userName == "" {
+			userName = "Cliente"
+		}
+	}
+
+	if userEmail == "" {
+		userEmail = ticket.UserEmail
+		if userEmail == "" {
+			userEmail = "client@example.com"
+		}
+	}
 
 	// Crear nueva entrada de mensaje LOCAL
 	// IMPORTANTE: Siempre con isClient=true para mensajes del widget
@@ -1206,9 +1758,12 @@ func sendMessage(c *gin.Context) {
 	// Guardar ticket actualizado localmente
 	if err := SaveTicket(ticket); err != nil {
 		log.Printf("Error al guardar ticket localmente: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al guardar mensaje en el ticket"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al guardar mensaje en el ticket", "success": false})
 		return
 	}
+
+	// Enviar a todos los clientes conectados por WebSocket
+	go sendMessageToWebSocketClients(ticketID, message)
 
 	// Enviar el mensaje al sistema GrowDesk en una goroutine separada
 	go func() {
@@ -1217,7 +1772,7 @@ func sendMessage(c *gin.Context) {
 		apiKey := os.Getenv("GROWDESK_API_KEY")
 
 		if apiURL == "" {
-			apiURL = "http://172.21.0.5:8080"
+			apiURL = "http://localhost:8080"
 			log.Printf("GROWDESK_API_URL no definido, usando valor por defecto: %s", apiURL)
 		}
 
@@ -1252,8 +1807,8 @@ func sendMessage(c *gin.Context) {
 		// Normalizar URL base
 		baseURL := strings.TrimSuffix(apiURL, "/")
 
-		// Construir URL correcta para enviar mensaje
-		url := fmt.Sprintf("%s/api/tickets/%s/messages?from_client=true", baseURL, ticketID)
+		// Construir URL para la API de tickets
+		url := fmt.Sprintf("%s/widget/tickets/%s/messages?from_client=true", baseURL, ticketID)
 
 		log.Printf("Enviando mensaje al sistema GrowDesk en la URL: %s", url)
 
@@ -1267,25 +1822,21 @@ func sendMessage(c *gin.Context) {
 			"X-From-Client":      "true",
 		}
 
-		// Enviar el mensaje con reintentos
+		// Enviar con reintentos
 		resp, err := sendHttpRequestWithRetry(url, jsonData, headers, 3)
-		if err == nil && resp != nil {
+		if err != nil {
+			log.Printf("Error al enviar mensaje a GrowDesk: %v", err)
+		} else if resp != nil {
 			body, _ := io.ReadAll(resp.Body)
 			resp.Body.Close()
-			log.Printf("Mensaje enviado exitosamente al sistema GrowDesk. Respuesta: %s", string(body))
-		} else {
-			log.Printf("Error al enviar mensaje al sistema GrowDesk: %v", err)
+			log.Printf("Respuesta al enviar mensaje a GrowDesk: Status %d, Body: %s", resp.StatusCode, string(body))
 		}
 	}()
 
-	// Enviar mensaje a clientes WebSocket
-	sendMessageToWebSocketClients(ticketID, message)
-
-	// Responder al cliente
+	// Devolver respuesta exitosa
 	c.JSON(http.StatusOK, gin.H{
-		"message":   "Mensaje añadido correctamente",
 		"messageId": messageID,
+		"message":   "Mensaje enviado correctamente",
+		"success":   true,
 	})
-
-	log.Printf("===== FIN MENSAJE WIDGET =====")
 }

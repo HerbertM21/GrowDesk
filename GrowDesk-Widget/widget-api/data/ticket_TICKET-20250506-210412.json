@@ -1,0 +1,34 @@
+{
+  "id": "TICKET-20250506-210412",
+  "title": "Prueba de ticket API 2",
+  "subject": "Prueba de ticket API 2",
+  "description": "Segunda prueba de ticket desde curl",
+  "status": "open",
+  "priority": "",
+  "createdBy": "",
+  "createdAt": "2025-05-06T21:04:12.296823628Z",
+  "updatedAt": "2025-05-06T21:04:12.296823628Z",
+  "messages": [
+    {
+      "id": "MSG-1746565452296828162",
+      "content": "Segunda prueba de ticket desde curl",
+      "isClient": true,
+      "createdAt": "2025-05-06T21:04:12.296823628Z",
+      "userName": "Herbert-Test-2",
+      "userEmail": "test2@example.com"
+    }
+  ],
+  "userEmail": "test2@example.com",
+  "userName": "Herbert-Test-2",
+  "clientName": "Herbert-Test-2",
+  "clientEmail": "test2@example.com",
+  "widgetId": "",
+  "department": "",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}

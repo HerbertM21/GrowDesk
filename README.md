@@ -140,3 +140,73 @@ docker compose down -v
 | Widget API            | 8082   | API para la comunicación del widget  |
 | Demo Site             | 8090   | Sitio web de demostración con widget |
 | PostgreSQL (Widget)   | 5434   | Base de datos para el widget         |
+
+## Componentes del sistema
+
+- **Backend Go**: API principal en Go que gestiona tickets, categorías y FAQs
+- **Frontend**: Panel de administración para gestionar tickets y configuraciones
+- **Widget Core**: Frontend del widget escrito en React/TypeScript
+- **Widget API**: Backend del widget adaptado para comunicarse con el backend principal en Go
+- **Demo Site**: Sitio demostrativo para probar el widget
+
+## Iniciar el sistema integrado
+
+Para iniciar todo el sistema usando Docker Compose:
+
+```bash
+# Desde la raíz del proyecto
+docker-compose up -d
+```
+
+La configuración incluye:
+
+- Backend Go: http://localhost:8080
+- Frontend (Panel Admin): http://localhost:3001
+- Widget Core: http://localhost:3030
+- Widget API: http://localhost:3000
+- Demo Site: http://localhost:8090
+
+## Desarrollo independiente
+
+### Backend Go
+
+Para iniciar sólo el backend Go:
+
+```bash
+cd GrowDesk/backend
+go build -o build/backend ./cmd/server
+./build/backend -port 8080 -data-dir ./data -mock-auth=true
+```
+
+### Frontend (Panel Admin)
+
+Para iniciar sólo el frontend:
+
+```bash
+cd GrowDesk/frontend
+npm install
+npm run dev
+```
+
+### Widget
+
+Para iniciar sólo el widget:
+
+```bash
+cd GrowDesk-Widget
+docker-compose up -d
+```
+
+## Estructura del proyecto
+
+```
+GrowDeskV2/
+├── GrowDesk/
+│   ├── backend/       # Backend Go
+│   └── frontend/      # Frontend React del panel admin
+├── GrowDesk-Widget/
+│   ├── widget-api/    # API del widget en Go
+│   ├── widget-core/   # Frontend del widget en React
+│   └── examples/      # Ejemplos de integración
+└── docker-compose.yml # Configuración para todo el sistema
+```

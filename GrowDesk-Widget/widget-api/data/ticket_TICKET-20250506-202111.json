@@ -1,0 +1,34 @@
+{
+  "id": "TICKET-20250506-202111",
+  "title": "Ticket prueba después de reiniciar widget-api",
+  "subject": "Ticket prueba después de reiniciar widget-api",
+  "description": "Este es un ticket creado después de reiniciar el servicio de widget-api",
+  "status": "open",
+  "priority": "HIGH",
+  "createdBy": "",
+  "createdAt": "2025-05-06T20:21:11.202338406Z",
+  "updatedAt": "2025-05-06T20:21:11.202338406Z",
+  "messages": [
+    {
+      "id": "MSG-1746562871202343740",
+      "content": "Este es un ticket creado después de reiniciar el servicio de widget-api",
+      "isClient": true,
+      "createdAt": "2025-05-06T20:21:11.202338406Z",
+      "userName": "Anónimo",
+      "userEmail": "user_1746562871@temporary.com"
+    }
+  ],
+  "userEmail": "user_1746562871@temporary.com",
+  "userName": "Anónimo",
+  "clientName": "Anónimo",
+  "clientEmail": "user_1746562871@temporary.com",
+  "widgetId": "testwidget",
+  "department": "Soporte",
+  "metadata": {
+    "url": "",
+    "referrer": "",
+    "userAgent": "",
+    "screenSize": "",
+    "externalId": ""
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "id": "TICKET-20250506-205943",
+  "title": "Solicitud de soporte - Herbert222",
+  "subject": "Solicitud de soporte - Herbert222",
+  "description": "asdasd",
+  "status": "open",
+  "priority": "",
+  "createdBy": "",
+  "createdAt": "2025-05-06T20:59:43.333589656Z",
+  "updatedAt": "2025-05-06T21:06:35.898099152Z",
+  "messages": [
+    {
+      "id": "MSG-1746565183333605975",
+      "content": "asdasd",
+      "isClient": true,
+      "createdAt": "2025-05-06T20:59:43.333589656Z",
+      "userName": "Herbert222",
+      "userEmail": "test@test.com"
+    },
+    {
+      "id": "MSG-1746565595898091032",
+      "content": "l",
+      "isClient": true,
+      "createdAt": "2025-05-06T21:06:35.898097889Z",
+      "userName": "Herbert222",
+      "userEmail": "test@test.com"
+    }
+  ],
+  "userEmail": "test@test.com",
+  "userName": "Herbert222",
+  "clientName": "Herbert222",
+  "clientEmail": "test@test.com",
+  "widgetId": "",
+  "department": "",
+  "metadata": {
+    "url": "http://localhost:8090/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+    "screenSize": "2133x1015",
+    "externalId": ""
+  }
+}

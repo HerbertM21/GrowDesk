@@ -1,82 +1,102 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
-	"github.com/hmdev/GrowDesk/backend/pkg/auth"
+	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/utils"
 )
 
-// AuthMiddleware revisa si el usuario está autenticado
-func AuthMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is required"})
-			c.Abort()
+// ContextKey representa una clave para los valores del contexto
+type ContextKey string
+
+// Constantes para las claves del contexto
+const (
+	UserIDKey ContextKey = "userID"
+	EmailKey  ContextKey = "email"
+	RoleKey   ContextKey = "role"
+)
+
+// ExtractToken extrae el token JWT del encabezado de autorización
+func ExtractToken(r *http.Request) string {
+	// Obtener el encabezado de autorización
+	authHeader := r.Header.Get("Authorization")
+
+	// Comprobar si el encabezado está presente
+	if authHeader == "" {
+		return ""
+	}
+
+	// Comprobar si el encabezado sigue el patrón "Bearer <token>"
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+		return ""
+	}
+
+	return parts[1]
+}
+
+// Middleware de autenticación para validar tokens JWT
+func Auth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Extraer token de la solicitud
+		tokenString := ExtractToken(r)
+
+		// Comprobar si el token existe
+		if tokenString == "" {
+			http.Error(w, "No autorizado: No se proporcionó un token", http.StatusUnauthorized)
 			return
 		}
 
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header format must be Bearer {token}"})
-			c.Abort()
-			return
-		}
-
-		tokenString := parts[1]
-		tokenDetails, err := auth.VerifyToken(tokenString)
+		// Validar token
+		claims, err := utils.ValidateToken(tokenString)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
-			c.Abort()
+			http.Error(w, "No autorizado: Token inválido", http.StatusUnauthorized)
 			return
 		}
 
-		// Set user info in context
-		c.Set("userID", tokenDetails.UserID)
-		c.Set("email", tokenDetails.Email)
-		c.Set("role", tokenDetails.Role)
+		// Agregar reclamaciones al contexto
+		ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
+		ctx = context.WithValue(ctx, EmailKey, claims.Email)
+		ctx = context.WithValue(ctx, RoleKey, claims.Role)
 
-		c.Next()
-	}
+		// Llamar al siguiente controlador con el contexto actualizado
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
-// RoleMiddleware revisa si el usuario tiene el rol requerido
-func RoleMiddleware(roles ...string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		userRole, exists := c.Get("role")
-		if !exists {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
-			c.Abort()
-			return
-		}
-
-		roleStr, ok := userRole.(string)
+// RequireRole middleware para verificar si el usuario tiene un rol específico
+func RequireRole(role string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Obtener el rol del usuario desde el contexto
+		userRole, ok := r.Context().Value(RoleKey).(string)
 		if !ok {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid role format"})
-			c.Abort()
+			http.Error(w, "No autorizado: No se proporcionó información de rol", http.StatusUnauthorized)
 			return
 		}
 
-		for _, role := range roles {
-			if roleStr == role {
-				c.Next()
-				return
-			}
+		// Comprobar si el usuario tiene el rol requerido
+		if userRole != role {
+			http.Error(w, "Prohibido: Permisos insuficientes", http.StatusForbidden)
+			return
 		}
 
-		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to access this resource"})
-		c.Abort()
-	}
+		// Llamar al siguiente controlador
+		next.ServeHTTP(w, r)
+	})
 }
 
-// AdminMiddleware
-func AdminMiddleware() gin.HandlerFunc {
-	return RoleMiddleware("admin")
-}
+// MockAuth middleware de autenticación para desarrollo
+// Este siempre tiene éxito y establece el rol de administrador
+func MockAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Agregar reclamaciones de prueba al contexto
+		ctx := context.WithValue(r.Context(), UserIDKey, "admin-123")
+		ctx = context.WithValue(ctx, EmailKey, "admin@growdesk.com")
+		ctx = context.WithValue(ctx, RoleKey, "admin")
 
-// AgentMiddleware revisa si el usuario es un agente o administrador
-func AgentMiddleware() gin.HandlerFunc {
-	return RoleMiddleware("agent", "admin")
+		// Llamar al siguiente controlador con el contexto actualizado
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
