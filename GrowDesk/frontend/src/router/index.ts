@@ -3,6 +3,7 @@ import Login from '../views/auth/Login.vue'
 import Dashboard from '../views/dashboard/Dashboard.vue'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
+import NotFound from '../views/NotFound.vue'
 
 // Definir las rutas
 const routes = [
@@ -104,6 +105,13 @@ const routes = [
     name: "admin-widget-config",
     component: () => import("../views/Admin/WidgetConfigView.vue"),
     meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  // Catch-all route for 404
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: NotFound,
+    meta: { requiresAuth: false }
   }
 ]
 

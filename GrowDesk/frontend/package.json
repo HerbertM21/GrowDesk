@@ -30,6 +30,7 @@
     "@vue/runtime-dom": "^3.5.13",
     "@vue/tsconfig": "^0.7.0",
     "sass": "^1.70.0",
+    "terser": "^5.39.0",
     "typescript": "^5.8.2",
     "vite": "^5.0.12",
     "vue": "^3.3.0",

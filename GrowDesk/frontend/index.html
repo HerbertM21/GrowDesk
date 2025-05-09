@@ -5,9 +5,32 @@
   <link rel="icon" href="/favicon.ico">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GrowDesk - Sistema de Gestión de Tickets</title>
+  <!-- Script anti inspección de código -->
+  <script>
+    // Prevenir acceso a las teclas de desarrollo
+    document.addEventListener('keydown', function(e) {
+      // Deshabilitar F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U
+      if (
+        e.keyCode === 123 || // F12
+        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) || // Ctrl+Shift+I/J/C
+        (e.ctrlKey && e.keyCode === 85) // Ctrl+U
+      ) {
+        e.preventDefault();
+        return false;
+      }
+    });
+    
+    // Deshabilitar menú contextual
+    document.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+      return false;
+    });
+  </script>
 </head>
 <body>
   <div id="app"></div>
   <script type="module" src="/src/main.ts"></script>
+  <!-- Script anti-devtools -->
+  <script src="/anti-devtools.js"></script>
 </body>
 </html> 

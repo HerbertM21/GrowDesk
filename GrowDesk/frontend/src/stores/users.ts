@@ -248,49 +248,39 @@ export const useUsersStore = defineStore('users', () => {
       // Guardar en localStorage
       saveUsersToLocalStorage();
       
-      return response.data;
+      return users.value[index];
     } catch (err: unknown) {
       console.error('Error al actualizar usuario:', err);
       error.value = 'Error al actualizar el usuario';
       
       // Para desarrollo, simular actualización
-      const index = users.value.findIndex((u: User) => u.id === userId);
-      if (index !== -1) {
-        // Permitir actualización de rol si viene en los datos
-        if ('role' in userData) {
-          users.value[index].role = userData.role as 'admin' | 'assistant' | 'employee';
+      if (import.meta.env.DEV) {
+        const index = users.value.findIndex((u: User) => u.id === userId);
+        if (index !== -1) {
+          users.value[index] = { 
+            ...users.value[index],
+            ...userData,
+            updatedAt: new Date().toISOString()
+          };
+          
+          // Si es el perfil actual, actualizar también
+          if (currentProfile.value?.id === userId) {
+            currentProfile.value = { 
+              ...currentProfile.value, 
+              ...userData,
+              updatedAt: new Date().toISOString()
+            };
+          }
+          
+          // Guardar en localStorage
+          saveUsersToLocalStorage();
+          
+          console.log('Usuario actualizado localmente:', users.value[index]);
+          return users.value[index];
         }
-        
-        // Añadir nuevos campos personalizados si no existen
-        if ('position' in userData) {
-          (users.value[index] as any).position = userData.position;
-        }
-        
-        if ('phone' in userData) {
-          (users.value[index] as any).phone = userData.phone;
-        }
-        
-        if ('language' in userData) {
-          (users.value[index] as any).language = userData.language;
-        }
-        
-        users.value[index] = { 
-          ...users.value[index], 
-          ...userData,
-          updatedAt: new Date().toISOString()
-        };
-        
-        // Si es el perfil actual, actualizar también
-        if (currentProfile.value?.id === userId) {
-          currentProfile.value = { ...currentProfile.value, ...userData };
-        }
-        
-        // Guardar en localStorage
-        saveUsersToLocalStorage();
-        
-        return users.value[index];
       }
-      throw err;
+      
+      return null;
     } finally {
       loading.value = false;
     }
@@ -299,17 +289,13 @@ export const useUsersStore = defineStore('users', () => {
   const changeUserRole = async (userId: string, newRole: 'admin' | 'assistant' | 'employee') => {
     return updateUser(userId, { role: newRole });
   };
-
+  
   const toggleUserActive = async (userId: string) => {
-    // Encontrar usuario
-    const user = users.value.find((u: User) => u.id === userId);
-    
-    if (!user) {
-      throw new Error('Usuario no encontrado');
+    const userToToggle = users.value.find((u: User) => u.id === userId);
+    if (userToToggle) {
+      return updateUser(userId, { active: !userToToggle.active });
     }
-
-    // Cambiar estado activo
-    return updateUser(userId, { active: !user.active });
+    return null;
   };
 
   const deleteUser = async (userId: string) => {
@@ -318,31 +304,41 @@ export const useUsersStore = defineStore('users', () => {
 
     try {
       await apiClient.delete(`/users/${userId}`);
+      
       // Eliminar del array local
       users.value = users.value.filter((u: User) => u.id !== userId);
-      // Si el perfil actual es el que se elimina, limpiarlo
-      if (currentProfile.value && currentProfile.value.id === userId) {
+      
+      // Si es el perfil actual, limpiar
+      if (currentProfile.value?.id === userId) {
         currentProfile.value = null;
       }
+      
       // Guardar en localStorage
       saveUsersToLocalStorage();
+      
       return true;
     } catch (err: unknown) {
       console.error('Error al eliminar usuario:', err);
       error.value = 'Error al eliminar el usuario';
       
       // Para desarrollo, simular eliminación
-      users.value = users.value.filter((u: User) => u.id !== userId);
-      
-      // Si el perfil actual es el que se elimina, limpiarlo
-      if (currentProfile.value && currentProfile.value.id === userId) {
-        currentProfile.value = null;
+      if (import.meta.env.DEV) {
+        // Eliminar del array local
+        users.value = users.value.filter((u: User) => u.id !== userId);
+        
+        // Si es el perfil actual, limpiar
+        if (currentProfile.value?.id === userId) {
+          currentProfile.value = null;
+        }
+        
+        // Guardar en localStorage
+        saveUsersToLocalStorage();
+        
+        console.log('Usuario eliminado localmente');
+        return true;
       }
       
-      // Guardar en localStorage
-      saveUsersToLocalStorage();
-      
-      return true;
+      return false;
     } finally {
       loading.value = false;
     }
@@ -513,7 +509,9 @@ export const useUsersStore = defineStore('users', () => {
     changeUserRole,
     toggleUserActive,
     deleteUser,
-    initMockUsers
+    initMockUsers,
+    saveUsersToLocalStorage,
+    loadUsersFromLocalStorage
   };
 });
 

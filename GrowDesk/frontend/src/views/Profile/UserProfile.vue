@@ -186,7 +186,7 @@
               </div>
               
               <div class="timeline-content">
-                <p class="activity-text">{{ activity.description }}</p>
+                <p class="activity-text">{{ activity.description || 'Actividad registrada' }}</p>
                 <span class="activity-time">{{ formatDate(activity.timestamp) }}</span>
               </div>
             </div>
@@ -301,6 +301,8 @@ const translatePriority = (priority: string): string => {
 };
 
 const truncateText = (text: string, maxLength: number): string => {
+  // Verificar si el texto es undefined, null o vacío
+  if (!text) return '';
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength) + '...';
 };
@@ -547,8 +549,8 @@ const loadUserActivities = async (userId: string) => {
       // Si no hay actividades reales después del filtrado, crear algunas actividades de demostración
       if (realActivities.length === 0) {
         console.log('No se encontraron actividades reales para este usuario, creando actividades de demostración');
-  userActivity.value = [
-    {
+        userActivity.value = [
+          {
             id: '1',
             userId: userId,
             type: 'ticket_assigned',

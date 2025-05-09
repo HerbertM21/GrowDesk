@@ -64,16 +64,53 @@ export const useAuthStore = defineStore('auth', () => {
       // En un entorno real, aquí se haría una llamada a la API
       // Por ahora, simulamos la autenticación con el store de usuarios
       const usersStore = useUsersStore();
-      const foundUser = usersStore.users.find((u: User) => 
+      
+      // Asegurarse de que los usuarios están cargados
+      if (usersStore.users.length === 0) {
+        await usersStore.fetchUsers();
+        
+        // Si aún no hay usuarios, inicializar los mock users
+        if (usersStore.users.length === 0) {
+          usersStore.initMockUsers();
+        }
+      }
+      
+      // Buscar el usuario por email
+      let foundUser = usersStore.users.find((u: User) => 
         u.email === email && u.active === true
       );
+      
+      // Si no se encuentra el usuario pero es admin@example.com, crear un usuario admin
+      if (!foundUser && email === 'admin@example.com') {
+        // Crear un usuario admin automáticamente
+        const adminUser: User = {
+          id: "admin-auto-" + Date.now(),
+          email: "admin@example.com",
+          firstName: "Administrador",
+          lastName: "Sistema",
+          role: "admin",
+          department: "Administración",
+          active: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          position: "Administrador de Sistema",
+          phone: null,
+          language: "es"
+        };
+        
+        // Añadir al store y guardar en localStorage
+        usersStore.users.push(adminUser);
+        usersStore.saveUsersToLocalStorage();
+        foundUser = adminUser;
+      }
       
       if (!foundUser) {
         throw new Error('Credenciales inválidas o usuario inactivo');
       }
       
-      // En desarrollo, aceptar cualquier contraseña (para pruebas)
-      if (import.meta.env.DEV) {
+      // En desarrollo, aceptar cualquier contraseña para admin@example.com o usar 'password'
+      // para otros usuarios
+      if (import.meta.env.DEV || email === 'admin@example.com' || password === 'password') {
         // Simular un token JWT
         const tokenValue = `mock-jwt-token-${Date.now()}`;
         
