@@ -10,8 +10,10 @@ const routes = [
   {
     path: '/',
     name: 'home',
-    component: () => import('../views/Home.vue'),
-    meta: { requiresAuth: false }
+    component: Login,
+    meta: {
+      requiresAuth: false
+    }
   },
   {
     path: '/login',
@@ -106,7 +108,7 @@ const routes = [
     component: () => import("../views/Admin/WidgetConfigView.vue"),
     meta: { requiresAuth: true, requiresAdmin: true }
   },
-  // Catch-all route for 404
+  // Ruta para manejar errores 404
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
@@ -127,15 +129,27 @@ const router = createRouter({
 })
 
 // Protección de rutas
-router.beforeEach((to: any, from: any, next: any) => {
+router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
   const notificationsStore = useNotificationsStore()
   
+  // Comprobar si el usuario está autenticado
+  const isAuthenticated = authStore.isAuthenticated
+  
   // Si la ruta requiere autenticación y el usuario no está autenticado
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+  if (to.meta.requiresAuth && !isAuthenticated) {
     notificationsStore.error('Debes iniciar sesión para acceder a esta página')
     next({ name: 'login' })
   } 
+  // Si la ruta es la página principal y el usuario ya está autenticado
+  else if ((to.path === '/' || to.path === '/login') && isAuthenticated) {
+    // Redirigir a dashboard o admin según el rol
+    if (authStore.isAdmin || authStore.isAssistant) {
+      next({ name: 'admin-dashboard' })
+    } else {
+      next({ name: 'dashboard' })
+    }
+  }
   // Si la ruta requiere rol de admin y el usuario no es admin
   else if (to.meta.requiresAdmin && !authStore.isAdmin) {
     notificationsStore.error('No tienes permisos suficientes para acceder a esta sección')

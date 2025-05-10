@@ -1,0 +1,34 @@
+{
+  "id": "TICKET-20250510-211711",
+  "title": "Solicitud de soporte - Herbert",
+  "subject": "Solicitud de soporte - Herbert",
+  "description": "asd",
+  "status": "open",
+  "priority": "",
+  "createdBy": "",
+  "createdAt": "2025-05-10T21:17:11.328727486Z",
+  "updatedAt": "2025-05-10T21:17:11.328727486Z",
+  "messages": [
+    {
+      "id": "MSG-1746911831328731494",
+      "content": "asd",
+      "isClient": true,
+      "createdAt": "2025-05-10T21:17:11.328727486Z",
+      "userName": "Herbert",
+      "userEmail": "admin@growdesk.com"
+    }
+  ],
+  "userEmail": "admin@growdesk.com",
+  "userName": "Herbert",
+  "clientName": "Herbert",
+  "clientEmail": "admin@growdesk.com",
+  "widgetId": "",
+  "department": "",
+  "metadata": {
+    "url": "http://localhost:8091/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+    "screenSize": "2132x813",
+    "externalId": ""
+  }
+}

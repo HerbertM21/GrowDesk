@@ -25,6 +25,9 @@ providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
+    network: "growdeskv2_grow-network"
+    useBindPortIP: false
+    swarmMode: false
   file:
     directory: "/etc/traefik/dynamic_conf"
     watch: true
@@ -43,8 +46,16 @@ entryPoints:
 ## Configuración de métricas
 metrics:
   prometheus:
+    addEntryPointsLabels: true
+    addServicesLabels: true
     buckets:
       - 0.1
       - 0.3
       - 1.2
-      - 5.0 
+      - 5.0
+
+## Configuración de resolución de nombres
+hostResolve:
+  enabled: true
+  resolvers:
+    - "127.0.0.11:53"  # DNS interno de Docker 

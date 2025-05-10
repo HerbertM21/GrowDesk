@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -301,6 +302,14 @@ func main() {
 			"backend_status":   resp.StatusCode,
 			"backend_response": string(body),
 			"message":          "Conexión exitosa con el backend",
+		})
+	})
+
+	// Agregar endpoint de health check
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "healthy",
+			"service": "widget-api",
 		})
 	})
 
@@ -1214,13 +1223,14 @@ func createTicket(c *gin.Context) {
 // sendHttpRequestWithRetry envía una solicitud HTTP con reintentos
 func sendHttpRequestWithRetry(url string, jsonData []byte, headers map[string]string, maxRetries int) (*http.Response, error) {
 	var resp *http.Response
-	var err error
+	var lastErr error
 
 	for i := 0; i < maxRetries; i++ {
 		// Crear solicitud
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 		if err != nil {
 			log.Printf("Error al crear solicitud HTTP (intento %d): %v", i+1, err)
+			lastErr = err
 			continue
 		}
 
@@ -1243,16 +1253,31 @@ func sendHttpRequestWithRetry(url string, jsonData []byte, headers map[string]st
 
 		if err != nil {
 			log.Printf("Error en intento %d: %v", i+1, err)
+			lastErr = err
+
+			// Intenta resolver problemas de DNS o hosts
+			if strings.Contains(err.Error(), "lookup backend") {
+				log.Printf("Error de resolución DNS detectado. Intentando con nombre completo 'growdesk-backend'")
+				if strings.Contains(url, "backend:") {
+					url = strings.Replace(url, "backend:", "growdesk-backend:", 1)
+					log.Printf("URL ajustada a: %s", url)
+				}
+			}
 		} else {
 			log.Printf("Respuesta no exitosa en intento %d: %d", i+1, resp.StatusCode)
+			bodyBytes, _ := ioutil.ReadAll(resp.Body)
+			log.Printf("Contenido de respuesta: %s", string(bodyBytes))
 			resp.Body.Close()
+			lastErr = fmt.Errorf("código de respuesta no exitoso: %d", resp.StatusCode)
 		}
 
 		// Esperar antes de reintentar (backoff exponencial)
-		time.Sleep(time.Duration(300*(i+1)) * time.Millisecond)
+		waitTime := time.Duration(300*(i+1)) * time.Millisecond
+		log.Printf("Esperando %v antes del siguiente intento...", waitTime)
+		time.Sleep(waitTime)
 	}
 
-	return nil, fmt.Errorf("fallo después de %d intentos: %v", maxRetries, err)
+	return nil, fmt.Errorf("fallo después de %d intentos: %v", maxRetries, lastErr)
 }
 
 // handleWebSocketConnection maneja las conexiones WebSocket para chat en tiempo real

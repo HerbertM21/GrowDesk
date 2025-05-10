@@ -1,0 +1,34 @@
+{
+  "id": "TICKET-20250510-215426",
+  "title": "Solicitud de soporte - Herbert23",
+  "subject": "Solicitud de soporte - Herbert23",
+  "description": "asdw",
+  "status": "open",
+  "priority": "",
+  "createdBy": "",
+  "createdAt": "2025-05-10T21:54:26.859509678Z",
+  "updatedAt": "2025-05-10T21:54:26.859509678Z",
+  "messages": [
+    {
+      "id": "MSG-1746914066859514882",
+      "content": "asdw",
+      "isClient": true,
+      "createdAt": "2025-05-10T21:54:26.859509678Z",
+      "userName": "Herbert23",
+      "userEmail": "herbertmm12@gmail.com"
+    }
+  ],
+  "userEmail": "herbertmm12@gmail.com",
+  "userName": "Herbert23",
+  "clientName": "Herbert23",
+  "clientEmail": "herbertmm12@gmail.com",
+  "widgetId": "",
+  "department": "",
+  "metadata": {
+    "url": "http://localhost:8091/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+    "screenSize": "2133x1015",
+    "externalId": ""
+  }
+}

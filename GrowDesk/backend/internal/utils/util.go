@@ -64,3 +64,19 @@ func HandleCORS(w http.ResponseWriter, r *http.Request) bool {
 
 	return false
 }
+
+// GetStringFromMap extrae un valor string de un mapa, con manejo seguro
+// Si la clave no existe o el valor no es string, devuelve una cadena vacía
+func GetStringFromMap(data map[string]interface{}, key string) string {
+	if data == nil {
+		return ""
+	}
+
+	if val, exists := data[key]; exists {
+		if strVal, ok := val.(string); ok {
+			return strVal
+		}
+	}
+
+	return ""
+}

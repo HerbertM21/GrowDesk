@@ -161,18 +161,12 @@ export const useTicketStore = defineStore('tickets', {
   actions: {
     async fetchTickets() {
       this.loading = true
+      this.error = null
       
       try {
-        // First try to load tickets from localStorage
-        const savedTickets = loadTicketsFromStorage()
-        
-        if (savedTickets && savedTickets.length > 0) {
-          this.tickets = savedTickets
-          this.loading = false
-          return
-        }
-        
+        console.log('Comenzando fetchTickets - Llamando API...')
         const response = await apiClient.get('/tickets')
+        console.log('Respuesta API fetchTickets:', response.data)
         this.tickets = response.data
         
         // Save to localStorage
@@ -180,6 +174,13 @@ export const useTicketStore = defineStore('tickets', {
       } catch (error) {
         console.error('Error fetching tickets:', error)
         this.error = 'Error al cargar los tickets'
+        
+        // Si hay un error, intentar recuperar tickets almacenados localmente
+        const savedTickets = loadTicketsFromStorage()
+        if (savedTickets && savedTickets.length > 0) {
+          console.log('Recuperando tickets de localStorage después de error de API')
+          this.tickets = savedTickets
+        }
       } finally {
         this.loading = false
       }

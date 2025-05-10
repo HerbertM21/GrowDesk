@@ -322,143 +322,194 @@ func (h *TicketHandler) CreateWidgetTicket(w http.ResponseWriter, r *http.Reques
 
 	// Estructura para recibir el formato específico del widget
 	var widgetRequest struct {
-		Subject    string                 `json:"subject"`    // El widget envía "subject" en lugar de "title"
-		Message    string                 `json:"message"`    // Mensaje inicial
-		Name       string                 `json:"name"`       // Nombre del cliente
-		Email      string                 `json:"email"`      // Email del cliente
-		Priority   string                 `json:"priority"`   // Opcional
-		Department string                 `json:"department"` // Opcional
-		WidgetId   string                 `json:"widgetId"`   // ID del widget
-		Metadata   map[string]interface{} `json:"metadata"`   // Metadatos
+		ID          string                 `json:"id"`
+		Title       string                 `json:"title"`
+		Subject     string                 `json:"subject"`
+		Description string                 `json:"description"`
+		Status      string                 `json:"status"`
+		Priority    string                 `json:"priority"`
+		Email       string                 `json:"email"`
+		Name        string                 `json:"name"`
+		ClientName  string                 `json:"clientName"`
+		ClientEmail string                 `json:"clientEmail"`
+		Department  string                 `json:"department"`
+		Source      string                 `json:"source"`
+		WidgetID    string                 `json:"widgetId"`
+		CreatedAt   string                 `json:"createdAt"`
+		Metadata    map[string]interface{} `json:"metadata"`
 	}
 
 	// Intentar decodificar primero con el formato del widget
 	if err := json.Unmarshal(body, &widgetRequest); err != nil {
-		// Si falla, intentar con el formato original
-		r.Body = io.NopCloser(bytes.NewBuffer(body))
-		var reqBody models.WidgetTicketRequest
-		if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-			http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		// Continuar con el formato original
-		name := reqBody.Name
-		if name == "" {
-			name = "Anónimo"
-		}
-
-		email := reqBody.Email
-		if email == "" {
-			email = "anonymous@example.com"
-		}
-
-		// Crear nuevo ticket
-		ticketID := utils.GenerateTicketID()
-		now := time.Now()
-
-		ticket := models.Ticket{
-			ID:          ticketID,
-			Title:       fmt.Sprintf("Soporte Web - %s", name),
-			Status:      "open",
-			CreatedAt:   now,
-			UpdatedAt:   now,
-			Description: reqBody.Message,
-			Priority:    "medium",
-			Category:    "soporte",
-			CreatedBy:   email,
-			Customer: models.Customer{
-				Name:  name,
-				Email: email,
-			},
-			Messages: []models.Message{
-				{
-					ID:        utils.GenerateMessageID(),
-					Content:   reqBody.Message,
-					IsClient:  true,
-					Timestamp: now,
-					UserName:  name,
-					UserEmail: email,
-				},
-			},
-		}
-
-		// Add ticket to store
-		h.Store.CreateTicket(ticket)
-
-		// Devolver respuesta de éxito
-		response := models.TicketResponse{
-			Success:           true,
-			TicketID:          ticketID,
-			LiveChatAvailable: true,
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(response)
+		fmt.Printf("Error al decodificar la solicitud del widget: %v\n", err)
+		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Proceso con el formato del widget
+	// Validaciones básicas
+	if widgetRequest.Subject == "" && widgetRequest.Title == "" {
+		fmt.Printf("Error: Solicitud sin título o asunto\n")
+		http.Error(w, "Subject or title is required", http.StatusBadRequest)
+		return
+	}
+
+	// Establecer valores por defecto si están vacíos
+	if widgetRequest.Status == "" {
+		widgetRequest.Status = "open"
+	}
+
+	if widgetRequest.Priority == "" {
+		widgetRequest.Priority = "medium"
+	}
+
+	if widgetRequest.Department == "" {
+		widgetRequest.Department = "soporte"
+	}
+
+	if widgetRequest.Source == "" {
+		widgetRequest.Source = "widget"
+	}
+
+	// Usar nombre del cliente para completar campos si están vacíos
 	name := widgetRequest.Name
 	if name == "" {
-		name = "Anónimo"
+		name = widgetRequest.ClientName
+		if name == "" {
+			name = "Anónimo"
+		}
 	}
 
 	email := widgetRequest.Email
 	if email == "" {
-		email = "anonymous@example.com"
+		email = widgetRequest.ClientEmail
+		if email == "" {
+			email = "anonymous@example.com"
+		}
 	}
 
-	// Crear nuevo ticket
-	ticketID := utils.GenerateTicketID()
+	// Usar ID proporcionado o generar uno nuevo
+	ticketID := widgetRequest.ID
+	if ticketID == "" {
+		ticketID = utils.GenerateTicketID()
+	}
+
+	// Fecha de creación
 	now := time.Now()
-
-	priority := widgetRequest.Priority
-	if priority == "" {
-		priority = "medium"
+	createdAt := now
+	if widgetRequest.CreatedAt != "" {
+		parsedTime, err := time.Parse(time.RFC3339, widgetRequest.CreatedAt)
+		if err == nil {
+			createdAt = parsedTime
+		}
 	}
 
-	department := widgetRequest.Department
-	if department == "" {
-		department = "soporte"
+	// Determinar el título para mantener consistencia
+	title := widgetRequest.Title
+	if title == "" {
+		title = widgetRequest.Subject
 	}
 
+	// Crear metadata para el ticket
+	var ticketMetadata *models.Metadata
+	if widgetRequest.Metadata != nil {
+		ticketMetadata = &models.Metadata{
+			URL:       utils.GetStringFromMap(widgetRequest.Metadata, "url"),
+			UserAgent: utils.GetStringFromMap(widgetRequest.Metadata, "userAgent"),
+			Referrer:  utils.GetStringFromMap(widgetRequest.Metadata, "referrer"),
+		}
+	}
+
+	// Crear el mensaje inicial
+	initialMessage := models.Message{
+		ID:        utils.GenerateMessageID(),
+		Content:   widgetRequest.Description,
+		IsClient:  true,
+		Timestamp: createdAt,
+		CreatedAt: createdAt,
+		UserName:  name,
+		UserEmail: email,
+	}
+
+	// Verificar si existe un usuario con este email para evitar violar la restricción foreign key
+	var userID string = ""
+	existingUser, userErr := h.Store.GetUserByEmail(email)
+	if userErr == nil && existingUser != nil {
+		// Si existe un usuario con este email, usar su ID
+		userID = existingUser.ID
+		fmt.Printf("Se encontró usuario existente con email %s, ID: %s\n", email, userID)
+	} else {
+		// No hay usuario existente con este email, verificamos el usuario del sistema
+		systemUser, sysErr := h.Store.GetUserByEmail("admin@growdesk.com")
+		if sysErr == nil && systemUser != nil {
+			userID = systemUser.ID
+			fmt.Printf("Usando usuario del sistema con ID: %s\n", userID)
+		} else {
+			fmt.Printf("No se encontró usuario del sistema. Error: %v\n", sysErr)
+		}
+	}
+
+	// Crear objeto de ticket para PostgreSQL
 	ticket := models.Ticket{
 		ID:          ticketID,
-		Title:       widgetRequest.Subject,
-		Status:      "open",
-		CreatedAt:   now,
+		Title:       title,
+		Subject:     widgetRequest.Subject,
+		Status:      widgetRequest.Status,
+		CreatedAt:   createdAt,
 		UpdatedAt:   now,
-		Description: widgetRequest.Message,
-		Priority:    priority,
-		Category:    department,
-		CreatedBy:   email,
+		Description: widgetRequest.Description,
+		Priority:    widgetRequest.Priority,
+		Category:    widgetRequest.Department,
+		Department:  widgetRequest.Department,
+		// No usar CreatedBy como referencia, usar UserID para la referencia de clave foránea
+		UserID:   userID,
+		Source:   widgetRequest.Source,
+		WidgetID: widgetRequest.WidgetID,
 		Customer: models.Customer{
 			Name:  name,
 			Email: email,
 		},
-		Messages: []models.Message{
-			{
-				ID:        utils.GenerateMessageID(),
-				Content:   widgetRequest.Message,
-				IsClient:  true,
-				Timestamp: now,
-				UserName:  name,
-				UserEmail: email,
-			},
-		},
+		Messages: []models.Message{initialMessage},
+		Metadata: ticketMetadata,
 	}
 
-	// Agregar ticket al almacén
-	h.Store.CreateTicket(ticket)
+	fmt.Printf("Intentando guardar ticket en base de datos: %+v\n", ticket)
+
+	// Almacenar en la base de datos
+	err := h.Store.CreateTicket(ticket)
+	if err != nil {
+		fmt.Printf("ERROR AL GUARDAR TICKET EN LA BASE DE DATOS: %v\n", err)
+		fmt.Printf("Detalles del ticket que no se pudo guardar: ID=%s, Title=%s\n", ticket.ID, ticket.Title)
+
+		// Intentar verificar si el ticket ya existe
+		existingTicket, checkErr := h.Store.GetTicket(ticketID)
+		if checkErr != nil {
+			fmt.Printf("El ticket no existe previamente en la base de datos: %v\n", checkErr)
+		} else {
+			fmt.Printf("ALERTA: El ticket ya existe en la base de datos: %+v\n", existingTicket)
+		}
+
+		http.Error(w, "Error creating ticket: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Confirmar la creación y loguear para depuración
+	fmt.Printf("Ticket %s guardado correctamente en la base de datos\n", ticketID)
+
+	// Verificar que el ticket se guardó correctamente
+	verifiedTicket, verifyErr := h.Store.GetTicket(ticketID)
+	if verifyErr != nil {
+		fmt.Printf("ALERTA: No se pudo verificar el ticket recién creado: %v\n", verifyErr)
+	} else {
+		fmt.Printf("Verificación exitosa - Ticket recuperado de la base de datos: %+v\n", verifiedTicket)
+	}
 
 	// Devolver respuesta de éxito con el formato que el widget espera
 	response := map[string]interface{}{
 		"success":           true,
 		"ticketId":          ticketID,
+		"id":                ticketID,
 		"liveChatAvailable": true,
-		"id":                ticketID, // Agregar id porque el widget lo espera
+		"message":           "Ticket creado correctamente",
 	}
 
 	w.Header().Set("Content-Type", "application/json")

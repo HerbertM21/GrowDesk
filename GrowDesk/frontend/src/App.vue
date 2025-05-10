@@ -71,9 +71,9 @@ watch(isDarkTheme, (newValue: boolean) => {
   }
 });
 
-// Verificar si estamos en una ruta de autenticación (login o registro)
+// Verificar si estamos en una ruta de autenticación (login, raíz, o registro)
 const isAuthRoute = computed(() => {
-  return route.path === '/login' || route.path === '/register';
+  return route.path === '/' || route.path === '/login' || route.path === '/register';
 });
 
 // Verificar autenticación al montar el componente

@@ -32,8 +32,8 @@
     <!-- Configuración global del widget -->
     <script>
         window.GrowDeskConfig = {
-            // URL correcta sin prefijo /widget
-            apiUrl: 'http://localhost:3001',
+            // URL correcta para la API del widget con la ruta /widget
+            apiUrl: 'http://localhost:3002/widget',
             brandName: "GrowDesk Support",
             primaryColor: "#6200ea",
             position: "bottom-right",
@@ -47,7 +47,7 @@
     <script 
         id="growdesk-widget"
         src="growdesk-widget.umd.js"
-        data-api-url="http://localhost:3001"
+        data-api-url="http://localhost:3002/widget"
         data-widget-id="testwidget"
         data-widget-token="testtoken"
         data-default-name="Usuario de Prueba"

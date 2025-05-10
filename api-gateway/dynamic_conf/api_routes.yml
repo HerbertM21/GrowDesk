@@ -6,6 +6,8 @@ http:
       rule: "Host(`localhost`) && PathPrefix(`/api`) && !PathPrefix(`/dashboard`) && !PathPrefix(`/api/version`) && !PathPrefix(`/api/entrypoints`) && !PathPrefix(`/api/overview`) && !PathPrefix(`/api/http`)"
       service: "backend-service"
       priority: 10
+      middlewares:
+        - "backend-cors"
 
     # Router directo al panel admin
     admin-ui-router:
@@ -31,11 +33,11 @@ http:
         - "widget-core-stripprefix"
       priority: 40
 
-    # Router directo al demo site
+    # Router directo al demo site (con redirección a URL específica)
     demo-site-router:
       rule: "Host(`localhost`) && PathPrefix(`/demo`)"
       middlewares:
-        - "redirect-demo"
+        - "redirect-demo-fixed"
       service: "noop@internal"
       priority: 50
 
@@ -50,30 +52,52 @@ http:
     backend-service:
       loadBalancer:
         servers:
-          - url: "http://backend:8080"
+          - url: "http://growdesk-backend:8080"
 
     widget-api-service:
       loadBalancer:
         servers:
-          - url: "http://172.21.0.6:3000"
+          - url: "http://growdesk-widget-api:3000"
 
     frontend-service:
       loadBalancer:
         servers:
-          - url: "http://frontend:3000"
+          - url: "http://growdesk-frontend:3000"
 
     widget-core-service:
       loadBalancer:
         servers:
-          - url: "http://widget-core:3030"
+          - url: "http://growdesk-widget-core:3030"
 
     demo-site-service:
       loadBalancer:
         servers:
-          - url: "http://demo-site:8090"
+          - url: "http://growdesk-demo-site:8090"
 
   # Middlewares para strip prefix y redirecciones
   middlewares:
+    backend-cors:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        accessControlAllowOriginList:
+          - "http://localhost"
+          - "http://localhost:3001"
+          - "*"
+        accessControlAllowHeaders:
+          - "Content-Type"
+          - "Authorization"
+          - "X-Requested-With"
+          - "X-Widget-ID"
+          - "X-Widget-Token"
+        accessControlMaxAge: 100
+        addVaryHeader: true
+        accessControlAllowCredentials: true
+    
     redirect-widget-api:
       redirectScheme:
         scheme: http
@@ -86,10 +110,16 @@ http:
         port: "3001"
         permanent: false
         
-    redirect-demo:
-      redirectScheme:
-        scheme: http
-        port: "8091"
+    redirect-demo-simple:
+      redirectRegex:
+        regex: "^/demo.*"
+        replacement: "http://localhost:8091"
+        permanent: false
+        
+    redirect-demo-fixed:
+      redirectRegex:
+        regex: ".*"
+        replacement: "http://localhost:8091"
         permanent: false
 
     widget-api-stripprefix:

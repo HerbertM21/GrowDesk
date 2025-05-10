@@ -1,0 +1,34 @@
+{
+  "id": "TICKET-20250510-212723",
+  "title": "Solicitud de soporte - Martina Cristi",
+  "subject": "Solicitud de soporte - Martina Cristi",
+  "description": "asdas",
+  "status": "open",
+  "priority": "",
+  "createdBy": "",
+  "createdAt": "2025-05-10T21:27:23.591737892Z",
+  "updatedAt": "2025-05-10T21:27:23.591737892Z",
+  "messages": [
+    {
+      "id": "MSG-1746912443591742566",
+      "content": "asdas",
+      "isClient": true,
+      "createdAt": "2025-05-10T21:27:23.591737892Z",
+      "userName": "Martina Cristi",
+      "userEmail": "test@test.com"
+    }
+  ],
+  "userEmail": "test@test.com",
+  "userName": "Martina Cristi",
+  "clientName": "Martina Cristi",
+  "clientEmail": "test@test.com",
+  "widgetId": "",
+  "department": "",
+  "metadata": {
+    "url": "http://localhost:8091/",
+    "referrer": "",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+    "screenSize": "2132x834",
+    "externalId": ""
+  }
+}

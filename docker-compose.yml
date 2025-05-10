@@ -8,14 +8,16 @@ services:
       dockerfile: Dockerfile
     container_name: growdesk-api-gateway
     ports:
-      - "80:80"     # Puerto principal para APIs
-      - "8082:8082" # Puerto para dashboard de Traefik (cambiado de 8081 a 8082)
+      - "80:80"     # API Principal
+      - "8082:8082" # Dashboard de Traefik
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./api-gateway/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./api-gateway/dynamic_conf:/etc/traefik/dynamic_conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - grow-network
+    environment:
+      - TRAEFIK_PROVIDERS_DOCKER_NETWORK=growdeskv2_grow-network
     restart: unless-stopped
     depends_on:
       - backend
@@ -170,9 +172,9 @@ services:
     environment:
       - PORT=3000
       - DATA_DIR=/app/data
-      - GROWDESK_API_URL=http://backend:8080  # Mantener referencia directa
+      - GROWDESK_API_URL=http://growdesk-backend:8080  # Cambiado para usar el nombre completo del contenedor
       - GROWDESK_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiJhZG1pbi0xMjMiLCJlbWFpbCI6ImFkbWluQGdyb3dkZXNrLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTcyNDA4ODQwMH0.8J5ayPvA4B-1vF5NaqRXycW1pmIl9qjKP6Ddj4Ot_Cw
-      - WIDGET_BASE_URL=http://widget-core:3030
+      - WIDGET_BASE_URL=http://growdesk-widget-core:3030  # Cambiado para usar el nombre completo del contenedor
       - WIDGET_API_URL=http://localhost/widget-api  # Actualizado para usar API Gateway
       - GIN_MODE=debug
       - JWT_SECRET=clave_secreta_desarrollo_local
@@ -186,11 +188,11 @@ services:
       - MIGRATE_DATA=true
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 30s
-      retries: 5
-      start_period: 40s
+      test: ["CMD", "nc", "-z", "localhost", "3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
       - grow-network
     depends_on:
