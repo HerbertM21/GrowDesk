@@ -12,7 +12,7 @@ import (
 
 // AuthHandler contiene manejadores para autenticación
 type AuthHandler struct {
-	Store *data.Store
+	Store data.DataStore
 }
 
 // Login maneja solicitudes de inicio de sesión de usuarios

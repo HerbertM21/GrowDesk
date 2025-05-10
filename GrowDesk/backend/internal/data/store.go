@@ -184,10 +184,12 @@ func (s *Store) loadFAQs() error {
 
 // SaveTickets guarda tickets en archivo
 func (s *Store) SaveTickets() error {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	tickets := make([]models.Ticket, len(s.Tickets))
+	copy(tickets, s.Tickets)
+	s.mu.Unlock()
 
-	data, err := json.MarshalIndent(s.Tickets, "", "  ")
+	data, err := json.MarshalIndent(tickets, "", "  ")
 	if err != nil {
 		return fmt.Errorf("error al serializar tickets: %w", err)
 	}
@@ -196,16 +198,18 @@ func (s *Store) SaveTickets() error {
 		return fmt.Errorf("error al escribir archivo de tickets: %w", err)
 	}
 
-	fmt.Printf("Guardados %d tickets en archivo\n", len(s.Tickets))
+	fmt.Printf("Guardados %d tickets en archivo\n", len(tickets))
 	return nil
 }
 
 // SaveUsers guarda usuarios en archivo
 func (s *Store) SaveUsers() error {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	users := make([]models.User, len(s.Users))
+	copy(users, s.Users)
+	s.mu.Unlock()
 
-	data, err := json.MarshalIndent(s.Users, "", "  ")
+	data, err := json.MarshalIndent(users, "", "  ")
 	if err != nil {
 		return fmt.Errorf("error al serializar usuarios: %w", err)
 	}
@@ -214,16 +218,18 @@ func (s *Store) SaveUsers() error {
 		return fmt.Errorf("error al escribir archivo de usuarios: %w", err)
 	}
 
-	fmt.Printf("Guardados %d usuarios en archivo\n", len(s.Users))
+	fmt.Printf("Guardados %d usuarios en archivo\n", len(users))
 	return nil
 }
 
 // SaveCategories guarda categorías en archivo
 func (s *Store) SaveCategories() error {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	categories := make([]models.Category, len(s.Categories))
+	copy(categories, s.Categories)
+	s.mu.Unlock()
 
-	data, err := json.MarshalIndent(s.Categories, "", "  ")
+	data, err := json.MarshalIndent(categories, "", "  ")
 	if err != nil {
 		return fmt.Errorf("error al serializar categorías: %w", err)
 	}
@@ -232,23 +238,21 @@ func (s *Store) SaveCategories() error {
 		return fmt.Errorf("error al escribir archivo de categorías: %w", err)
 	}
 
-	fmt.Printf("Guardados %d categorías en archivo\n", len(s.Categories))
+	fmt.Printf("Guardados %d categorías en archivo\n", len(categories))
 	return nil
 }
 
 // SaveFAQs guarda FAQs en archivo
 func (s *Store) SaveFAQs() error {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	faqsCopy := make([]models.FAQ, len(s.FAQs))
+	copy(faqsCopy, s.FAQs)
+	s.mu.Unlock()
 
 	// Asegurarse de que el directorio existe
 	if err := os.MkdirAll(filepath.Dir(s.FAQsFile), 0755); err != nil {
 		return fmt.Errorf("Error al crear directorio: %v", err)
 	}
-
-	// Crear una copia local de las FAQs para evitar problemas de concurrencia
-	faqsCopy := make([]models.FAQ, len(s.FAQs))
-	copy(faqsCopy, s.FAQs)
 
 	data, err := json.MarshalIndent(faqsCopy, "", "  ")
 	if err != nil {
@@ -304,7 +308,7 @@ func (s *Store) initializeDefaultUsers() {
 // InitializeDefaultCategories inicializa el almacén con categorías por defecto
 func (s *Store) initializeDefaultCategories() {
 	now := time.Now()
-	s.Categories = []models.Category{
+	defaultCategories := []models.Category{
 		{
 			ID:          "1",
 			Name:        "Soporte Técnico",
@@ -337,7 +341,12 @@ func (s *Store) initializeDefaultCategories() {
 		},
 	}
 
-	// Guardar en archivo
+	// Actualizar categorías dentro del lock
+	s.mu.Lock()
+	s.Categories = defaultCategories
+	s.mu.Unlock()
+
+	// Guardar en archivo (esto adquiere su propio lock)
 	s.SaveCategories()
 }
 
@@ -433,42 +442,27 @@ func (s *Store) GetTicket(id string) (*models.Ticket, error) {
 }
 
 // UpdateTicket actualiza un ticket existente
-func (s *Store) UpdateTicket(id string, updates models.TicketUpdateRequest) (*models.Ticket, error) {
+func (s *Store) UpdateTicket(ticket models.Ticket) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	for i, ticket := range s.Tickets {
-		if ticket.ID == id {
-			// Actualizar campos si se proporcionan
-			if updates.Status != "" {
-				s.Tickets[i].Status = updates.Status
-			}
-			if updates.Priority != "" {
-				s.Tickets[i].Priority = updates.Priority
-			}
-			if updates.Category != "" {
-				s.Tickets[i].Category = updates.Category
+	for i, existingTicket := range s.Tickets {
+		if existingTicket.ID == ticket.ID {
+			// Preservar mensajes existentes si no se proporcionan
+			if len(ticket.Messages) == 0 {
+				ticket.Messages = existingTicket.Messages
 			}
 
-			// Especial manejo para asignación
-			if updates.AssignedTo != s.Tickets[i].AssignedTo {
-				s.Tickets[i].AssignedTo = updates.AssignedTo
+			// Asegurar que la fecha de actualización se establece
+			ticket.UpdatedAt = time.Now()
 
-				// Actualizar estado basado en asignación
-				if updates.AssignedTo != "" {
-					s.Tickets[i].Status = "assigned"
-				} else if s.Tickets[i].Status == "assigned" {
-					s.Tickets[i].Status = "open"
-				}
-			}
-
-			s.Tickets[i].UpdatedAt = time.Now()
-			s.SaveTickets()
-			return &s.Tickets[i], nil
+			// Actualizar el ticket
+			s.Tickets[i] = ticket
+			return s.SaveTickets()
 		}
 	}
 
-	return nil, fmt.Errorf("Ticket no encontrado: %s", id)
+	return fmt.Errorf("Ticket no encontrado: %s", ticket.ID)
 }
 
 // AddMessageToTicket agrega un mensaje a un ticket
@@ -680,7 +674,7 @@ func (s *Store) BroadcastMessage(ticketID string, message models.Message) {
 }
 
 // CreateFAQ crea una nueva FAQ
-func (s *Store) CreateFAQ(faq *models.FAQ) (*models.FAQ, error) {
+func (s *Store) createFAQInternal(faq *models.FAQ) (*models.FAQ, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -707,8 +701,14 @@ func (s *Store) CreateFAQ(faq *models.FAQ) (*models.FAQ, error) {
 	return faq, nil
 }
 
+// CreateFAQ crea una nueva FAQ (implementación para la interfaz)
+func (s *Store) CreateFAQ(faq models.FAQ) error {
+	_, err := s.createFAQInternal(&faq)
+	return err
+}
+
 // GetUsers devuelve todos los usuarios
-func (s *Store) GetUsers() []models.User {
+func (s *Store) GetUsers() ([]models.User, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -716,7 +716,7 @@ func (s *Store) GetUsers() []models.User {
 	usersCopy := make([]models.User, len(s.Users))
 	copy(usersCopy, s.Users)
 
-	return usersCopy
+	return usersCopy, nil
 }
 
 // GetUser obtiene un usuario por ID
@@ -744,19 +744,20 @@ func (s *Store) AddUser(user models.User) {
 }
 
 // UpdateUser actualiza un usuario existente
-func (s *Store) UpdateUser(id string, updates models.User) error {
+func (s *Store) UpdateUser(user models.User) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	for i, user := range s.Users {
-		if user.ID == id {
-			updates.ID = id // Asegurar que el ID no cambie
-			s.Users[i] = updates
-			return nil
+	for i, existingUser := range s.Users {
+		if existingUser.ID == user.ID {
+			// Update user fields
+			user.UpdatedAt = time.Now()
+			s.Users[i] = user
+			return s.SaveUsers()
 		}
 	}
 
-	return fmt.Errorf("usuario con ID %s no encontrado", id)
+	return fmt.Errorf("usuario con ID %s no encontrado", user.ID)
 }
 
 // DeleteUser elimina un usuario por ID
@@ -768,9 +769,276 @@ func (s *Store) DeleteUser(id string) error {
 		if user.ID == id {
 			// Eliminar usuario
 			s.Users = append(s.Users[:i], s.Users[i+1:]...)
-			return nil
+			return s.SaveUsers()
 		}
 	}
 
 	return fmt.Errorf("usuario con ID %s no encontrado", id)
+}
+
+// GetUserByEmail finds a user by email
+func (s *Store) GetUserByEmail(email string) (*models.User, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, user := range s.Users {
+		if user.Email == email {
+			// Create a copy to avoid race conditions
+			userCopy := user
+			return &userCopy, nil
+		}
+	}
+
+	return nil, fmt.Errorf("user with email %s not found", email)
+}
+
+// CreateUser adds a new user
+func (s *Store) CreateUser(user models.User) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Ensure user has an ID
+	if user.ID == "" {
+		user.ID = uuid.New().String()
+	}
+
+	// Set timestamps if not already set
+	if user.CreatedAt.IsZero() {
+		user.CreatedAt = time.Now()
+	}
+	if user.UpdatedAt.IsZero() {
+		user.UpdatedAt = time.Now()
+	}
+
+	s.Users = append(s.Users, user)
+	return s.SaveUsers()
+}
+
+// GetTickets returns all tickets
+func (s *Store) GetTickets() ([]models.Ticket, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	// Create a copy to avoid race conditions
+	tickets := make([]models.Ticket, len(s.Tickets))
+	copy(tickets, s.Tickets)
+
+	return tickets, nil
+}
+
+// CreateTicket adds a new ticket
+func (s *Store) CreateTicket(ticket models.Ticket) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Ensure ticket has an ID
+	if ticket.ID == "" {
+		ticket.ID = uuid.New().String()
+	}
+
+	// Set timestamps if not already set
+	if ticket.CreatedAt.IsZero() {
+		ticket.CreatedAt = time.Now()
+	}
+	if ticket.UpdatedAt.IsZero() {
+		ticket.UpdatedAt = time.Now()
+	}
+
+	s.Tickets = append(s.Tickets, ticket)
+	return s.SaveTickets()
+}
+
+// DeleteTicket deletes a ticket by ID
+func (s *Store) DeleteTicket(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Find ticket index
+	for i, ticket := range s.Tickets {
+		if ticket.ID == id {
+			// Remove ticket
+			s.Tickets = append(s.Tickets[:i], s.Tickets[i+1:]...)
+			return s.SaveTickets()
+		}
+	}
+
+	return fmt.Errorf("ticket with ID %s not found", id)
+}
+
+// AddTicketMessage adds a message to a ticket
+func (s *Store) AddTicketMessage(ticketID string, message models.Message) error {
+	_, err := s.AddMessageToTicket(ticketID, message)
+	return err
+}
+
+// GetCategories devuelve todas las categorías
+func (s *Store) GetCategories() ([]models.Category, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	// Crear una copia para evitar problemas de concurrencia
+	categoriesCopy := make([]models.Category, len(s.Categories))
+	copy(categoriesCopy, s.Categories)
+
+	return categoriesCopy, nil
+}
+
+// GetCategory obtiene una categoría por ID
+func (s *Store) GetCategory(id string) (*models.Category, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, category := range s.Categories {
+		if category.ID == id {
+			// Crear una copia para evitar problemas de concurrencia
+			categoryCopy := category
+			return &categoryCopy, nil
+		}
+	}
+
+	return nil, fmt.Errorf("categoría con ID %s no encontrada", id)
+}
+
+// CreateCategory crea una nueva categoría
+func (s *Store) CreateCategory(category models.Category) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Asegurar que la categoría tiene un ID
+	if category.ID == "" {
+		category.ID = uuid.New().String()
+	}
+
+	// Establecer marcas de tiempo si no están ya establecidas
+	now := time.Now()
+	if category.CreatedAt.IsZero() {
+		category.CreatedAt = now
+	}
+	if category.UpdatedAt.IsZero() {
+		category.UpdatedAt = now
+	}
+
+	s.Categories = append(s.Categories, category)
+	return s.SaveCategories()
+}
+
+// UpdateCategory actualiza una categoría existente
+func (s *Store) UpdateCategory(category models.Category) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, existingCategory := range s.Categories {
+		if existingCategory.ID == category.ID {
+			// Actualizar marca de tiempo
+			category.UpdatedAt = time.Now()
+			s.Categories[i] = category
+			return s.SaveCategories()
+		}
+	}
+
+	return fmt.Errorf("categoría con ID %s no encontrada", category.ID)
+}
+
+// DeleteCategory elimina una categoría por ID
+func (s *Store) DeleteCategory(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, category := range s.Categories {
+		if category.ID == id {
+			// Eliminar categoría
+			s.Categories = append(s.Categories[:i], s.Categories[i+1:]...)
+			return s.SaveCategories()
+		}
+	}
+
+	return fmt.Errorf("categoría con ID %s no encontrada", id)
+}
+
+// GetFAQs devuelve todas las FAQs
+func (s *Store) GetFAQs() ([]models.FAQ, error) {
+	faqs := s.GetAllFAQs()
+	return faqs, nil
+}
+
+// GetFAQsByStatus devuelve FAQs filtradas por estado de publicación
+func (s *Store) GetFAQsByStatus(published bool) ([]models.FAQ, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	// Crear una copia filtrada
+	filteredFAQs := make([]models.FAQ, 0)
+	for _, faq := range s.FAQs {
+		if faq.IsPublished == published {
+			filteredFAQs = append(filteredFAQs, faq)
+		}
+	}
+
+	return filteredFAQs, nil
+}
+
+// GetFAQ obtiene una FAQ por ID
+func (s *Store) GetFAQ(id int) (*models.FAQ, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, faq := range s.FAQs {
+		if faq.ID == id {
+			// Crear una copia para evitar problemas de concurrencia
+			faqCopy := faq
+			return &faqCopy, nil
+		}
+	}
+
+	return nil, fmt.Errorf("FAQ con ID %d no encontrada", id)
+}
+
+// UpdateFAQ actualiza una FAQ existente
+func (s *Store) UpdateFAQ(faq models.FAQ) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, existingFAQ := range s.FAQs {
+		if existingFAQ.ID == faq.ID {
+			// Actualizar marca de tiempo
+			faq.UpdatedAt = time.Now()
+			s.FAQs[i] = faq
+			return s.SaveFAQs()
+		}
+	}
+
+	return fmt.Errorf("FAQ con ID %d no encontrada", faq.ID)
+}
+
+// DeleteFAQ elimina una FAQ por ID
+func (s *Store) DeleteFAQ(id int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, faq := range s.FAQs {
+		if faq.ID == id {
+			// Eliminar FAQ
+			s.FAQs = append(s.FAQs[:i], s.FAQs[i+1:]...)
+			return s.SaveFAQs()
+		}
+	}
+
+	return fmt.Errorf("FAQ con ID %d no encontrada", id)
+}
+
+// ToggleFAQPublish cambia el estado de publicación de una FAQ
+func (s *Store) ToggleFAQPublish(id int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, faq := range s.FAQs {
+		if faq.ID == id {
+			// Cambiar estado de publicación
+			s.FAQs[i].IsPublished = !s.FAQs[i].IsPublished
+			s.FAQs[i].UpdatedAt = time.Now()
+			return s.SaveFAQs()
+		}
+	}
+
+	return fmt.Errorf("FAQ con ID %d no encontrada", id)
 }

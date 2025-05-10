@@ -1,11 +1,11 @@
 # GrowDesk Widget Docker Compose
-version: '3.8'
 
 services:
   widget-core:
     build:
       context: ./widget-core
       dockerfile: Dockerfile
+    container_name: growdesk-widget-core
     ports:
       - "3030:3030"
     volumes:
@@ -14,40 +14,57 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3030
+      - WIDGET_API_URL=http://widget-api:3000
     restart: unless-stopped
     networks:
       - growdesk-widget-network
       - growdesk-main-network
+    depends_on:
+      - widget-api
 
   widget-api:
     build:
       context: ./widget-api
       dockerfile: Dockerfile
+    container_name: growdesk-widget-api
     ports:
       - "3000:3000"
     volumes:
       - ./widget-api:/app
       - ./widget-api/data:/app/data
+      - ./.env:/app/.env
     environment:
       - PORT=3000
+      - DATA_DIR=/app/data
       - GROWDESK_API_URL=http://growdesk-backend:8080
       - GROWDESK_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiJhZG1pbi0xMjMiLCJlbWFpbCI6ImFkbWluQGdyb3dkZXNrLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTcyNDA4ODQwMH0.8J5ayPvA4B-1vF5NaqRXycW1pmIl9qjKP6Ddj4Ot_Cw
-      - WIDGET_BASE_URL=http://localhost:3030
-      - WIDGET_API_URL=http://localhost:3000
+      - WIDGET_BASE_URL=http://widget-core:3030
+      - WIDGET_API_URL=http://widget-api:3000
       - GIN_MODE=debug
       - JWT_SECRET=clave_secreta_desarrollo_local
       - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:3030,http://localhost:8090
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=growdesk
+      - USE_POSTGRES=true
+      - MIGRATE_DATA=true
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
       - growdesk-widget-network
       - growdesk-main-network
+    depends_on:
+      growdesk-db:
+        condition: service_healthy
 
   demo-site:
     build:
       context: ./examples/simple-demo
       dockerfile: Dockerfile
+    container_name: growdesk-demo-site
     ports:
       - "8090:8090"
     volumes:

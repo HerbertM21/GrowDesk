@@ -1,282 +1,238 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/data"
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/middleware"
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/models"
+	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/utils"
 )
 
-// CategoryHandler contiene manejadores para operaciones de categoría
+// CategoryHandler contiene manejadores para categorías
 type CategoryHandler struct {
-	Store *data.Store
+	Store data.DataStore
 }
 
 // GetAllCategories devuelve todas las categorías
 func (h *CategoryHandler) GetAllCategories(w http.ResponseWriter, r *http.Request) {
-	// Solo maneja solicitudes GET
+	// Esta función solo maneja solicitudes GET
 	if r.Method != http.MethodGet {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Devolver todas las categorías
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(h.Store.Categories)
+	// Establecer CORS
+	utils.SetCORS(w)
+
+	// Obtener categorías del almacén
+	categories, err := h.Store.GetCategories()
+	if err != nil {
+		http.Error(w, "Error al obtener categorías", http.StatusInternalServerError)
+		return
+	}
+
+	// Devolver categorías como JSON
+	utils.WriteJSON(w, http.StatusOK, categories)
 }
 
-// GetCategory returns a specific category by ID
+// GetCategory obtiene una categoría por ID
 func (h *CategoryHandler) GetCategory(w http.ResponseWriter, r *http.Request) {
-	// Solo maneja solicitudes GET
+	// Esta función solo maneja solicitudes GET
 	if r.Method != http.MethodGet {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Extraer el ID de la categoría desde la URL
-	// Formato de URL: /api/categories/:id
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) < 3 {
-		http.Error(w, "ID de categoría inválido", http.StatusBadRequest)
+	// Establecer CORS
+	utils.SetCORS(w)
+
+	// Obtener ID de la URL
+	path := r.URL.Path
+	segments := strings.Split(path, "/")
+	if len(segments) < 4 {
+		http.Error(w, "URL de categoría inválida", http.StatusBadRequest)
 		return
 	}
 
-	categoryID := parts[len(parts)-1]
+	categoryID := segments[3]
 
-	// Encontrar la categoría
-	var category *models.Category
-	for i, c := range h.Store.Categories {
-		if c.ID == categoryID {
-			category = &h.Store.Categories[i]
-			break
-		}
-	}
-
-	if category == nil {
+	// Obtener categoría del almacén
+	category, err := h.Store.GetCategory(categoryID)
+	if err != nil {
 		http.Error(w, "Categoría no encontrada", http.StatusNotFound)
 		return
 	}
 
-	// Devolver la categoría
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(category)
+	// Devolver categoría como JSON
+	utils.WriteJSON(w, http.StatusOK, category)
 }
 
 // CreateCategory crea una nueva categoría
 func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request) {
-	// Solo maneja solicitudes POST
+	// Esta función solo maneja solicitudes POST
 	if r.Method != http.MethodPost {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Comprobar si el usuario es administrador
+	// Establecer CORS
+	utils.SetCORS(w)
+
+	// Verificar permisos de administrador
 	role, ok := r.Context().Value(middleware.RoleKey).(string)
 	if !ok || role != "admin" {
-		http.Error(w, "Prohibido: Solo los administradores pueden crear categorías", http.StatusForbidden)
+		http.Error(w, "No autorizado", http.StatusUnauthorized)
 		return
 	}
 
-	// Parsear el cuerpo de la solicitud
-	var categoryReq struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
-		Color       string `json:"color"`
-		Icon        string `json:"icon"`
-		Active      bool   `json:"active"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&categoryReq); err != nil {
-		http.Error(w, "El cuerpo de la solicitud es inválido", http.StatusBadRequest)
+	// Decodificar cuerpo de la solicitud
+	var category models.Category
+	if err := utils.DecodeJSON(r, &category); err != nil {
+		http.Error(w, "Error al leer datos de la categoría", http.StatusBadRequest)
 		return
 	}
 
 	// Validar campos requeridos
-	if categoryReq.Name == "" {
+	if category.Name == "" {
 		http.Error(w, "El nombre de la categoría es requerido", http.StatusBadRequest)
 		return
 	}
 
-	// Establecer valores predeterminados si no se proporcionan
-	if categoryReq.Color == "" {
-		categoryReq.Color = "#2196F3" // Valor predeterminado azul
+	// Establecer valores por defecto si no se proporcionan
+	if category.Color == "" {
+		category.Color = "#3498db" // Color azul por defecto
 	}
-	if categoryReq.Icon == "" {
-		categoryReq.Icon = "category" // Icono predeterminado
-	}
-
-	// Generar nuevo ID (ID incremental simple por ahora)
-	newID := "1"
-	if len(h.Store.Categories) > 0 {
-		lastID, _ := strconv.Atoi(h.Store.Categories[len(h.Store.Categories)-1].ID)
-		newID = strconv.Itoa(lastID + 1)
+	if category.Icon == "" {
+		category.Icon = "category" // Icono por defecto
 	}
 
-	// Crear nueva categoría
+	// Establecer ID y marcas de tiempo
+	category.ID = uuid.New().String()
 	now := time.Now()
-	newCategory := models.Category{
-		ID:          newID,
-		Name:        categoryReq.Name,
-		Description: categoryReq.Description,
-		Color:       categoryReq.Color,
-		Icon:        categoryReq.Icon,
-		Active:      categoryReq.Active,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+	category.CreatedAt = now
+	category.UpdatedAt = now
+	category.Active = true
+
+	// Guardar en el almacén
+	if err := h.Store.CreateCategory(category); err != nil {
+		http.Error(w, "Error al crear categoría", http.StatusInternalServerError)
+		return
 	}
 
-	// Agregar al almacén y guardar
-	h.Store.Categories = append(h.Store.Categories, newCategory)
-	h.Store.SaveCategories()
-
-	// Devolver la categoría creada
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(newCategory)
+	// Devolver categoría creada
+	utils.WriteJSON(w, http.StatusCreated, category)
 }
 
 // UpdateCategory actualiza una categoría existente
 func (h *CategoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
-	// Solo maneja solicitudes PUT
+	// Esta función solo maneja solicitudes PUT
 	if r.Method != http.MethodPut {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Comprobar si el usuario es administrador
+	// Establecer CORS
+	utils.SetCORS(w)
+
+	// Verificar permisos de administrador
 	role, ok := r.Context().Value(middleware.RoleKey).(string)
 	if !ok || role != "admin" {
-		http.Error(w, "Prohibido: Solo los administradores pueden actualizar categorías", http.StatusForbidden)
+		http.Error(w, "No autorizado", http.StatusUnauthorized)
 		return
 	}
 
-	// Extraer el ID de la categoría desde la URL
-	// Formato de URL: /api/categories/:id
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) < 3 {
-		http.Error(w, "ID de categoría inválido", http.StatusBadRequest)
+	// Obtener ID de la URL
+	path := r.URL.Path
+	segments := strings.Split(path, "/")
+	if len(segments) < 4 {
+		http.Error(w, "URL de categoría inválida", http.StatusBadRequest)
 		return
 	}
 
-	categoryID := parts[len(parts)-1]
+	categoryID := segments[3]
 
-	// Parsear el cuerpo de la solicitud
-	var updateReq struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
-		Color       string `json:"color"`
-		Icon        string `json:"icon"`
-		Active      *bool  `json:"active"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&updateReq); err != nil {
-		http.Error(w, "El cuerpo de la solicitud es inválido", http.StatusBadRequest)
-		return
-	}
-
-	// Encontrar la categoría
-	var categoryIndex = -1
-	for i, c := range h.Store.Categories {
-		if c.ID == categoryID {
-			categoryIndex = i
-			break
-		}
-	}
-
-	if categoryIndex == -1 {
+	// Obtener categoría existente
+	existingCategory, err := h.Store.GetCategory(categoryID)
+	if err != nil {
 		http.Error(w, "Categoría no encontrada", http.StatusNotFound)
 		return
 	}
 
-	// Actualizar campos si se proporcionan
-	if updateReq.Name != "" {
-		h.Store.Categories[categoryIndex].Name = updateReq.Name
+	// Decodificar cuerpo de la solicitud
+	var updates models.Category
+	if err := utils.DecodeJSON(r, &updates); err != nil {
+		http.Error(w, "Error al leer datos de actualización", http.StatusBadRequest)
+		return
 	}
-	if updateReq.Description != "" {
-		h.Store.Categories[categoryIndex].Description = updateReq.Description
+
+	// Actualizar campos de la categoría existente
+	if updates.Name != "" {
+		existingCategory.Name = updates.Name
 	}
-	if updateReq.Color != "" {
-		h.Store.Categories[categoryIndex].Color = updateReq.Color
+	if updates.Description != "" {
+		existingCategory.Description = updates.Description
 	}
-	if updateReq.Icon != "" {
-		h.Store.Categories[categoryIndex].Icon = updateReq.Icon
+	if updates.Color != "" {
+		existingCategory.Color = updates.Color
 	}
-	if updateReq.Active != nil {
-		h.Store.Categories[categoryIndex].Active = *updateReq.Active
+	if updates.Icon != "" {
+		existingCategory.Icon = updates.Icon
 	}
+
+	// Actualizar campo active explícitamente si se proporciona
+	existingCategory.Active = updates.Active
 
 	// Actualizar marca de tiempo
-	h.Store.Categories[categoryIndex].UpdatedAt = time.Now()
+	existingCategory.UpdatedAt = time.Now()
 
-	// Guardar cambios
-	h.Store.SaveCategories()
+	// Guardar en el almacén
+	if err := h.Store.UpdateCategory(*existingCategory); err != nil {
+		http.Error(w, "Error al actualizar categoría", http.StatusInternalServerError)
+		return
+	}
 
-	// Devolver la categoría actualizada
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(h.Store.Categories[categoryIndex])
+	// Devolver categoría actualizada
+	utils.WriteJSON(w, http.StatusOK, existingCategory)
 }
 
 // DeleteCategory elimina una categoría existente
 func (h *CategoryHandler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
-	// Solo maneja solicitudes DELETE
+	// Esta función solo maneja solicitudes DELETE
 	if r.Method != http.MethodDelete {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Comprobar si el usuario es administrador
+	// Establecer CORS
+	utils.SetCORS(w)
+
+	// Verificar permisos de administrador
 	role, ok := r.Context().Value(middleware.RoleKey).(string)
 	if !ok || role != "admin" {
-		http.Error(w, "Prohibido: Solo los administradores pueden eliminar categorías", http.StatusForbidden)
+		http.Error(w, "No autorizado", http.StatusUnauthorized)
 		return
 	}
 
-	// Extraer el ID de la categoría desde la URL
-	// Formato de URL: /api/categories/:id
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) < 3 {
-		http.Error(w, "ID de categoría inválido", http.StatusBadRequest)
+	// Obtener ID de la URL
+	path := r.URL.Path
+	segments := strings.Split(path, "/")
+	if len(segments) < 4 {
+		http.Error(w, "URL de categoría inválida", http.StatusBadRequest)
 		return
 	}
 
-	categoryID := parts[len(parts)-1]
+	categoryID := segments[3]
 
-	// Comprobar si alguna incidencia está usando esta categoría
-	for _, ticket := range h.Store.Tickets {
-		if ticket.Category == categoryID {
-			http.Error(w, "La categoría está en uso por una o más incidencias", http.StatusBadRequest)
-			return
-		}
-	}
-
-	// Encontrar y eliminar la categoría
-	var found bool
-	var updatedCategories []models.Category
-	for _, c := range h.Store.Categories {
-		if c.ID != categoryID {
-			updatedCategories = append(updatedCategories, c)
-		} else {
-			found = true
-		}
-	}
-
-	if !found {
-		http.Error(w, "Categoría no encontrada", http.StatusNotFound)
+	// Eliminar la categoría
+	if err := h.Store.DeleteCategory(categoryID); err != nil {
+		http.Error(w, "Error al eliminar categoría", http.StatusInternalServerError)
 		return
 	}
 
-	// Actualizar lista de categorías
-	h.Store.Categories = updatedCategories
-	h.Store.SaveCategories()
-
-	// Devolver éxito
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Categoría eliminada correctamente",
-	})
+	// Devolver respuesta exitosa
+	utils.WriteJSON(w, http.StatusOK, map[string]bool{"success": true})
 }

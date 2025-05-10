@@ -1,4 +1,4 @@
-version: '3.8'
+# GrowDesk Docker Compose
 
 services:
   frontend:
@@ -22,12 +22,15 @@ services:
     networks:
       - grow-network
     restart: unless-stopped
+    depends_on:
+      - backend
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: growdesk-backend
+    command: ["/app/server"]
     ports:
       - "8080:8080"
     networks:
@@ -36,34 +39,55 @@ services:
       - PORT=8080
       - DATA_DIR=/app/data
       - MOCK_AUTH=true
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=growdesk
+      - USE_POSTGRES=true
+      - MIGRATE_DATA=true
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - SYNC_SERVICE_URL=http://sync-server:8000/api/sync
     volumes:
       - backend_data:/app/data
+      - ./backend/.env:/app/.env
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+    depends_on:
+      - postgres
+      - redis
 
   sync-server:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: ./cmd/sync-server/Dockerfile
     container_name: growdesk-sync-server
-    command: ["go", "run", "cmd/sync-server/main.go"]
     ports:
       - "8000:8000"
     volumes:
       - backend_data:/app/data
       - ./backend/data:/backend/data
+      - ./backend/.env:/app/.env
     environment:
       - PORT=8000
       - DATA_DIR=/app/data
       - LOCAL_DATA_DIR=/backend/data
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=growdesk
+      - USE_POSTGRES=true
     networks:
       - grow-network
     restart: unless-stopped
     depends_on:
+      - postgres
       - backend
 
   postgres:
@@ -78,6 +102,12 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backend/internal/db/schema.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - grow-network
 
@@ -87,6 +117,11 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - grow-network
 

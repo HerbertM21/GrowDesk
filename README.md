@@ -1,212 +1,113 @@
 # GrowDeskV2
 
-## Sistema Integrado de Gestión de Tickets y Soporte al Cliente
+Sistema completo de mesa de ayuda con panel de administración y widget de chat para integración en sitios web.
 
-GrowDeskV2 es una plataforma moderna de help desk y gestión de tickets de soporte, diseñada para simplificar la comunicación con clientes y la gestión eficiente de solicitudes de soporte.
+## Componentes
 
-## Requisitos Previos
+El sistema está compuesto por dos componentes principales:
 
-- **Docker**: versión 20.10.0 o superior
-- **Docker Compose**: versión 2.0.0 o superior
-- **Git**: para clonar el repositorio
+1. **GrowDesk**: Panel de administración y backend principal
+   - Frontend: Panel de administración
+   - Backend: API REST y servidor de WebSockets
+   - Sync-Server: Servidor de sincronización entre instancias
 
-## Estructura del Proyecto
+2. **GrowDesk-Widget**: Widget de chat para sitios web
+   - Widget-Core: Componente frontend del widget
+   - Widget-API: Backend para el widget
+   - Demo-Site: Sitio de demostración para probar el widget
 
-El proyecto está organizado en dos componentes principales:
+## Requisitos
 
-- **GrowDesk**: Sistema principal de gestión de tickets
-- **GrowDesk-Widget**: Widget embebible para sitios web de clientes
+- Docker
+- Docker Compose
 
-## Inicio Rápido con Docker
+## Configuración
 
-### 1. Clonar el repositorio
+El sistema incluye archivos de configuración predeterminados, pero puedes personalizarlos modificando los archivos `.env` en cada directorio.
+
+### Variables de entorno principales
+
+- **PostgreSQL**:
+  - `DB_HOST`: Host de la base de datos (por defecto: postgres)
+  - `DB_PORT`: Puerto de la base de datos (por defecto: 5432)
+  - `DB_USER`: Usuario de la base de datos (por defecto: postgres)
+  - `DB_PASSWORD`: Contraseña de la base de datos (por defecto: postgres)
+  - `DB_NAME`: Nombre de la base de datos (por defecto: growdesk)
+
+- **Backend**:
+  - `PORT`: Puerto del backend (por defecto: 8080)
+  - `DATA_DIR`: Directorio de datos (por defecto: /app/data)
+  - `MOCK_AUTH`: Usar autenticación simulada para desarrollo (por defecto: true)
+
+## Ejecución
+
+Para ejecutar todo el sistema:
 
 ```bash
-git clone https://github.com/HerbertM21/GrowDesk.git
-cd GrowDeskV2
+docker compose up
 ```
 
-### 2. Iniciar el Sistema Principal (GrowDesk)
+Para ejecutar en segundo plano:
 
 ```bash
-# Navegar al directorio GrowDesk
-cd GrowDesk
-
-# Iniciar todos los servicios con Docker Compose
 docker compose up -d
 ```
 
-Este comando iniciará todos los servicios necesarios:
-- **Frontend**: Interfaz de usuario Vue.js (accesible en http://localhost:3000)
-- **Backend**: API y servidor mock para desarrollo (accesible en http://localhost:8080)
-- **Base de datos**: PostgreSQL (puerto 5433)
-- **Redis**: Para caché y gestión de sesiones (puerto 6379)
+## Acceso a los servicios
 
-### 3. Iniciar el Widget (opcional)
+Una vez que el sistema esté en ejecución, podrás acceder a los siguientes servicios:
+
+- **Panel de administración**: http://localhost:3001
+- **API Backend**: http://localhost:8080
+- **Widget Demo**: http://localhost:8090
+- **Widget API**: http://localhost:3000
+- **Widget Core**: http://localhost:3030
+
+## Base de datos PostgreSQL
+
+El sistema utiliza PostgreSQL para almacenar todos los datos. La base de datos está configurada para persistir los datos en un volumen Docker, por lo que no se perderán al reiniciar los contenedores.
+
+### Datos iniciales
+
+La primera vez que se inicie el sistema, se migrarán automáticamente los datos de los archivos JSON a PostgreSQL si existen.
+
+### Acceso directo a PostgreSQL
+
+Puedes acceder directamente a la base de datos mediante:
 
 ```bash
-# Navegar al directorio GrowDesk-Widget
-cd ../GrowDesk-Widget
-
-# Iniciar todos los servicios para el widget
-docker compose up -d
+docker exec -it growdesk-db psql -U postgres -d growdesk
 ```
 
-Este comando iniciará todos los servicios del widget:
-- **Widget Core**: Núcleo del widget (accesible en http://localhost:5174)
-- **Widget API**: API para la comunicación del widget (accesible en http://localhost:8082)
-- **Demo Site**: Sitio web de demostración con el widget integrado (accesible en http://localhost:8090)
-- **Base de datos**: PostgreSQL para el widget (puerto 5434)
+## Desarrollo
 
-## Acceso a las Aplicaciones
+Para desarrollar el sistema, puedes utilizar los siguientes comandos:
 
-Una vez que todos los contenedores estén en funcionamiento, puedes acceder a:
-
-- **Panel de Administración**: http://localhost:3000
-- **API Backend (para pruebas)**: http://localhost:8080/api/health
-- **Demo del Widget**: http://localhost:8090
-
-## Credenciales de Prueba
-
-Para acceder al sistema de administración, usa las siguientes credenciales:
-
-- **Administrador**:
-  - Email: admin@example.com
-  - Contraseña: password
-- **Asistente**:
-  - Email: asistente@example.com
-  - Contraseña: password
-- **Empleado**:
-  - Email: empleado@example.com
-  - Contraseña: password
-
-## Gestión de los Contenedores
-
-### Detener los servicios
+### Reconstruir servicios específicos
 
 ```bash
-# Para el sistema principal
-cd GrowDesk
-docker compose down
-
-# Para el widget
-cd ../GrowDesk-Widget
-docker compose down
+docker compose build frontend backend
+docker compose up -d frontend backend
 ```
 
 ### Ver logs
 
 ```bash
-# Logs del frontend
-docker logs growdesk-frontend
-
-# Logs del backend
-docker logs growdesk-backend
+docker compose logs -f backend
 ```
 
-### Reiniciar servicios específicos
-
-```bash
-# Reiniciar solo el frontend
-docker compose restart frontend
-
-# Reiniciar solo el backend
-docker compose restart backend
-```
-
-### Limpieza completa
-
-Para eliminar todos los contenedores, redes y volúmenes:
-
-```bash
-# Sistema principal
-cd GrowDesk
-docker compose down -v
-
-# Widget
-cd ../GrowDesk-Widget
-docker compose down -v
-```
-
-## Configuración de Puertos
-
-| Componente            | Puerto | Descripción                          |
-| --------------------- | ------ | ------------------------------------- |
-| Frontend              | 3000   | Panel de administración de GrowDesk  |
-| Backend               | 8080   | Servidor mock para datos de prueba    |
-| PostgreSQL (GrowDesk) | 5433   | Base de datos para el sistema principal |
-| Redis                 | 6379   | Caché y gestión de sesiones          |
-| Widget Core           | 5174   | Interfaz del widget                  |
-| Widget API            | 8082   | API para la comunicación del widget  |
-| Demo Site             | 8090   | Sitio web de demostración con widget |
-| PostgreSQL (Widget)   | 5434   | Base de datos para el widget         |
-
-## Componentes del sistema
-
-- **Backend Go**: API principal en Go que gestiona tickets, categorías y FAQs
-- **Frontend**: Panel de administración para gestionar tickets y configuraciones
-- **Widget Core**: Frontend del widget escrito en React/TypeScript
-- **Widget API**: Backend del widget adaptado para comunicarse con el backend principal en Go
-- **Demo Site**: Sitio demostrativo para probar el widget
-
-## Iniciar el sistema integrado
-
-Para iniciar todo el sistema usando Docker Compose:
-
-```bash
-# Desde la raíz del proyecto
-docker-compose up -d
-```
-
-La configuración incluye:
-
-- Backend Go: http://localhost:8080
-- Frontend (Panel Admin): http://localhost:3001
-- Widget Core: http://localhost:3030
-- Widget API: http://localhost:3000
-- Demo Site: http://localhost:8090
-
-## Desarrollo independiente
-
-### Backend Go
-
-Para iniciar sólo el backend Go:
-
-```bash
-cd GrowDesk/backend
-go build -o build/backend ./cmd/server
-./build/backend -port 8080 -data-dir ./data -mock-auth=true
-```
-
-### Frontend (Panel Admin)
-
-Para iniciar sólo el frontend:
-
-```bash
-cd GrowDesk/frontend
-npm install
-npm run dev
-```
-
-### Widget
-
-Para iniciar sólo el widget:
-
-```bash
-cd GrowDesk-Widget
-docker-compose up -d
-```
-
-## Estructura del proyecto
+## Estructura de directorios
 
 ```
 GrowDeskV2/
-├── GrowDesk/
-│   ├── backend/       # Backend Go
-│   └── frontend/      # Frontend React del panel admin
-├── GrowDesk-Widget/
-│   ├── widget-api/    # API del widget en Go
-│   ├── widget-core/   # Frontend del widget en React
-│   └── examples/      # Ejemplos de integración
-└── docker-compose.yml # Configuración para todo el sistema
+├── GrowDesk/                # Panel de administración y backend
+│   ├── backend/             # Backend API
+│   ├── frontend/            # Panel de administración
+│   └── docker-compose.yml   # Configuración de Docker para GrowDesk
+├── GrowDesk-Widget/         # Widget de chat
+│   ├── widget-api/          # API del widget
+│   ├── widget-core/         # Componente frontend del widget
+│   ├── examples/            # Ejemplos de integración
+│   └── docker-compose.yml   # Configuración de Docker para Widget
+└── docker-compose.yml       # Configuración de Docker principal
 ```

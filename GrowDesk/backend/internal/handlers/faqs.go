@@ -1,9 +1,7 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,104 +10,69 @@ import (
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/data"
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/middleware"
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/models"
+	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/utils"
 )
 
-// FAQHandler contiene manejadores para operaciones de FAQ
+// FAQHandler contiene manejadores para FAQs
 type FAQHandler struct {
-	Store *data.Store
+	Store data.DataStore
 }
 
-// GetAllFAQs devuelve todas las FAQs (ruta de administrador)
+// GetAllFAQs devuelve todas las FAQs
 func (h *FAQHandler) GetAllFAQs(w http.ResponseWriter, r *http.Request) {
-	// Establecer contexto de timeout
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
-
-	// Solo maneja solicitudes GET
+	// Esta función solo maneja solicitudes GET
 	if r.Method != http.MethodGet {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Crear canal para respuesta
-	faqsChan := make(chan []models.FAQ, 1)
-	errChan := make(chan error, 1)
+	// Establecer CORS
+	utils.SetCORS(w)
 
-	// Obtener FAQs en una goroutine
-	go func() {
-		faqs := h.Store.GetAllFAQs()
-		select {
-		case faqsChan <- faqs:
-		case <-ctx.Done():
-			errChan <- ctx.Err()
-		}
-	}()
+	// Determinar si se debe filtrar por estado de publicación
+	published := r.URL.Query().Get("published")
 
-	// Esperar respuesta o timeout
-	select {
-	case faqs := <-faqsChan:
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(faqs)
-	case err := <-errChan:
-		if err == context.DeadlineExceeded {
-			http.Error(w, "Tiempo de espera de solicitud agotado", http.StatusGatewayTimeout)
-		} else {
-			http.Error(w, "Error interno del servidor", http.StatusInternalServerError)
-		}
-	case <-ctx.Done():
-		http.Error(w, "Tiempo de espera de solicitud agotado", http.StatusGatewayTimeout)
+	var faqs []models.FAQ
+	var err error
+
+	if published != "" {
+		// Convertir string a bool
+		isPublished := published == "true"
+		faqs, err = h.Store.GetFAQsByStatus(isPublished)
+	} else {
+		// Obtener todas las FAQs
+		faqs, err = h.Store.GetFAQs()
 	}
+
+	if err != nil {
+		http.Error(w, "Error al obtener FAQs", http.StatusInternalServerError)
+		return
+	}
+
+	// Devolver FAQs como JSON
+	utils.WriteJSON(w, http.StatusOK, faqs)
 }
 
-// GetPublishedFAQs devuelve solo las FAQs publicadas (ruta pública)
+// GetPublishedFAQs devuelve solo las FAQs publicadas
 func (h *FAQHandler) GetPublishedFAQs(w http.ResponseWriter, r *http.Request) {
-	// Establecer contexto de timeout
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
-
-	// Solo maneja solicitudes GET
+	// Esta función solo maneja solicitudes GET
 	if r.Method != http.MethodGet {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Comprobar credenciales de widget
-	widgetID := r.Header.Get("X-Widget-ID")
-	widgetToken := r.Header.Get("X-Widget-Token")
+	// Establecer CORS
+	utils.SetCORS(w)
 
-	// Log credenciales de widget para depuración
-	if widgetID != "" {
-		fmt.Printf("Solicitud de widget - ID: %s, Token: %s\n", widgetID, widgetToken)
+	// Obtener FAQs publicadas
+	faqs, err := h.Store.GetFAQsByStatus(true)
+	if err != nil {
+		http.Error(w, "Error al obtener FAQs", http.StatusInternalServerError)
+		return
 	}
 
-	// Crear canal para respuesta
-	faqsChan := make(chan []models.FAQ, 1)
-	errChan := make(chan error, 1)
-
-	// Obtener FAQs publicadas en una goroutine
-	go func() {
-		faqs := h.Store.GetPublishedFAQs()
-		select {
-		case faqsChan <- faqs:
-		case <-ctx.Done():
-			errChan <- ctx.Err()
-		}
-	}()
-
-	// Esperar respuesta o timeout
-	select {
-	case faqs := <-faqsChan:
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(faqs)
-	case err := <-errChan:
-		if err == context.DeadlineExceeded {
-			http.Error(w, "Tiempo de espera de solicitud agotado", http.StatusGatewayTimeout)
-		} else {
-			http.Error(w, "Error interno del servidor", http.StatusInternalServerError)
-		}
-	case <-ctx.Done():
-		http.Error(w, "Tiempo de espera de solicitud agotado", http.StatusGatewayTimeout)
-	}
+	// Devolver FAQs como JSON
+	utils.WriteJSON(w, http.StatusOK, faqs)
 }
 
 // GetFAQ devuelve una FAQ específica por ID
@@ -136,16 +99,9 @@ func (h *FAQHandler) GetFAQ(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Encontrar la FAQ
-	var faq *models.FAQ
-	for i, f := range h.Store.FAQs {
-		if f.ID == id {
-			faq = &h.Store.FAQs[i]
-			break
-		}
-	}
-
-	if faq == nil {
+	// Obtener FAQ por ID
+	faq, err := h.Store.GetFAQ(id)
+	if err != nil {
 		http.Error(w, "FAQ no encontrada", http.StatusNotFound)
 		return
 	}
@@ -157,55 +113,48 @@ func (h *FAQHandler) GetFAQ(w http.ResponseWriter, r *http.Request) {
 
 // CreateFAQ crea una nueva FAQ
 func (h *FAQHandler) CreateFAQ(w http.ResponseWriter, r *http.Request) {
-	// Establecer contexto de timeout
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
-
-	// Solo maneja solicitudes POST
+	// Esta función solo maneja solicitudes POST
 	if r.Method != http.MethodPost {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Parsear el cuerpo de la solicitud
-	var faq models.FAQ
-	if err := json.NewDecoder(r.Body).Decode(&faq); err != nil {
-		http.Error(w, "El cuerpo de la solicitud es inválido", http.StatusBadRequest)
+	// Establecer CORS
+	utils.SetCORS(w)
+
+	// Verificar permisos de administrador
+	role, ok := r.Context().Value(middleware.RoleKey).(string)
+	if !ok || role != "admin" {
+		http.Error(w, "No autorizado", http.StatusUnauthorized)
 		return
 	}
 
-	// Crear canal para respuesta
-	faqChan := make(chan *models.FAQ, 1)
-	errChan := make(chan error, 1)
-
-	// Crear FAQ en una goroutine
-	go func() {
-		newFAQ, err := h.Store.CreateFAQ(&faq)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		select {
-		case faqChan <- newFAQ:
-		case <-ctx.Done():
-			errChan <- ctx.Err()
-		}
-	}()
-
-	// Esperar respuesta o timeout
-	select {
-	case newFAQ := <-faqChan:
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(newFAQ)
-	case err := <-errChan:
-		if err == context.DeadlineExceeded {
-			http.Error(w, "Tiempo de espera de solicitud agotado", http.StatusGatewayTimeout)
-		} else {
-			http.Error(w, "Error interno del servidor", http.StatusInternalServerError)
-		}
-	case <-ctx.Done():
-		http.Error(w, "Tiempo de espera de solicitud agotado", http.StatusGatewayTimeout)
+	// Decodificar cuerpo de la solicitud
+	var faq models.FAQ
+	if err := utils.DecodeJSON(r, &faq); err != nil {
+		http.Error(w, "Error al leer datos de la FAQ", http.StatusBadRequest)
+		return
 	}
+
+	// Validar campos requeridos
+	if faq.Question == "" || faq.Answer == "" {
+		http.Error(w, "La pregunta y la respuesta son requeridas", http.StatusBadRequest)
+		return
+	}
+
+	// Establecer marcas de tiempo
+	now := time.Now()
+	faq.CreatedAt = now
+	faq.UpdatedAt = now
+
+	// Guardar en el almacén
+	if err := h.Store.CreateFAQ(faq); err != nil {
+		http.Error(w, "Error al crear FAQ", http.StatusInternalServerError)
+		return
+	}
+
+	// Devolver FAQ creada
+	utils.WriteJSON(w, http.StatusCreated, faq)
 }
 
 // UpdateFAQ actualiza una FAQ existente
@@ -258,35 +207,31 @@ func (h *FAQHandler) UpdateFAQ(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Encontrar la FAQ
-	var faqIndex = -1
-	for i, f := range h.Store.FAQs {
-		if f.ID == id {
-			faqIndex = i
-			break
-		}
-	}
-
-	if faqIndex == -1 {
+	// Obtener la FAQ existente
+	faq, err := h.Store.GetFAQ(id)
+	if err != nil {
 		http.Error(w, "FAQ no encontrada", http.StatusNotFound)
 		return
 	}
 
 	// Actualizar campos
-	h.Store.FAQs[faqIndex].Question = updateReq.Question
-	h.Store.FAQs[faqIndex].Answer = updateReq.Answer
-	h.Store.FAQs[faqIndex].Category = updateReq.Category
+	faq.Question = updateReq.Question
+	faq.Answer = updateReq.Answer
+	faq.Category = updateReq.Category
 	if updateReq.IsPublished != nil {
-		h.Store.FAQs[faqIndex].IsPublished = *updateReq.IsPublished
+		faq.IsPublished = *updateReq.IsPublished
 	}
-	h.Store.FAQs[faqIndex].UpdatedAt = time.Now()
+	faq.UpdatedAt = time.Now()
 
 	// Guardar cambios
-	h.Store.SaveFAQs()
+	if err := h.Store.UpdateFAQ(*faq); err != nil {
+		http.Error(w, "Error al actualizar FAQ", http.StatusInternalServerError)
+		return
+	}
 
 	// Devolver la FAQ actualizada
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(h.Store.FAQs[faqIndex])
+	json.NewEncoder(w).Encode(faq)
 }
 
 // DeleteFAQ elimina una FAQ existente
@@ -320,25 +265,11 @@ func (h *FAQHandler) DeleteFAQ(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Encontrar y eliminar la FAQ
-	var found bool
-	var updatedFAQs []models.FAQ
-	for _, f := range h.Store.FAQs {
-		if f.ID != id {
-			updatedFAQs = append(updatedFAQs, f)
-		} else {
-			found = true
-		}
-	}
-
-	if !found {
-		http.Error(w, "FAQ no encontrada", http.StatusNotFound)
+	// Eliminar la FAQ
+	if err := h.Store.DeleteFAQ(id); err != nil {
+		http.Error(w, "Error al eliminar FAQ", http.StatusInternalServerError)
 		return
 	}
-
-	// Actualizar lista de FAQs
-	h.Store.FAQs = updatedFAQs
-	h.Store.SaveFAQs()
 
 	// Devolver no contenido para eliminación exitosa
 	w.WriteHeader(http.StatusNoContent)
@@ -375,28 +306,20 @@ func (h *FAQHandler) TogglePublishFAQ(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Encontrar la FAQ
-	var faqIndex = -1
-	for i, f := range h.Store.FAQs {
-		if f.ID == id {
-			faqIndex = i
-			break
-		}
-	}
-
-	if faqIndex == -1 {
-		http.Error(w, "FAQ no encontrada", http.StatusNotFound)
+	// Llamar al método para alternar estado de publicación
+	if err := h.Store.ToggleFAQPublish(id); err != nil {
+		http.Error(w, "Error al cambiar estado de publicación", http.StatusInternalServerError)
 		return
 	}
 
-	// Alternar estado publicado
-	h.Store.FAQs[faqIndex].IsPublished = !h.Store.FAQs[faqIndex].IsPublished
-	h.Store.FAQs[faqIndex].UpdatedAt = time.Now()
-
-	// Guardar cambios
-	h.Store.SaveFAQs()
+	// Obtener la FAQ actualizada
+	faq, err := h.Store.GetFAQ(id)
+	if err != nil {
+		http.Error(w, "Error al obtener FAQ actualizada", http.StatusInternalServerError)
+		return
+	}
 
 	// Devolver la FAQ actualizada
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(h.Store.FAQs[faqIndex])
+	json.NewEncoder(w).Encode(faq)
 }

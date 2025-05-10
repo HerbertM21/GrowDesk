@@ -9,27 +9,38 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/data"
+	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/middleware"
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/models"
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/utils"
 )
 
 // TicketHandler contiene manejadores para operaciones de tickets
 type TicketHandler struct {
-	Store *data.Store
+	Store data.DataStore
 }
 
-// GetAllTickets devuelve todos los tickets
+// GetAllTickets maneja la obtención de todos los tickets
 func (h *TicketHandler) GetAllTickets(w http.ResponseWriter, r *http.Request) {
-	// Solo maneja solicitudes GET
+	// Esta función solo maneja solicitudes GET
 	if r.Method != http.MethodGet {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Devolver todos los tickets
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(h.Store.Tickets)
+	// Establecer CORS
+	utils.SetCORS(w)
+
+	// Obtener tickets del almacén
+	tickets, err := h.Store.GetTickets()
+	if err != nil {
+		http.Error(w, "Error al obtener tickets", http.StatusInternalServerError)
+		return
+	}
+
+	// Devolver tickets como JSON
+	utils.WriteJSON(w, http.StatusOK, tickets)
 }
 
 // GetTicket devuelve un ticket específico por ID
@@ -62,69 +73,74 @@ func (h *TicketHandler) GetTicket(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(ticket)
 }
 
-// CreateTicket crea un nuevo ticket
+// CreateTicket maneja la creación de un nuevo ticket
 func (h *TicketHandler) CreateTicket(w http.ResponseWriter, r *http.Request) {
-	// Solo maneja solicitudes POST
+	// Esta función solo maneja solicitudes POST
 	if r.Method != http.MethodPost {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Parsear el cuerpo de la solicitud
-	var ticketReq struct {
-		Title       string `json:"title"`
-		Description string `json:"description"`
-		Category    string `json:"category"`
-		Priority    string `json:"priority"`
-		Customer    struct {
-			Name  string `json:"name"`
-			Email string `json:"email"`
-		} `json:"customer"`
-	}
+	// Establecer CORS
+	utils.SetCORS(w)
 
-	if err := json.NewDecoder(r.Body).Decode(&ticketReq); err != nil {
-		http.Error(w, "El cuerpo de la solicitud es inválido", http.StatusBadRequest)
+	// Obtener ID de usuario del contexto
+	userID := r.Context().Value(middleware.UserIDKey).(string)
+	if userID == "" {
+		http.Error(w, "No autorizado", http.StatusUnauthorized)
 		return
 	}
 
-	// Crear nuevo ticket
-	ticket := models.Ticket{
-		ID:          utils.GenerateTicketID(),
-		Title:       ticketReq.Title,
-		Description: ticketReq.Description,
-		Status:      "open",
-		Priority:    ticketReq.Priority,
-		Category:    ticketReq.Category,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-		Customer: models.Customer{
-			Name:  ticketReq.Customer.Name,
-			Email: ticketReq.Customer.Email,
-		},
-		Messages: []models.Message{},
+	// Decodificar cuerpo de la solicitud
+	var ticketReq models.TicketRequest
+	if err := utils.DecodeJSON(r, &ticketReq); err != nil {
+		http.Error(w, "Error al leer datos del ticket", http.StatusBadRequest)
+		return
 	}
 
-	// Agregar mensaje inicial si se proporciona una descripción
-	if ticketReq.Description != "" {
-		ticket.Messages = append(ticket.Messages, models.Message{
-			ID:        utils.GenerateMessageID(),
-			Content:   ticketReq.Description,
-			IsClient:  true,
-			Timestamp: time.Now(),
-			UserName:  ticketReq.Customer.Name,
-		})
+	// Validar campos requeridos
+	if ticketReq.Title == "" || ticketReq.Description == "" || ticketReq.CategoryID == "" {
+		http.Error(w, "Título, descripción y categoría son requeridos", http.StatusBadRequest)
+		return
+	}
+
+	// Crear mensaje inicial
+	initialMessage := models.Message{
+		ID:        uuid.New().String(),
+		Content:   ticketReq.Description,
+		UserID:    userID,
+		UserName:  ticketReq.UserName,
+		IsClient:  ticketReq.IsClient,
+		Timestamp: time.Now(),
+		CreatedAt: time.Now(),
+	}
+
+	// Crear nuevo ticket
+	newTicket := models.Ticket{
+		ID:          fmt.Sprintf("TICKET-%s", time.Now().Format("20060102-150405")),
+		Title:       ticketReq.Title,
+		Description: ticketReq.Description,
+		CategoryID:  ticketReq.CategoryID,
+		Status:      "open",
+		Priority:    ticketReq.Priority,
+		UserID:      userID,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+		Messages:    []models.Message{initialMessage},
+		Metadata:    ticketReq.Metadata,
 	}
 
 	// Agregar ticket al almacén
-	h.Store.AddTicket(ticket)
+	if err := h.Store.CreateTicket(newTicket); err != nil {
+		http.Error(w, "Error al crear ticket", http.StatusInternalServerError)
+		return
+	}
 
-	// Devolver el ticket creado
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(ticket)
+	// Devolver ticket creado
+	utils.WriteJSON(w, http.StatusCreated, newTicket)
 }
 
-// UpdateTicket updates an existing ticket
+// UpdateTicket maneja la actualización de un ticket existente
 func (h *TicketHandler) UpdateTicket(w http.ResponseWriter, r *http.Request) {
 	// Solo maneja solicitudes PUT
 	if r.Method != http.MethodPut {
@@ -132,33 +148,64 @@ func (h *TicketHandler) UpdateTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extraer el ID del ticket desde la URL
-	// Formato de URL: /api/tickets/:id
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) < 3 {
-		http.Error(w, "ID de ticket inválido", http.StatusBadRequest)
+	// Establecer CORS
+	utils.SetCORS(w)
+
+	// Obtener ID del ticket de la URL
+	path := r.URL.Path
+	segments := strings.Split(path, "/")
+	if len(segments) < 4 {
+		http.Error(w, "URL de ticket inválida", http.StatusBadRequest)
 		return
 	}
 
-	ticketID := parts[len(parts)-1]
+	ticketID := segments[3]
 
-	// Parsear el cuerpo de la solicitud
-	var updateReq models.TicketUpdateRequest
-	if err := json.NewDecoder(r.Body).Decode(&updateReq); err != nil {
-		http.Error(w, "El cuerpo de la solicitud es inválido", http.StatusBadRequest)
-		return
-	}
-
-	// Actualizar el ticket
-	ticket, err := h.Store.UpdateTicket(ticketID, updateReq)
+	// Obtener el ticket existente
+	ticket, err := h.Store.GetTicket(ticketID)
 	if err != nil {
 		http.Error(w, "Ticket no encontrado", http.StatusNotFound)
 		return
 	}
 
-	// Devolver el ticket actualizado
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(ticket)
+	// Decodificar cuerpo de la solicitud
+	var updates models.TicketUpdateRequest
+	if err := utils.DecodeJSON(r, &updates); err != nil {
+		http.Error(w, "Error al leer datos de actualización", http.StatusBadRequest)
+		return
+	}
+
+	// Actualizar los campos del ticket
+	if updates.Status != "" {
+		ticket.Status = updates.Status
+	}
+	if updates.Priority != "" {
+		ticket.Priority = updates.Priority
+	}
+	if updates.AssignedTo != "" {
+		ticket.AssignedTo = updates.AssignedTo
+	}
+	if updates.Category != "" {
+		ticket.Category = updates.Category
+	}
+	if updates.Department != "" {
+		ticket.Department = updates.Department
+	}
+	if updates.Subject != "" {
+		ticket.Subject = updates.Subject
+	}
+
+	// Actualizar timestamp
+	ticket.UpdatedAt = time.Now()
+
+	// Guardar en el almacén
+	if err := h.Store.UpdateTicket(*ticket); err != nil {
+		http.Error(w, "Error al actualizar ticket", http.StatusInternalServerError)
+		return
+	}
+
+	// Devolver ticket actualizado
+	utils.WriteJSON(w, http.StatusOK, ticket)
 }
 
 // GetTicketMessages devuelve mensajes para un ticket específico
@@ -236,14 +283,13 @@ func (h *TicketHandler) AddTicketMessage(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Agregar mensaje al ticket
-	addedMessage, err := h.Store.AddMessageToTicket(ticketID, message)
-	if err != nil {
+	if err := h.Store.AddTicketMessage(ticketID, message); err != nil {
 		http.Error(w, "Failed to add message: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Broadcast a los clientes WebSocket
-	h.Store.BroadcastMessage(ticketID, *addedMessage)
+	h.Store.BroadcastMessage(ticketID, message)
 
 	// Devolver respuesta de éxito
 	response := struct {
@@ -253,7 +299,7 @@ func (h *TicketHandler) AddTicketMessage(w http.ResponseWriter, r *http.Request)
 	}{
 		Success: true,
 		Message: "Message added successfully",
-		Data:    *addedMessage,
+		Data:    message,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -338,7 +384,7 @@ func (h *TicketHandler) CreateWidgetTicket(w http.ResponseWriter, r *http.Reques
 		}
 
 		// Add ticket to store
-		h.Store.AddTicket(ticket)
+		h.Store.CreateTicket(ticket)
 
 		// Devolver respuesta de éxito
 		response := models.TicketResponse{
@@ -405,7 +451,7 @@ func (h *TicketHandler) CreateWidgetTicket(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Agregar ticket al almacén
-	h.Store.AddTicket(ticket)
+	h.Store.CreateTicket(ticket)
 
 	// Devolver respuesta de éxito con el formato que el widget espera
 	response := map[string]interface{}{

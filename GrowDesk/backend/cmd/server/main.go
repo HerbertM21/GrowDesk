@@ -9,24 +9,35 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/data"
+	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/db"
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/handlers"
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/middleware"
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/models"
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/utils"
-	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/websocket"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Cargar variables de entorno desde .env
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Advertencia: No se encontró archivo .env, usando variables de entorno directamente")
+	}
+
 	// Parsear flags
 	var (
-		port    = flag.Int("port", 8080, "HTTP service port")
-		dataDir = flag.String("data-dir", "./data", "Directory for data storage")
-		useMock = flag.Bool("mock-auth", true, "Use mock authentication for development")
+		port        = flag.Int("port", getEnvInt("PORT", 8080), "HTTP service port")
+		dataDir     = flag.String("data-dir", getEnv("DATA_DIR", "./data"), "Directory for data storage")
+		useMock     = flag.Bool("mock-auth", getEnvBool("MOCK_AUTH", true), "Use mock authentication for development")
+		usePostgres = flag.Bool("postgres", getEnvBool("USE_POSTGRES", true), "Use PostgreSQL database instead of file storage")
+		migrateData = flag.Bool("migrate", getEnvBool("MIGRATE_DATA", true), "Migrate data from JSON files to PostgreSQL")
 	)
 	flag.Parse()
 
@@ -35,8 +46,39 @@ func main() {
 		log.Fatalf("Error al crear directorio de datos: %v", err)
 	}
 
-	// Inicializar el almacén de datos
-	store := data.NewStore(*dataDir)
+	// Inicializar el almacén de datos (store)
+	var store data.DataStore
+
+	// Decidir si usar PostgreSQL o almacenamiento en archivos basado en la flag
+	if *usePostgres {
+		log.Println("Usando PostgreSQL como almacén de datos")
+
+		// Inicializar conexión a PostgreSQL
+		database, err := db.InitDB()
+		if err != nil {
+			log.Fatalf("Error al conectar a PostgreSQL: %v", err)
+		}
+		defer db.Close()
+
+		// Inicializar esquema de base de datos
+		if err := db.InitializeSchema(database); err != nil {
+			log.Fatalf("Error al inicializar esquema de base de datos: %v", err)
+		}
+
+		// Migrar datos desde JSON si se solicita
+		if *migrateData {
+			log.Println("Migrando datos de archivos JSON a PostgreSQL...")
+			if err := db.MigrateAllFromJSON(database, *dataDir); err != nil {
+				log.Printf("Advertencia: Error durante la migración de datos: %v", err)
+			}
+		}
+
+		// Crear store PostgreSQL
+		store = db.NewPostgreSQLStore(database)
+	} else {
+		log.Println("Usando almacenamiento en archivos")
+		store = data.NewStore(*dataDir)
+	}
 
 	// Crear handlers
 	authHandler := &handlers.AuthHandler{Store: store}
@@ -212,7 +254,11 @@ func main() {
 		switch r.Method {
 		case http.MethodGet:
 			// Obtener todos los usuarios
-			users := store.GetUsers()
+			users, err := store.GetUsers()
+			if err != nil {
+				http.Error(w, "Error al obtener usuarios", http.StatusInternalServerError)
+				return
+			}
 			utils.WriteJSON(w, http.StatusOK, users)
 		case http.MethodPost:
 			// Crear un nuevo usuario
@@ -250,10 +296,7 @@ func main() {
 			}
 
 			// Agregar el usuario al store
-			store.AddUser(newUser)
-
-			// Guardar cambios
-			if err := store.SaveUsers(); err != nil {
+			if err := store.CreateUser(newUser); err != nil {
 				http.Error(w, "Error al guardar usuario", http.StatusInternalServerError)
 				return
 			}
@@ -336,28 +379,17 @@ func main() {
 			user.UpdatedAt = time.Now()
 
 			// Actualizar en el store
-			if err := store.UpdateUser(userID, *user); err != nil {
+			if err := store.UpdateUser(*user); err != nil {
 				http.Error(w, "Error al actualizar usuario", http.StatusInternalServerError)
 				return
 			}
 
-			// Guardar cambios
-			if err := store.SaveUsers(); err != nil {
-				http.Error(w, "Error al guardar cambios", http.StatusInternalServerError)
-				return
-			}
-
+			// Devolver la respuesta actualizada
 			utils.WriteJSON(w, http.StatusOK, user)
 		case http.MethodDelete:
 			// Eliminar un usuario
 			if err := store.DeleteUser(userID); err != nil {
 				http.Error(w, "Error al eliminar usuario", http.StatusInternalServerError)
-				return
-			}
-
-			// Guardar cambios
-			if err := store.SaveUsers(); err != nil {
-				http.Error(w, "Error al guardar cambios", http.StatusInternalServerError)
 				return
 			}
 
@@ -368,7 +400,68 @@ func main() {
 	})))
 
 	// Ruta de WebSocket para el chat de tickets
-	mux.HandleFunc("/api/ws/chat/", websocket.ChatHandler(store))
+	mux.HandleFunc("/api/ws/chat/", func(w http.ResponseWriter, r *http.Request) {
+		// Configurar CORS para WebSocket
+		utils.SetCORS(w)
+
+		// Extraer el ID del ticket de la URL
+		parts := strings.Split(r.URL.Path, "/")
+		if len(parts) < 4 {
+			http.Error(w, "ID de ticket inválido", http.StatusBadRequest)
+			return
+		}
+		ticketID := parts[len(parts)-1]
+
+		// Actualizar a WebSocket
+		upgrader := websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+			CheckOrigin: func(r *http.Request) bool {
+				return true // Permitir todas las solicitudes en desarrollo
+			},
+		}
+
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Printf("Error al actualizar conexión a WebSocket: %v", err)
+			return
+		}
+
+		// Registrar la conexión
+		connID := store.AddWSConnection(ticketID, conn)
+
+		// Cerrar la conexión cuando finalice
+		defer func() {
+			conn.Close()
+			store.RemoveWSConnection(ticketID, connID)
+		}()
+
+		// Enviar mensajes existentes del ticket
+		ticket, err := store.GetTicket(ticketID)
+		if err == nil && ticket != nil {
+			// Enviar mensajes existentes
+			wsMessage := models.WebSocketMessage{
+				Type:     "init_messages",
+				TicketID: ticketID,
+				Messages: ticket.Messages,
+			}
+
+			conn.WriteJSON(wsMessage)
+		}
+
+		// Mantener la conexión abierta y escuchar mensajes
+		for {
+			messageType, _, err := conn.ReadMessage()
+			if err != nil {
+				break // Salir si hay error (cliente desconectado)
+			}
+
+			// Ping-pong para mantener la conexión activa
+			if messageType == websocket.PingMessage {
+				conn.WriteMessage(websocket.PongMessage, []byte{})
+			}
+		}
+	})
 
 	// Middleware de CORS
 	corsMiddleware := func(h http.Handler) http.Handler {
@@ -420,4 +513,43 @@ func main() {
 	}
 
 	log.Println("Servidor cerrado de maneragraceful")
+}
+
+// Helper para obtener variables de entorno con valor por defecto
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
+}
+
+// Helper para obtener variables de entorno numéricas con valor por defecto
+func getEnvInt(key string, defaultValue int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	var result int
+	_, err := fmt.Sscanf(value, "%d", &result)
+	if err != nil {
+		return defaultValue
+	}
+	return result
+}
+
+// Helper para obtener variables de entorno como booleano
+func getEnvBool(key string, defaultValue bool) bool {
+	valueStr := os.Getenv(key)
+	if valueStr == "" {
+		return defaultValue
+	}
+
+	value, err := strconv.ParseBool(valueStr)
+	if err != nil {
+		log.Printf("Advertencia: Variable de entorno %s no es un booleano válido, usando valor por defecto: %v", key, defaultValue)
+		return defaultValue
+	}
+
+	return value
 }
