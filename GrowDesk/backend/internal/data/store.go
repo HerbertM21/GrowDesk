@@ -113,23 +113,81 @@ func (s *Store) loadUsers() {
 
 // LoadCategories carga categorías desde archivo o inicializa con valores por defecto
 func (s *Store) loadCategories() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
+	// Leemos el archivo fuera del mutex para evitar deadlocks
 	data, err := os.ReadFile(s.CategoriesFile)
 	if err != nil {
 		fmt.Println("No se encontró archivo de categorías, inicializando con categorías por defecto")
-		s.initializeDefaultCategories()
+		now := time.Now()
+		defaultCategories := []models.Category{
+			{
+				ID:          "1",
+				Name:        "Soporte Técnico",
+				Description: "Problemas técnicos con hardware o software",
+				Color:       "#4CAF50",
+				Icon:        "computer",
+				Active:      true,
+				CreatedAt:   now,
+				UpdatedAt:   now,
+			},
+			{
+				ID:          "2",
+				Name:        "Consultas Generales",
+				Description: "Preguntas sobre productos o servicios",
+				Color:       "#2196F3",
+				Icon:        "help",
+				Active:      true,
+				CreatedAt:   now,
+				UpdatedAt:   now,
+			},
+			{
+				ID:          "3",
+				Name:        "Facturación",
+				Description: "Problemas o dudas sobre facturación",
+				Color:       "#FFC107",
+				Icon:        "credit_card",
+				Active:      true,
+				CreatedAt:   now,
+				UpdatedAt:   now,
+			},
+		}
+
+		// Actualizar categorías con lock
+		s.mu.Lock()
+		s.Categories = defaultCategories
+		s.mu.Unlock()
+
+		// Guardar directamente a archivo sin usar SaveCategories
+		dataToSave, err := json.MarshalIndent(defaultCategories, "", "  ")
+		if err != nil {
+			fmt.Printf("Error al serializar categorías: %v\n", err)
+			return
+		}
+
+		if err := os.WriteFile(s.CategoriesFile, dataToSave, 0644); err != nil {
+			fmt.Printf("Error al escribir archivo de categorías: %v\n", err)
+			return
+		}
+
+		fmt.Printf("Guardadas %d categorías por defecto en archivo\n", len(defaultCategories))
 		return
 	}
 
-	if err := json.Unmarshal(data, &s.Categories); err != nil {
+	// Si el archivo existe, lo deserializamos
+	var categories []models.Category
+	if err := json.Unmarshal(data, &categories); err != nil {
 		fmt.Printf("Error al analizar archivo de categorías, inicializando con valores por defecto: %v\n", err)
-		s.initializeDefaultCategories()
+		// Llamamos recursivamente para inicializar con valores por defecto
+		// Esta llamada es segura porque el archivo no se podrá leer en la próxima iteración
+		s.loadCategories()
 		return
 	}
 
-	fmt.Printf("Cargados %d categorías desde archivo\n", len(s.Categories))
+	// Actualizamos el store con lock
+	s.mu.Lock()
+	s.Categories = categories
+	s.mu.Unlock()
+
+	fmt.Printf("Cargados %d categorías desde archivo\n", len(categories))
 }
 
 // LoadFAQs carga FAQs desde archivo o inicializa con valores por defecto
@@ -303,51 +361,6 @@ func (s *Store) initializeDefaultUsers() {
 
 	// Guardar en archivo
 	s.SaveUsers()
-}
-
-// InitializeDefaultCategories inicializa el almacén con categorías por defecto
-func (s *Store) initializeDefaultCategories() {
-	now := time.Now()
-	defaultCategories := []models.Category{
-		{
-			ID:          "1",
-			Name:        "Soporte Técnico",
-			Description: "Problemas técnicos con hardware o software",
-			Color:       "#4CAF50",
-			Icon:        "computer",
-			Active:      true,
-			CreatedAt:   now,
-			UpdatedAt:   now,
-		},
-		{
-			ID:          "2",
-			Name:        "Consultas Generales",
-			Description: "Preguntas sobre productos o servicios",
-			Color:       "#2196F3",
-			Icon:        "help",
-			Active:      true,
-			CreatedAt:   now,
-			UpdatedAt:   now,
-		},
-		{
-			ID:          "3",
-			Name:        "Facturación",
-			Description: "Problemas o dudas sobre facturación",
-			Color:       "#FFC107",
-			Icon:        "credit_card",
-			Active:      true,
-			CreatedAt:   now,
-			UpdatedAt:   now,
-		},
-	}
-
-	// Actualizar categorías dentro del lock
-	s.mu.Lock()
-	s.Categories = defaultCategories
-	s.mu.Unlock()
-
-	// Guardar en archivo (esto adquiere su propio lock)
-	s.SaveCategories()
 }
 
 // InitializeDefaultFAQs inicializa el almacén con FAQs por defecto

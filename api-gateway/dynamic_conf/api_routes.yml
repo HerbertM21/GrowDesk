@@ -1,0 +1,129 @@
+## Configuración de routing para API Gateway
+http:
+  routers:
+    # Router para el backend principal
+    backend-api:
+      rule: "Host(`localhost`) && PathPrefix(`/api`) && !PathPrefix(`/dashboard`) && !PathPrefix(`/api/version`) && !PathPrefix(`/api/entrypoints`) && !PathPrefix(`/api/overview`) && !PathPrefix(`/api/http`)"
+      service: "backend-service"
+      priority: 10
+
+    # Router directo al panel admin
+    admin-ui-router:
+      rule: "Host(`localhost`) && PathPrefix(`/admin`)"
+      middlewares:
+        - "redirect-admin"
+      service: "noop@internal"
+      priority: 30
+
+    # Router directo al widget api
+    widget-api-router:
+      rule: "Host(`localhost`) && PathPrefix(`/widget-api`)"
+      middlewares:
+        - "redirect-widget-api"
+      service: "noop@internal"
+      priority: 20
+
+    # Router para el widget core
+    widget-core:
+      rule: "PathPrefix(`/widget`)"
+      service: "widget-core-service"
+      middlewares:
+        - "widget-core-stripprefix"
+      priority: 40
+
+    # Router directo al demo site
+    demo-site-router:
+      rule: "Host(`localhost`) && PathPrefix(`/demo`)"
+      middlewares:
+        - "redirect-demo"
+      service: "noop@internal"
+      priority: 50
+
+    # Router para el dashboard de Traefik
+    traefik-api:
+      rule: "PathPrefix(`/api/version`) || PathPrefix(`/api/entrypoints`) || PathPrefix(`/api/overview`) || PathPrefix(`/dashboard`) || PathPrefix(`/api/http`)"
+      service: "api@internal"
+      priority: 200
+
+  # Configuración de servicios
+  services:
+    backend-service:
+      loadBalancer:
+        servers:
+          - url: "http://backend:8080"
+
+    widget-api-service:
+      loadBalancer:
+        servers:
+          - url: "http://172.21.0.6:3000"
+
+    frontend-service:
+      loadBalancer:
+        servers:
+          - url: "http://frontend:3000"
+
+    widget-core-service:
+      loadBalancer:
+        servers:
+          - url: "http://widget-core:3030"
+
+    demo-site-service:
+      loadBalancer:
+        servers:
+          - url: "http://demo-site:8090"
+
+  # Middlewares para strip prefix y redirecciones
+  middlewares:
+    redirect-widget-api:
+      redirectScheme:
+        scheme: http
+        port: "3002"
+        permanent: false
+        
+    redirect-admin:
+      redirectScheme:
+        scheme: http
+        port: "3001"
+        permanent: false
+        
+    redirect-demo:
+      redirectScheme:
+        scheme: http
+        port: "8091"
+        permanent: false
+
+    widget-api-stripprefix:
+      stripPrefix:
+        prefixes:
+          - "/widget-api"
+
+    admin-ui-stripprefix:
+      stripPrefix:
+        prefixes:
+          - "/admin"
+    
+    admin-ui-cors:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        accessControlAllowOriginList:
+          - "http://localhost"
+          - "http://localhost:3001"
+        accessControlAllowHeaders:
+          - "*"
+        accessControlMaxAge: 100
+        addVaryHeader: true
+
+    widget-core-stripprefix:
+      stripPrefix:
+        prefixes:
+          - "/widget"
+
+    demo-site-stripprefix:
+      stripPrefix:
+        prefixes:
+          - "/demo" 

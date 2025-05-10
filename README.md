@@ -1,20 +1,78 @@
-# GrowDeskV2
+# GrowDesk V2
 
-Sistema completo de mesa de ayuda con panel de administración y widget de chat para integración en sitios web.
+Sistema de mesa de ayuda y soporte al cliente con widget embebible.
+
+## Estructura del Proyecto
+
+El proyecto está organizado en dos carpetas principales:
+
+- **GrowDesk**: Contiene el backend y frontend principal
+- **GrowDesk-Widget**: Contiene el widget embebible y su API
 
 ## Componentes
 
-El sistema está compuesto por dos componentes principales:
+- **Backend API**: API principal para el sistema de tickets (puerto 8080)
+- **Frontend Admin**: Panel de administración (puerto 3001)
+- **Widget API**: API para el widget (puerto 3002)
+- **Widget Core**: Widget embebible JavaScript (puerto 3030)
+- **Demo Site**: Sitio de demostración para el widget (puerto 8091)
+- **API Gateway**: Traefik como puerta de enlace (puerto 80)
 
-1. **GrowDesk**: Panel de administración y backend principal
-   - Frontend: Panel de administración
-   - Backend: API REST y servidor de WebSockets
-   - Sync-Server: Servidor de sincronización entre instancias
+## Configuración de Acceso
 
-2. **GrowDesk-Widget**: Widget de chat para sitios web
-   - Widget-Core: Componente frontend del widget
-   - Widget-API: Backend para el widget
-   - Demo-Site: Sitio de demostración para probar el widget
+| Componente      | URL Directa              | URL a través del Gateway |
+|-----------------|--------------------------|--------------------------|
+| Backend API     | http://localhost:8080    | http://localhost/api     |
+| Frontend Admin  | http://localhost:3001    | http://localhost/admin   |
+| Widget API      | http://localhost:3002    | http://localhost/widget-api* |
+| Widget Core     | http://localhost:3030    | http://localhost/widget  |
+| Demo Site       | http://localhost:8091    | http://localhost/demo    |
+| Traefik Dashboard | http://localhost:8080/dashboard | http://localhost/dashboard |
+
+> *Nota: El Widget API debe accederse directamente a través del puerto 3002 debido a limitaciones de configuración en el gateway. Este comportamiento está configurado mediante una redirección.
+
+## Configuración del API Gateway
+
+El API Gateway está configurado con Traefik y proporciona:
+
+- Enrutamiento a los diferentes servicios
+- Redirecciones para servicios front-end
+- Soporte para CORS
+- Dashboard para monitoreo
+
+### Detalles de Redirección
+
+- Los endpoints `/admin` y `/demo` están configurados como redirecciones 307 para preservar la funcionalidad completa de las aplicaciones frontend
+- El endpoint `/widget-api` redirige al puerto 3002 donde se encuentra la API del widget
+- El endpoint `/widget` utiliza un stripPrefix para acceder al widget core
+
+## Solución de Problemas
+
+### Widget API
+
+El Widget API (puerto 3002) debe accederse directamente debido a incompatibilidades con el gateway. Esto se debe a:
+
+1. Configuración de red entre contenedores Docker
+2. Requisitos específicos del servicio de API del widget
+3. Redirección configurada en el gateway
+
+### Aplicaciones Frontend
+
+Las aplicaciones frontend (admin, demo) utilizan redirecciones en lugar de proxy inverso porque:
+
+1. Evita problemas de recursos estáticos (CSS, JS) que comúnmente ocurren con stripPrefix
+2. Mantiene la navegación y rutas internas intactas
+3. Preserve la funcionalidad de desarrollador como Hot Module Replacement
+
+## Inicio del Sistema
+
+```bash
+# En la carpeta GrowDesk
+docker-compose up -d
+
+# En la carpeta GrowDesk-Widget
+docker-compose up -d
+```
 
 ## Requisitos
 

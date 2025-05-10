@@ -1,6 +1,29 @@
 # GrowDesk V2 Docker Compose
 
 services:
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: growdesk-api-gateway
+    ports:
+      - "80:80"     # Puerto principal para APIs
+      - "8082:8082" # Puerto para dashboard de Traefik (cambiado de 8081 a 8082)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./api-gateway/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./api-gateway/dynamic_conf:/etc/traefik/dynamic_conf:ro
+    networks:
+      - grow-network
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+      - widget-api
+      - widget-core
+      - demo-site
+
   # GrowDesk Core Services
   postgres:
     image: postgres:15
@@ -43,7 +66,7 @@ services:
       dockerfile: Dockerfile
     container_name: growdesk-backend
     ports:
-      - "8080:8080"
+      - "8081:8080"  # Cambiado para evitar conflicto con el API Gateway
     networks:
       - grow-network
     environment:
@@ -83,7 +106,7 @@ services:
     container_name: growdesk-sync-server
     command: ["/bin/sh", "-c", "cd /app && go build -o /tmp/sync-server ./cmd/sync-server && /tmp/sync-server"]
     ports:
-      - "8000:8000"
+      - "8001:8000"  # Cambiado para evitar conflicto con el API Gateway
     volumes:
       - backend_data:/app/data
       - ./GrowDesk/backend/data:/backend/data
@@ -121,8 +144,8 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=production
-      - VITE_API_URL=http://localhost:8080/api
-      - VITE_SYNC_API_URL=http://localhost:8080/api/sync/users
+      - VITE_API_URL=http://localhost/api  # Actualizado para usar API Gateway
+      - VITE_SYNC_API_URL=http://localhost/api/sync/users  # Actualizado para usar API Gateway
       - HOST=0.0.0.0
       - PORT=3000
     networks:
@@ -139,7 +162,7 @@ services:
       dockerfile: Dockerfile
     container_name: growdesk-widget-api
     ports:
-      - "3000:3000"
+      - "3002:3000"  # Cambiado para evitar conflicto con el API Gateway
     volumes:
       - ./GrowDesk-Widget/widget-api:/app
       - ./GrowDesk-Widget/widget-api/data:/app/data
@@ -147,13 +170,13 @@ services:
     environment:
       - PORT=3000
       - DATA_DIR=/app/data
-      - GROWDESK_API_URL=http://backend:8080
+      - GROWDESK_API_URL=http://backend:8080  # Mantener referencia directa
       - GROWDESK_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiJhZG1pbi0xMjMiLCJlbWFpbCI6ImFkbWluQGdyb3dkZXNrLmNvbSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTcyNDA4ODQwMH0.8J5ayPvA4B-1vF5NaqRXycW1pmIl9qjKP6Ddj4Ot_Cw
       - WIDGET_BASE_URL=http://widget-core:3030
-      - WIDGET_API_URL=http://widget-api:3000
+      - WIDGET_API_URL=http://localhost/widget-api  # Actualizado para usar API Gateway
       - GIN_MODE=debug
       - JWT_SECRET=clave_secreta_desarrollo_local
-      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:3030,http://localhost:8090
+      - ALLOWED_ORIGINS=http://localhost,http://localhost:80,http://localhost:3001,http://localhost:3030,http://localhost:8090
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
@@ -182,14 +205,14 @@ services:
       dockerfile: Dockerfile
     container_name: growdesk-widget-core
     ports:
-      - "3030:3030"
+      - "3031:3030"  # Cambiado para evitar conflicto con el API Gateway
     volumes:
       - ./GrowDesk-Widget/widget-core:/app
       - /app/node_modules
     environment:
       - NODE_ENV=development
       - PORT=3030
-      - WIDGET_API_URL=http://widget-api:3000
+      - WIDGET_API_URL=http://localhost/widget-api  # Actualizado para usar API Gateway
     restart: unless-stopped
     networks:
       - grow-network
@@ -203,7 +226,7 @@ services:
       dockerfile: Dockerfile
     container_name: growdesk-demo-site
     ports:
-      - "8090:8090"
+      - "8091:8090"  # Cambiado para evitar conflicto con el API Gateway
     volumes:
       - ./GrowDesk-Widget/examples/simple-demo:/app
       - /app/node_modules
@@ -215,8 +238,8 @@ services:
     environment:
       - PORT=8090
       - NODE_ENV=development
-      - WIDGET_CORE_URL=http://widget-core:3030
-      - WIDGET_API_URL=http://widget-api:3000
+      - WIDGET_CORE_URL=http://localhost/widget  # Actualizado para usar API Gateway
+      - WIDGET_API_URL=http://localhost/widget-api  # Actualizado para usar API Gateway
     restart: unless-stopped
     networks:
       - grow-network

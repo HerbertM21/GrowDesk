@@ -1,0 +1,37 @@
+## Configuración de Rate Limiting para protección de APIs
+http:
+  middlewares:
+    # Middleware para limitar peticiones a APIs
+    api-rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+        period: 1s
+        sourceCriterion:
+          ipStrategy:
+            depth: 1
+
+    # Middleware para limitar peticiones a APIs del widget (menos restrictivo)
+    widget-api-rate-limit:
+      rateLimit:
+        average: 200
+        burst: 100
+        period: 1s
+        sourceCriterion:
+          ipStrategy:
+            depth: 1
+
+  # Aplicar rate limit a routers específicos
+  routers:
+    # Backend API con rate limit
+    backend-api:
+      middlewares:
+        - "api-rate-limit"
+        - "cors-headers"
+
+    # Widget API con rate limit menos restrictivo
+    widget-api:
+      middlewares:
+        - "widget-api-rate-limit"
+        - "cors-headers"
+        - "widget-api-stripprefix" 

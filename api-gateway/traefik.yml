@@ -1,0 +1,50 @@
+## Configuración Global de Traefik
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: false
+
+## Configuración de logs
+log:
+  level: INFO
+  filePath: "/var/log/traefik/traefik.log"
+  format: json
+
+## Configuración de acceso
+accessLog:
+  filePath: "/var/log/traefik/access.log"
+  format: json
+  bufferingSize: 100
+
+## API y Dashboard
+api:
+  dashboard: true
+  insecure: true  # En producción, establecer a false y usar certificados
+
+## Configuración de proveedores
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+  file:
+    directory: "/etc/traefik/dynamic_conf"
+    watch: true
+
+## Configuración de entrypoints
+entryPoints:
+  web:
+    address: ":80"
+    # Exponer directamente la API de Traefik para el dashboard
+    forwardedHeaders:
+      insecure: true
+  
+  dashboard:
+    address: ":8082"  # Puerto dedicado para el dashboard
+
+## Configuración de métricas
+metrics:
+  prometheus:
+    buckets:
+      - 0.1
+      - 0.3
+      - 1.2
+      - 5.0 

@@ -1,0 +1,38 @@
+## Configuración de métricas para API Gateway
+http:
+  middlewares:
+    # Middleware para añadir prefijo a las métricas
+    metrics-prefix:
+      plugin:
+        metricsPrefix:
+          prefix: "growdesk"
+
+  # Aplicar middleware de métricas a todos los routers
+  routers:
+    backend-api:
+      middlewares:
+        - "metrics-prefix"
+        - "api-rate-limit"
+        - "cors-headers"
+
+    widget-api:
+      middlewares:
+        - "metrics-prefix"
+        - "widget-api-rate-limit"
+        - "cors-headers"
+        - "widget-api-stripprefix"
+
+    admin-ui:
+      middlewares:
+        - "metrics-prefix"
+        - "admin-ui-stripprefix"
+
+    widget-core:
+      middlewares:
+        - "metrics-prefix"
+        - "widget-core-stripprefix"
+
+    demo-site:
+      middlewares:
+        - "metrics-prefix"
+        - "demo-site-stripprefix" 

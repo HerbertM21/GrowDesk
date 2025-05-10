@@ -1,0 +1,42 @@
+## Configuración CORS para GrowDesk
+http:
+  middlewares:
+    cors-headers:
+      headers:
+        accessControlAllowMethods:
+          - "GET"
+          - "POST"
+          - "PUT"
+          - "DELETE"
+          - "OPTIONS"
+        accessControlAllowHeaders:
+          - "Origin"
+          - "Content-Type"
+          - "Accept"
+          - "Authorization"
+          - "X-Requested-With"
+          - "X-User-Email"
+          - "X-User-Name"
+          - "X-Widget-ID"
+          - "X-Widget-Token"
+        accessControlAllowOriginList:
+          - "http://localhost:3001"  # Frontend admin
+          - "http://localhost:3030"  # Widget core
+          - "http://localhost:8090"  # Demo site
+          - "http://localhost:80"    # API Gateway
+          - "http://localhost:8080"  # API Gateway dashboard
+        accessControlAllowCredentials: true
+        accessControlMaxAge: 3600
+
+  # Aplicar CORS a todos los routers
+  routers:
+    # Backend API con CORS
+    backend-api:
+      middlewares:
+        - "cors-headers"
+
+    # Widget API con CORS
+    widget-api:
+      middlewares:
+        - "cors-headers"
+        - "widget-api-stripprefix" 
