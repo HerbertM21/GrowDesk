@@ -76,11 +76,51 @@ const saveTicketsToStorage = (tickets: Ticket[]) => {
 // Helper function to load tickets from localStorage
 const loadTicketsFromStorage = (): Ticket[] => {
   try {
+    // Importar la función de validación para limpiar los datos
+    import('@/utils/validators').then(({ filterValidTickets }) => {
+      try {
+        const data = localStorage.getItem(TICKETS_STORAGE_KEY);
+        if (data) {
+          const parsed = JSON.parse(data);
+          if (Array.isArray(parsed)) {
+            const valid = filterValidTickets(parsed);
+            if (valid.length !== parsed.length) {
+              localStorage.setItem(TICKETS_STORAGE_KEY, JSON.stringify(valid));
+              console.warn(`Se limpiaron ${parsed.length - valid.length} tickets inválidos`);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error al limpiar tickets del localStorage:', e);
+      }
+    }).catch(e => console.error('Error al importar utilidades de validación:', e));
+    
     const ticketsJson = localStorage.getItem(TICKETS_STORAGE_KEY)
     if (ticketsJson) {
-      const tickets = JSON.parse(ticketsJson)
-      console.log('Tickets loaded from localStorage:', tickets.length)
-      return tickets
+      const parsed = JSON.parse(ticketsJson)
+      
+      // Verificar que es un array válido
+      if (!Array.isArray(parsed)) {
+        console.error('Datos de tickets no son un array válido');
+        return [];
+      }
+      
+      // Filtrar para asegurar que solo tenemos objetos válidos
+      const validTickets = parsed.filter(item => 
+        typeof item === 'object' && 
+        item !== null && 
+        'id' in item && 
+        'title' in item &&
+        'status' in item
+      );
+      
+      if (validTickets.length !== parsed.length) {
+        console.warn(`Se filtraron ${parsed.length - validTickets.length} tickets inválidos`);
+        localStorage.setItem(TICKETS_STORAGE_KEY, JSON.stringify(validTickets));
+      }
+      
+      console.log('Tickets loaded from localStorage:', validTickets.length)
+      return validTickets
     }
   } catch (error) {
     console.error('Error loading tickets from localStorage:', error)

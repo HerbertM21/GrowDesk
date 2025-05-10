@@ -1,80 +1,55 @@
-# GrowDesk Go Backend
+# GrowDesk Backend - Servidor de Sincronización
 
-This is the Go backend application for GrowDesk, a ticket management system.
+Este servidor proporciona una API simple para sincronizar datos entre el frontend (almacenados en localStorage) y archivos JSON en el servidor.
 
-## Requirements
+## Funcionalidades
 
-- Go 1.20 or higher
-- Docker and Docker Compose (for containerized deployment)
+- Sincronización de usuarios entre localStorage y users.json
 
-## Getting Started
+## Requisitos
 
-### Local Development
+- Go 1.18 o superior
 
-1. Clone this repository
-2. Navigate to the project directory:
-   ```
-   cd GrowDesk-Go
-   ```
-3. Install dependencies:
-   ```
-   go mod download
-   ```
-4. Run the application:
-   ```
-   go run cmd/server/main.go
-   ```
+## Instalación
 
-The server will start on port 8080 (or the port specified in the `PORT` environment variable).
+1. Clona este repositorio
+2. Navega al directorio del backend
+3. Ejecuta `go mod tidy` para instalar dependencias
 
-### Using Docker
+## Uso
 
-1. Build and run the container using Docker Compose:
-   ```
-   docker-compose up --build
-   ```
+### Iniciar el servidor de sincronización
 
-2. To run in the background:
-   ```
-   docker-compose up -d
-   ```
+```bash
+cd cmd/sync-server
+go run main.go
+```
 
-3. To stop the services:
-   ```
-   docker-compose down
-   ```
+El servidor se ejecutará en http://localhost:8000 por defecto.
 
-## Environment Variables
+### Endpoints disponibles
 
-- `PORT`: The port on which the server will run (default: 8080)
-- `DATA_DIR`: Directory for storing data files (default: ./data)
-- `MOCK_AUTH`: Enable mock authentication for development (default: true)
+- `POST /api/sync/users` - Sincroniza los usuarios desde localStorage al archivo users.json
 
-## API Endpoints
+## Cómo funciona la sincronización
 
-The API provides the following endpoints:
+1. El frontend almacena datos de usuarios en localStorage
+2. Cuando se realiza una operación CRUD en usuarios (crear, actualizar, eliminar), los datos se envían al servidor
+3. El servidor guarda estos datos en el archivo users.json
+4. Al reiniciar, el backend lee los datos del archivo para mantener la persistencia
 
-### Tickets
-- `GET /api/tickets`: Get all tickets
-- `GET /api/tickets/:id`: Get a specific ticket
-- `POST /api/tickets`: Create a new ticket
-- `PUT /api/tickets/:id`: Update a ticket
-- `DELETE /api/tickets/:id`: Delete a ticket
+## Configuración
 
-### Categories
-- `GET /api/categories`: Get all categories
-- `GET /api/categories/:id`: Get a specific category
-- `POST /api/categories`: Create a new category
-- `PUT /api/categories/:id`: Update a category
-- `DELETE /api/categories/:id`: Delete a category
+Puedes configurar el puerto usando la variable de entorno `PORT`:
 
-### FAQs
-- `GET /api/faqs`: Get all FAQs
-- `GET /api/faqs/:id`: Get a specific FAQ
-- `POST /api/faqs`: Create a new FAQ
-- `PUT /api/faqs/:id`: Update a FAQ
-- `DELETE /api/faqs/:id`: Delete a FAQ
+```bash
+PORT=9000 go run main.go
+```
 
-## License
+## Solución de problemas
 
-MIT 
+Si encuentras problemas con la sincronización:
+
+1. Verifica que el servidor esté ejecutándose y accesible
+2. Revisa la consola del navegador para errores
+3. Comprueba los logs del servidor 

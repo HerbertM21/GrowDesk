@@ -13,6 +13,45 @@ import './assets/main.css'
 import { useUsersStore } from './stores/users'
 import { useAuthStore } from './stores/auth'
 
+// Función para limpiar localStorage de datos corruptos
+const cleanLocalStorage = async () => {
+  try {
+    // Comprobar si es necesario limpiar basado en versión en archivo JSON
+    const response = await fetch('/localStorage-fix.json');
+    if (response.ok) {
+      const { id, version } = await response.json();
+      const lastCleanVersion = localStorage.getItem('localStorage-clean-version');
+      
+      // Si la versión es nueva o no existe, limpiar y actualizar versión
+      if (!lastCleanVersion || parseInt(lastCleanVersion) < version) {
+        console.log('Iniciando limpieza de localStorage...');
+        
+        // Importar utilitarios de validación
+        const { 
+          cleanLocalStorageData, 
+          isValidUser, 
+          isValidTicket, 
+          isValidCategory 
+        } = await import('./utils/validators');
+        
+        // Limpiar cada tipo de datos con su validador adecuado
+        cleanLocalStorageData<any>('growdesk-users', isValidUser);
+        cleanLocalStorageData<any>('growdesk_tickets', isValidTicket);
+        cleanLocalStorageData<any>('growdesk-categories', isValidCategory);
+        
+        // Marcar que se completó la limpieza con esta versión
+        localStorage.setItem('localStorage-clean-version', version.toString());
+        console.log('Limpieza de localStorage completada');
+      }
+    }
+  } catch (err) {
+    console.error('Error al limpiar localStorage:', err);
+  }
+};
+
+// Llamar a la función de limpieza antes de iniciar la app
+cleanLocalStorage().catch(err => console.error('Error en proceso de limpieza:', err));
+
 // Crear app
 const app = createApp(App)
 

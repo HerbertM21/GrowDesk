@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-interface Category {
+export interface Category {
   id: number
   name: string
   description: string
@@ -32,10 +32,46 @@ export const useCategoriesStore = defineStore('categories', () => {
   // Cargar categorías desde localStorage
   function loadCategoriesFromLocalStorage(): Category[] {
     try {
+      // Limpiar datos potencialmente inválidos
+      import('@/utils/validators').then(({ filterValidCategories }) => {
+        try {
+          const data = localStorage.getItem(STORAGE_KEY);
+          if (data) {
+            const parsed = JSON.parse(data);
+            if (Array.isArray(parsed)) {
+              const valid = filterValidCategories(parsed);
+              if (valid.length !== parsed.length) {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(valid));
+                console.warn(`Se limpiaron ${parsed.length - valid.length} categorías inválidas`);
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error al limpiar categorías:', e);
+        }
+      }).catch(e => console.error('Error al importar utilidades:', e));
+      
       const storedData = localStorage.getItem(STORAGE_KEY)
       if (storedData) {
         console.log('Categorías cargadas desde localStorage')
-        return JSON.parse(storedData)
+        const parsed = JSON.parse(storedData);
+        // Verificar que es un array válido
+        if (!Array.isArray(parsed)) {
+          console.error('Datos de categorías no son un array válido');
+          return [];
+        }
+        // Filtrar para asegurar que solo tenemos objetos válidos
+        const validCategories = parsed.filter(item => 
+          typeof item === 'object' && 
+          item !== null && 
+          'id' in item && 
+          'name' in item
+        );
+        if (validCategories.length !== parsed.length) {
+          console.warn(`Se filtraron ${parsed.length - validCategories.length} categorías inválidas`);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(validCategories));
+        }
+        return validCategories;
       }
     } catch (err) {
       console.error('Error al cargar categorías desde localStorage:', err)

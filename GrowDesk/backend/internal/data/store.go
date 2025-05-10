@@ -706,3 +706,71 @@ func (s *Store) CreateFAQ(faq *models.FAQ) (*models.FAQ, error) {
 
 	return faq, nil
 }
+
+// GetUsers devuelve todos los usuarios
+func (s *Store) GetUsers() []models.User {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	// Crear una copia para evitar problemas de concurrencia
+	usersCopy := make([]models.User, len(s.Users))
+	copy(usersCopy, s.Users)
+
+	return usersCopy
+}
+
+// GetUser obtiene un usuario por ID
+func (s *Store) GetUser(id string) (*models.User, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, user := range s.Users {
+		if user.ID == id {
+			// Crear una copia para evitar problemas de concurrencia
+			userCopy := user
+			return &userCopy, nil
+		}
+	}
+
+	return nil, fmt.Errorf("usuario con ID %s no encontrado", id)
+}
+
+// AddUser agrega un nuevo usuario
+func (s *Store) AddUser(user models.User) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.Users = append(s.Users, user)
+}
+
+// UpdateUser actualiza un usuario existente
+func (s *Store) UpdateUser(id string, updates models.User) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, user := range s.Users {
+		if user.ID == id {
+			updates.ID = id // Asegurar que el ID no cambie
+			s.Users[i] = updates
+			return nil
+		}
+	}
+
+	return fmt.Errorf("usuario con ID %s no encontrado", id)
+}
+
+// DeleteUser elimina un usuario por ID
+func (s *Store) DeleteUser(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, user := range s.Users {
+		if user.ID == id {
+			// Eliminar usuario
+			s.Users = append(s.Users[:i], s.Users[i+1:]...)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("usuario con ID %s no encontrado", id)
+}

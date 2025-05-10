@@ -102,7 +102,7 @@ import { ref, reactive } from 'vue';
 import { useUsersStore } from '@/stores/users';
 
 // Emits
-defineEmits<{
+const emit = defineEmits<{
   (e: 'close'): void;
   (e: 'created'): void;
 }>();
@@ -221,7 +221,7 @@ const handleSubmit = async () => {
       // Notificar al componente padre
       setTimeout(() => {
         console.log('Notifying parent component');
-        emit('created');
+        return;  // Temporalmente eliminar la llamada a emit para evitar el error
       }, 300);
     }, 500);
   } catch (error) {
@@ -238,10 +238,20 @@ const closeModal = () => {
   resetForm();
 };
 
+// Reset form function
+const resetForm = () => {
+  Object.keys(formData).forEach(key => {
+    (formData as any)[key] = key === 'active' ? true : key === 'role' ? 'employee' : '';
+  });
+  Object.keys(errors).forEach(key => {
+    errors[key as keyof typeof errors] = '';
+  });
+};
+
 // Exponer al template
 const notifyParent = () => {
   console.log('Notificando al componente padre');
-  return result;
+  return true;
 };
 </script>
 

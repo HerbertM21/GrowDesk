@@ -132,10 +132,29 @@ services:
     networks:
       - grow-network
 
+  sync-server:
+    build:
+      context: ./GrowDesk/backend
+      dockerfile: cmd/sync-server/Dockerfile
+    container_name: growdesk-sync-server
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_data:/app/data
+    environment:
+      - PORT=8000
+      - DATA_DIR=/app/data
+    networks:
+      - grow-network
+    restart: unless-stopped
+    depends_on:
+      - backend
+
 networks:
   grow-network:
     driver: bridge
 
 volumes:
   postgres_data:
+  backend_data:
   backend_uploads: 

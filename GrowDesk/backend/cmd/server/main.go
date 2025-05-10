@@ -9,12 +9,14 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/data"
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/handlers"
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/middleware"
+	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/models"
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/utils"
 	"github.com/hmdev/GrowDeskV2/GrowDesk/backend/internal/websocket"
 )
@@ -194,6 +196,176 @@ func main() {
 
 	// Rutas de compatibilidad de widget (para manejar las rutas duplicadas /widget/widget/...)
 	mux.HandleFunc("/widget/widget/faqs", faqHandler.GetPublishedFAQs)
+
+	// Rutas de usuarios (autenticadas)
+	mux.Handle("/api/users", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Configurar CORS explícitamente
+		utils.SetCORS(w)
+
+		// Responder a preflight requests
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		// Manejar basado en el método HTTP
+		switch r.Method {
+		case http.MethodGet:
+			// Obtener todos los usuarios
+			users := store.GetUsers()
+			utils.WriteJSON(w, http.StatusOK, users)
+		case http.MethodPost:
+			// Crear un nuevo usuario
+			var user struct {
+				FirstName  string `json:"firstName"`
+				LastName   string `json:"lastName"`
+				Email      string `json:"email"`
+				Password   string `json:"password"`
+				Role       string `json:"role"`
+				Department string `json:"department"`
+				Active     bool   `json:"active"`
+			}
+
+			// Leer el cuerpo de la solicitud
+			if err := utils.DecodeJSON(r, &user); err != nil {
+				http.Error(w, "Error al leer datos del usuario", http.StatusBadRequest)
+				return
+			}
+
+			// Generar ID único
+			id := fmt.Sprintf("%d", time.Now().UnixNano())
+
+			// Crear nuevo usuario
+			newUser := models.User{
+				ID:         id,
+				FirstName:  user.FirstName,
+				LastName:   user.LastName,
+				Email:      user.Email,
+				Password:   user.Password, // esto debería ser hasheado
+				Role:       user.Role,
+				Department: user.Department,
+				Active:     user.Active,
+				CreatedAt:  time.Now(),
+				UpdatedAt:  time.Now(),
+			}
+
+			// Agregar el usuario al store
+			store.AddUser(newUser)
+
+			// Guardar cambios
+			if err := store.SaveUsers(); err != nil {
+				http.Error(w, "Error al guardar usuario", http.StatusInternalServerError)
+				return
+			}
+
+			// Devolver el usuario creado
+			utils.WriteJSON(w, http.StatusCreated, newUser)
+		default:
+			http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		}
+	})))
+
+	// Rutas de usuarios individuales
+	mux.Handle("/api/users/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Configurar CORS explícitamente
+		utils.SetCORS(w)
+
+		// Responder a preflight requests
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		// Obtener ID del usuario de la URL
+		path := r.URL.Path
+		segments := strings.Split(path, "/")
+		if len(segments) < 4 {
+			http.Error(w, "URL de usuario inválida", http.StatusBadRequest)
+			return
+		}
+
+		userID := segments[3]
+
+		// Manejar basado en el método HTTP
+		switch r.Method {
+		case http.MethodGet:
+			// Obtener un usuario específico
+			user, err := store.GetUser(userID)
+			if err != nil {
+				http.Error(w, "Usuario no encontrado", http.StatusNotFound)
+				return
+			}
+
+			utils.WriteJSON(w, http.StatusOK, user)
+		case http.MethodPut:
+			// Actualizar un usuario
+			var updates models.User
+			if err := utils.DecodeJSON(r, &updates); err != nil {
+				http.Error(w, "Error al leer datos de actualización", http.StatusBadRequest)
+				return
+			}
+
+			// Obtener usuario existente
+			user, err := store.GetUser(userID)
+			if err != nil {
+				http.Error(w, "Usuario no encontrado", http.StatusNotFound)
+				return
+			}
+
+			// Actualizar campos
+			if updates.FirstName != "" {
+				user.FirstName = updates.FirstName
+			}
+			if updates.LastName != "" {
+				user.LastName = updates.LastName
+			}
+			if updates.Email != "" {
+				user.Email = updates.Email
+			}
+			if updates.Role != "" {
+				user.Role = updates.Role
+			}
+			if updates.Department != "" {
+				user.Department = updates.Department
+			}
+			if updates.Password != "" {
+				user.Password = updates.Password // En producción real, esto debería ser hasheado
+			}
+
+			// Marcar como actualizado
+			user.UpdatedAt = time.Now()
+
+			// Actualizar en el store
+			if err := store.UpdateUser(userID, *user); err != nil {
+				http.Error(w, "Error al actualizar usuario", http.StatusInternalServerError)
+				return
+			}
+
+			// Guardar cambios
+			if err := store.SaveUsers(); err != nil {
+				http.Error(w, "Error al guardar cambios", http.StatusInternalServerError)
+				return
+			}
+
+			utils.WriteJSON(w, http.StatusOK, user)
+		case http.MethodDelete:
+			// Eliminar un usuario
+			if err := store.DeleteUser(userID); err != nil {
+				http.Error(w, "Error al eliminar usuario", http.StatusInternalServerError)
+				return
+			}
+
+			// Guardar cambios
+			if err := store.SaveUsers(); err != nil {
+				http.Error(w, "Error al guardar cambios", http.StatusInternalServerError)
+				return
+			}
+
+			utils.WriteJSON(w, http.StatusOK, map[string]bool{"success": true})
+		default:
+			http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		}
+	})))
 
 	// Ruta de WebSocket para el chat de tickets
 	mux.HandleFunc("/api/ws/chat/", websocket.ChatHandler(store))

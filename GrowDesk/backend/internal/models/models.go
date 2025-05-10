@@ -6,14 +6,19 @@ import (
 
 // User representa un usuario en el sistema
 type User struct {
-	ID         string `json:"id"`
-	Email      string `json:"email"`
-	FirstName  string `json:"firstName"`
-	LastName   string `json:"lastName"`
-	Role       string `json:"role"`
-	Department string `json:"department,omitempty"`
-	Active     bool   `json:"active"`
-	Password   string `json:"-"`
+	ID         string    `json:"id"`
+	Email      string    `json:"email"`
+	FirstName  string    `json:"firstName"`
+	LastName   string    `json:"lastName"`
+	Role       string    `json:"role"`
+	Department string    `json:"department,omitempty"`
+	Active     bool      `json:"active"`
+	Password   string    `json:"password,omitempty"`
+	CreatedAt  time.Time `json:"createdAt,omitempty"`
+	UpdatedAt  time.Time `json:"updatedAt,omitempty"`
+	Position   string    `json:"position,omitempty"`
+	Phone      string    `json:"phone,omitempty"`
+	Language   string    `json:"language,omitempty"`
 }
 
 // LoginRequest representa los datos de la solicitud de inicio de sesión
