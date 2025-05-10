@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, RouteLocationNormalized, NavigationGuardNext } from 'vue-router'
 import Login from '../views/auth/Login.vue'
 import Dashboard from '../views/dashboard/Dashboard.vue'
 import { useAuthStore } from '../stores/auth'
@@ -129,6 +129,7 @@ const router = createRouter({
 })
 
 // Protección de rutas
+// @ts-expect-error - Vue Router types are not properly imported
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
   const notificationsStore = useNotificationsStore()

@@ -10,7 +10,6 @@ if ! command -v go &> /dev/null; then
     exit 1
 fi
 
-# Ejecutar el servidor
 go run main.go
 
 echo "Servidor detenido." 

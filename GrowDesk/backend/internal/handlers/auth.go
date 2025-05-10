@@ -36,7 +36,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// En una implementación real, validaríamos las credenciales contra la base de datos
+	// En una implementación produccion, validaríamos las credenciales contra la base de datos
 	// Por ahora, usaremos un token fijo para cualquier inicio de sesión válido
 
 	// Generar token

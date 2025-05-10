@@ -1,171 +1,276 @@
 # GrowDesk V2
 
-Sistema de mesa de ayuda y soporte al cliente con widget embebible.
+Sistema de mesa de ayuda y soporte al cliente con widget embebible para sitios web.
+
+## Descripción General
+
+GrowDesk es una plataforma completa para la gestión de tickets de soporte que incluye:
+
+- Panel de administración para agentes y administradores
+- API RESTful para gestión de tickets, usuarios y categorías
+- Widget embebible para integración en sitios web
+- Comunicación en tiempo real mediante WebSockets
+- Sistema de chat integrado
 
 ## Estructura del Proyecto
 
-El proyecto está organizado en dos carpetas principales:
+El proyecto está organizado en tres componentes principales:
 
-- **GrowDesk**: Contiene el backend y frontend principal
-- **GrowDesk-Widget**: Contiene el widget embebible y su API
+- **GrowDesk**: Core del sistema (backend y frontend principal)
+- **GrowDesk-Widget**: Widget embebible y su API
+- **api-gateway**: Puerta de enlace API con Traefik
 
-## Componentes
+## Componentes y Puertos
 
-- **Backend API**: API principal para el sistema de tickets (puerto 8080)
-- **Frontend Admin**: Panel de administración (puerto 3001)
-- **Widget API**: API para el widget (puerto 3002)
-- **Widget Core**: Widget embebible JavaScript (puerto 3030)
-- **Demo Site**: Sitio de demostración para el widget (puerto 8091)
-- **API Gateway**: Traefik como puerta de enlace (puerto 80)
+| Componente      | Puerto  | Descripción                                  | URL Directa              | URL Gateway            |
+|-----------------|---------|----------------------------------------------|--------------------------|------------------------|
+| Backend API     | 8080    | API principal para el sistema de tickets     | http://localhost:8080    | http://localhost/api   |
+| Frontend Admin  | 3001    | Panel de administración                      | http://localhost:3001    | http://localhost/admin |
+| Widget API      | 3002    | API para el widget                           | http://localhost:3002    | -                      |
+| Widget Core     | 3030    | Widget embebible JavaScript                  | http://localhost:3030    | http://localhost/widget|
+| Demo Site       | 8091    | Sitio de demostración para el widget         | http://localhost:8091    | http://localhost/demo  |
+| API Gateway     | 80      | Puerta de enlace Traefik                     | http://localhost         | -                      |
+| Traefik Dashboard | 8082  | Panel de control de Traefik                  | http://localhost:8082    | http://localhost/dashboard |
+| PostgreSQL      | 5432    | Base de datos                                | localhost:5432           | -                      |
 
-## Configuración de Acceso
+## Requisitos Previos
 
-| Componente      | URL Directa              | URL a través del Gateway |
-|-----------------|--------------------------|--------------------------|
-| Backend API     | http://localhost:8080    | http://localhost/api     |
-| Frontend Admin  | http://localhost:3001    | http://localhost/admin   |
-| Widget API      | http://localhost:3002    | http://localhost/widget-api* |
-| Widget Core     | http://localhost:3030    | http://localhost/widget  |
-| Demo Site       | http://localhost:8091    | http://localhost/demo    |
-| Traefik Dashboard | http://localhost:8080/dashboard | http://localhost/dashboard |
+- Docker v20.10.0 o superior
+- Docker Compose v2.0.0 o superior
+- Git
 
-> *Nota: El Widget API debe accederse directamente a través del puerto 3002 debido a limitaciones de configuración en el gateway. Este comportamiento está configurado mediante una redirección.
+## Instalación y Ejecución
 
-## Configuración del API Gateway
-
-El API Gateway está configurado con Traefik y proporciona:
-
-- Enrutamiento a los diferentes servicios
-- Redirecciones para servicios front-end
-- Soporte para CORS
-- Dashboard para monitoreo
-
-### Detalles de Redirección
-
-- Los endpoints `/admin` y `/demo` están configurados como redirecciones 307 para preservar la funcionalidad completa de las aplicaciones frontend
-- El endpoint `/widget-api` redirige al puerto 3002 donde se encuentra la API del widget
-- El endpoint `/widget` utiliza un stripPrefix para acceder al widget core
-
-## Solución de Problemas
-
-### Widget API
-
-El Widget API (puerto 3002) debe accederse directamente debido a incompatibilidades con el gateway. Esto se debe a:
-
-1. Configuración de red entre contenedores Docker
-2. Requisitos específicos del servicio de API del widget
-3. Redirección configurada en el gateway
-
-### Aplicaciones Frontend
-
-Las aplicaciones frontend (admin, demo) utilizan redirecciones en lugar de proxy inverso porque:
-
-1. Evita problemas de recursos estáticos (CSS, JS) que comúnmente ocurren con stripPrefix
-2. Mantiene la navegación y rutas internas intactas
-3. Preserve la funcionalidad de desarrollador como Hot Module Replacement
-
-## Inicio del Sistema
+### 1. Clonar el repositorio
 
 ```bash
-# En la carpeta GrowDesk
-docker-compose up -d
-
-# En la carpeta GrowDesk-Widget
-docker-compose up -d
+git clone https://github.com/HerbertM21/GrowDesk.git
+cd GrowDesk
 ```
 
-## Requisitos
+### 2. Iniciar el sistema completo
 
-- Docker
-- Docker Compose
+El script `start-system.sh` automatiza el proceso de inicio de todos los componentes:
+
+```bash
+chmod +x start-system.sh
+./start-system.sh
+```
+
+Alternativamente, puedes iniciar cada componente manualmente:
+
+```bash
+# Iniciar todos los servicios
+docker-compose up -d
+
+# O iniciar servicios específicos
+docker-compose up -d api-gateway postgres backend frontend widget-api widget-core demo-site
+```
+
+### 3. Verificar que los contenedores estén funcionando
+
+```bash
+docker ps
+```
+
+Deberías ver todos los contenedores en estado "Up".
+
+### 4. Acceder al panel de administración
+
+Abre en tu navegador: http://localhost/admin o http://localhost:3001
+
+**Credenciales por defecto:**
+- Usuario: admin@example.com
+- Contraseña: password
 
 ## Configuración
 
-El sistema incluye archivos de configuración predeterminados, pero puedes personalizarlos modificando los archivos `.env` en cada directorio.
+### Variables de Entorno
 
-### Variables de entorno principales
+El sistema utiliza archivos `.env` para configuración en cada componente. Los principales son:
 
-- **PostgreSQL**:
-  - `DB_HOST`: Host de la base de datos (por defecto: postgres)
-  - `DB_PORT`: Puerto de la base de datos (por defecto: 5432)
-  - `DB_USER`: Usuario de la base de datos (por defecto: postgres)
-  - `DB_PASSWORD`: Contraseña de la base de datos (por defecto: postgres)
-  - `DB_NAME`: Nombre de la base de datos (por defecto: growdesk)
-
-- **Backend**:
-  - `PORT`: Puerto del backend (por defecto: 8080)
-  - `DATA_DIR`: Directorio de datos (por defecto: /app/data)
-  - `MOCK_AUTH`: Usar autenticación simulada para desarrollo (por defecto: true)
-
-## Ejecución
-
-Para ejecutar todo el sistema:
-
-```bash
-docker compose up
+**Proyecto principal (.env):**
+```
+COMPOSE_PROJECT_NAME=growdeskv2
 ```
 
-Para ejecutar en segundo plano:
+**Backend (.env):**
+```
+# PostgreSQL
+DB_HOST=postgres
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=growdesk
 
-```bash
-docker compose up -d
+# Aplicación
+PORT=8080
+DATA_DIR=/app/data
+MOCK_AUTH=true
+JWT_SECRET=your_jwt_secret
+LOG_LEVEL=debug
 ```
 
-## Acceso a los servicios
+**Frontend (.env):**
+```
+VITE_API_URL=http://localhost/api
+VITE_WS_URL=ws://localhost/api/ws
+VITE_APP_NAME=GrowDesk
+VITE_APP_VERSION=1.0.0
+```
 
-Una vez que el sistema esté en ejecución, podrás acceder a los siguientes servicios:
+**Widget API (.env):**
+```
+PORT=3000
+DATA_DIR=/app/data
+GROWDESK_API_URL=http://growdesk-backend:8080
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:3030,http://localhost:8091
+```
 
-- **Panel de administración**: http://localhost:3001
-- **API Backend**: http://localhost:8080
-- **Widget Demo**: http://localhost:8090
-- **Widget API**: http://localhost:3000
-- **Widget Core**: http://localhost:3030
+### Configuración del Widget para tu Sitio Web
 
-## Base de datos PostgreSQL
+Para integrar el widget en tu sitio, añade este código antes del cierre de `</body>`:
 
-El sistema utiliza PostgreSQL para almacenar todos los datos. La base de datos está configurada para persistir los datos en un volumen Docker, por lo que no se perderán al reiniciar los contenedores.
+```html
+<script id="growdesk-widget" 
+        src="http://localhost/widget/growdesk-widget.umd.js" 
+        data-api-url="http://localhost:3002/widget" 
+        data-widget-id="testwidget" 
+        data-widget-token="testtoken" 
+        async>
+</script>
+```
 
-### Datos iniciales
+## Base de Datos
 
-La primera vez que se inicie el sistema, se migrarán automáticamente los datos de los archivos JSON a PostgreSQL si existen.
+GrowDesk utiliza PostgreSQL como base de datos principal:
 
-### Acceso directo a PostgreSQL
+- Los datos se persisten en un volumen Docker
+- La primera vez que se inicia, se migran automáticamente datos de ejemplo
+- Puedes conectarte directamente con un cliente SQL:
+  ```
+  Host: localhost
+  Puerto: 5432
+  Usuario: postgres
+  Contraseña: postgres
+  Base de datos: growdesk
+  ```
 
-Puedes acceder directamente a la base de datos mediante:
+Para acceder desde la línea de comandos:
 
 ```bash
 docker exec -it growdesk-db psql -U postgres -d growdesk
 ```
 
-## Desarrollo
+## Solución de Problemas Comunes
 
-Para desarrollar el sistema, puedes utilizar los siguientes comandos:
+### Widget API no Accesible a través del Gateway
 
-### Reconstruir servicios específicos
+El Widget API (puerto 3002) debe accederse directamente debido a limitaciones en la configuración del gateway. Para resolver esto:
+
+1. Asegúrate de que el widget esté configurado para conectarse a http://localhost:3002/widget
+2. Verifica que no haya un firewall bloqueando el puerto 3002
+
+### Errores de CORS
+
+Si encuentras errores de CORS en el frontend o widget:
+
+1. Verifica la configuración CORS en `api-gateway/dynamic_conf/api_routes.yml`
+2. Asegúrate de que tu origen esté permitido en las cabeceras `Access-Control-Allow-Origin`
+
+### Tickets No Aparecen en el Panel de Administración
+
+Si los tickets creados desde el widget no aparecen en el panel:
+
+1. Verifica que el ticket existe en la base de datos:
+   ```bash
+   docker exec -it growdesk-db psql -U postgres -d growdesk -c "SELECT id, title FROM tickets ORDER BY created_at DESC LIMIT 5"
+   ```
+2. Comprueba que el frontend esté utilizando la URL de API correcta (http://localhost/api)
+3. Reinicia el frontend para que refresque su caché:
+   ```bash
+   docker restart growdesk-frontend
+   ```
+
+### Problemas de WebSocket
+
+Si el chat en tiempo real no funciona:
+
+1. Asegúrate de que los puertos para WebSockets estén abiertos
+2. Verifica la configuración de WebSocket en el frontend y backend
+3. Comprueba que el API Gateway esté configurado para permitir conexiones WebSocket
+
+## Desarrollo y Extensión
+
+### Desarrollo en Modo Local
+
+Para desarrollo, puedes ejecutar componentes individuales en modo local:
 
 ```bash
-docker compose build frontend backend
-docker compose up -d frontend backend
+# Backend
+cd GrowDesk/backend
+make run
+
+# Frontend
+cd GrowDesk/frontend
+npm install
+npm run dev
+
+# Widget Core
+cd GrowDesk-Widget/widget-core
+npm install
+npm run dev
 ```
 
-### Ver logs
+### Reconstruir Contenedores Específicos
 
 ```bash
-docker compose logs -f backend
+docker-compose build backend frontend
+docker-compose up -d backend frontend
 ```
 
-## Estructura de directorios
+### Ver Logs
+
+```bash
+# Ver logs de un servicio específico
+docker logs -f growdesk-backend
+
+# Ver logs de múltiples servicios
+docker-compose logs -f backend frontend
+```
+
+## Documentación Técnica
+
+Consulta estos documentos para una comprensión más profunda de la arquitectura:
+
+- [Arquitectura del Backend](docs/backend_architecture.md)
+- [Arquitectura del Frontend](docs/frontend_architecture.md)
+- [API Documentation](docs/API.md)
+
+## Estructura de Directorios Completa
 
 ```
 GrowDeskV2/
-├── GrowDesk/                # Panel de administración y backend
-│   ├── backend/             # Backend API
-│   ├── frontend/            # Panel de administración
-│   └── docker-compose.yml   # Configuración de Docker para GrowDesk
-├── GrowDesk-Widget/         # Widget de chat
-│   ├── widget-api/          # API del widget
-│   ├── widget-core/         # Componente frontend del widget
-│   ├── examples/            # Ejemplos de integración
-│   └── docker-compose.yml   # Configuración de Docker para Widget
-└── docker-compose.yml       # Configuración de Docker principal
+├── docs/                   # Documentación del proyecto
+├── GrowDesk/               # Sistema principal
+│   ├── backend/            # API backend en Go
+│   │   ├── api/            # Definiciones API
+│   │   ├── cmd/            # Puntos de entrada
+│   │   ├── internal/       # Código interno
+│   │   └── ...
+│   ├── frontend/           # Panel de admin Vue.js
+│   │   ├── public/
+│   │   ├── src/
+│   │   └── ...
+│   └── docker-compose.yml  # Configuración Docker
+├── GrowDesk-Widget/        # Widget de chat
+│   ├── widget-api/         # API del widget (Go)
+│   ├── widget-core/        # Core del widget (Vue.js)
+│   ├── examples/           # Ejemplos de uso
+│   └── docker-compose.yml  # Configuración Docker
+├── api-gateway/            # Configuración Traefik
+│   ├── dynamic_conf/       # Configuraciones dinámicas
+│   ├── traefik.yml         # Configuración principal
+│   └── ...
+└── docker-compose.yml      # Configuración principal
 ```

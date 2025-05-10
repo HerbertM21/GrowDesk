@@ -789,14 +789,14 @@ func (s *Store) DeleteUser(id string) error {
 	return fmt.Errorf("usuario con ID %s no encontrado", id)
 }
 
-// GetUserByEmail finds a user by email
+// GetUserByEmail busca un usuario por email
 func (s *Store) GetUserByEmail(email string) (*models.User, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	for _, user := range s.Users {
 		if user.Email == email {
-			// Create a copy to avoid race conditions
+			// Crear una copia para evitar problemas de concurrencia
 			userCopy := user
 			return &userCopy, nil
 		}
@@ -805,17 +805,17 @@ func (s *Store) GetUserByEmail(email string) (*models.User, error) {
 	return nil, fmt.Errorf("user with email %s not found", email)
 }
 
-// CreateUser adds a new user
+// CreateUser agrega un nuevo usuario
 func (s *Store) CreateUser(user models.User) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Ensure user has an ID
+	// Asegurar que el usuario tiene un ID
 	if user.ID == "" {
 		user.ID = uuid.New().String()
 	}
 
-	// Set timestamps if not already set
+	// Establecer marcas de tiempo si no están ya establecidas
 	if user.CreatedAt.IsZero() {
 		user.CreatedAt = time.Now()
 	}
@@ -827,29 +827,29 @@ func (s *Store) CreateUser(user models.User) error {
 	return s.SaveUsers()
 }
 
-// GetTickets returns all tickets
+// GetTickets devuelve todos los tickets
 func (s *Store) GetTickets() ([]models.Ticket, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	// Create a copy to avoid race conditions
+	// Crear una copia para evitar problemas de concurrencia
 	tickets := make([]models.Ticket, len(s.Tickets))
 	copy(tickets, s.Tickets)
 
 	return tickets, nil
 }
 
-// CreateTicket adds a new ticket
+// CreateTicket agrega un nuevo ticket
 func (s *Store) CreateTicket(ticket models.Ticket) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Ensure ticket has an ID
+	// Asegurar que el ticket tiene un ID
 	if ticket.ID == "" {
 		ticket.ID = uuid.New().String()
 	}
 
-	// Set timestamps if not already set
+	// Establecer marcas de tiempo si no están ya establecidas
 	if ticket.CreatedAt.IsZero() {
 		ticket.CreatedAt = time.Now()
 	}
@@ -861,15 +861,15 @@ func (s *Store) CreateTicket(ticket models.Ticket) error {
 	return s.SaveTickets()
 }
 
-// DeleteTicket deletes a ticket by ID
+// DeleteTicket elimina un ticket por ID
 func (s *Store) DeleteTicket(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Find ticket index
+	// Encontrar el índice del ticket
 	for i, ticket := range s.Tickets {
 		if ticket.ID == id {
-			// Remove ticket
+			// Eliminar ticket
 			s.Tickets = append(s.Tickets[:i], s.Tickets[i+1:]...)
 			return s.SaveTickets()
 		}
@@ -878,7 +878,7 @@ func (s *Store) DeleteTicket(id string) error {
 	return fmt.Errorf("ticket with ID %s not found", id)
 }
 
-// AddTicketMessage adds a message to a ticket
+// AddTicketMessage agrega un mensaje a un ticket
 func (s *Store) AddTicketMessage(ticketID string, message models.Message) error {
 	_, err := s.AddMessageToTicket(ticketID, message)
 	return err
