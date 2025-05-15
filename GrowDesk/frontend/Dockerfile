@@ -2,14 +2,14 @@
 # Use Dockerfile.dev for development environment
 # Use Dockerfile.prod for production environment
 
-FROM node:18-alpine
+# Stage 1: Base
+FROM node:18-alpine AS base
 
 # Set working directory
 WORKDIR /app
 
-# Build arguments - default to development
-ARG NODE_ENV=development
-ENV NODE_ENV=${NODE_ENV}
+# Install dependencies
+RUN apk add --no-cache bash curl
 
 # Copy package files
 COPY package*.json ./
@@ -20,11 +20,14 @@ RUN npm install
 # Copy source files
 COPY . .
 
-# Copy entrypoint script
+# Make entrypoint script executable
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # For production, build the app
+ARG NODE_ENV=development
+ENV NODE_ENV=${NODE_ENV}
+
 RUN if [ "$NODE_ENV" = "production" ] ; then npm run build ; fi
 
 # Configurar para que Vite escuche en todas las interfaces
@@ -35,5 +38,5 @@ ENV VITE_API_URL=http://localhost:8080/api
 # Expose port
 EXPOSE 3000
 
-# Start development server
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"] 
+# Set entrypoint script
+ENTRYPOINT ["/entrypoint.sh"] 

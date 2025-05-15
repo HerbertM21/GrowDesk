@@ -268,8 +268,8 @@ export const useChatStore = defineStore('chat', {
         // Intentar establecer una conexión WebSocket real con token incluido
         console.log(`Conectando WebSocket con ticket ${ticketId} y usuario ${userId}`);
         
-        // URL websocket corregida - usar directamente localhost:8000 sin duplicar el protocolo
-        const wsUrl = `ws://localhost:8000/api/ws/chat/${ticketId}`;
+        // URL websocket corregida - usar el API Gateway configurado en lugar de localhost:8000
+        const wsUrl = `ws://localhost/api/ws/chat/${ticketId}`;
         console.log(`Intentando conectar WebSocket a: ${wsUrl}`);
         
         // Probar a conectar, pero fallar silenciosamente si no es posible

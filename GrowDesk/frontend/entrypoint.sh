@@ -2,6 +2,26 @@
 
 echo "Configurando variables de entorno..."
 
+# Verificar si node_modules existe y tiene contenido
+if [ ! -d "node_modules" ] || [ -z "$(ls -A node_modules 2>/dev/null)" ]; then
+  echo "Directorio node_modules vacío o inexistente, instalando dependencias..."
+  npm install
+  if [ $? -ne 0 ]; then
+    echo "Error al instalar las dependencias. Abortando."
+    exit 1
+  fi
+fi
+
+# Verificar específicamente si vite está instalado
+if [ ! -f "node_modules/.bin/vite" ]; then
+  echo "Vite no encontrado, instalando vite específicamente..."
+  npm install --save-dev vite
+  if [ $? -ne 0 ]; then
+    echo "Error al instalar vite. Abortando."
+    exit 1
+  fi
+fi
+
 # Verificar el entorno
 if [ "$NODE_ENV" = "production" ]; then
   echo "Iniciando en modo PRODUCCIÓN"
@@ -41,5 +61,6 @@ else
   # En desarrollo, ejecutamos el servidor de Vite
   echo "Iniciando en modo DESARROLLO"
   echo "Iniciando servidor de desarrollo Vite..."
-  exec npm run dev -- --host 0.0.0.0 --port 3000
+  # Usar la ruta absoluta a vite para asegurarse de que lo encuentre
+  exec ./node_modules/.bin/vite --host 0.0.0.0 --port 3000
 fi 

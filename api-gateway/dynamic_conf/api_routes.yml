@@ -9,6 +9,14 @@ http:
       middlewares:
         - "backend-cors"
 
+    # Router específico para WebSockets
+    websocket-router:
+      rule: "Host(`localhost`) && PathPrefix(`/api/ws`)"
+      service: "backend-service"
+      priority: 15
+      middlewares:
+        - "websocket-headers"
+
     # Router directo al panel admin
     admin-ui-router:
       rule: "Host(`localhost`) && PathPrefix(`/admin`)"
@@ -76,6 +84,26 @@ http:
 
   # Middlewares para strip prefix y redirecciones
   middlewares:
+    # Middleware específico para WebSockets
+    websocket-headers:
+      headers:
+        customResponseHeaders:
+          Connection: "Upgrade"
+          Upgrade: "websocket"
+        accessControlAllowOriginList:
+          - "http://localhost"
+          - "http://localhost:3001"
+          - "*"
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        accessControlAllowHeaders:
+          - "*"
+        accessControlAllowCredentials: true
+
     backend-cors:
       headers:
         accessControlAllowMethods:

@@ -9,7 +9,7 @@ echo "Limpiando contenedores existentes..."
 docker stop growdesk-db growdesk-redis growdesk-backend growdesk-sync-server growdesk-frontend growdesk-widget-api growdesk-widget-core growdesk-demo-site 2>/dev/null || true
 docker rm growdesk-db growdesk-redis growdesk-backend growdesk-sync-server growdesk-frontend growdesk-widget-api growdesk-widget-core growdesk-demo-site 2>/dev/null || true
 
-# Limpiar volúmenes (opcional - descomentar si es necesario)
+# Limpiar volúmenes 
 # echo "Limpiando volúmenes..."
 # docker volume rm growdeskv2_postgres_data growdeskv2_backend_data growdeskv2_backend_uploads 2>/dev/null || true
 

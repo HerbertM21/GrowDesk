@@ -1,47 +1,32 @@
 FROM golang:1.20-alpine AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Install build dependencies
 RUN apk add --no-cache git
 
-# Copy go.mod and go.sum
 COPY go.mod go.sum ./
 
-# Download dependencies
 RUN go mod download
 
-# Copy entire project
 COPY . .
 
-# Build the server application
 RUN CGO_ENABLED=0 GOOS=linux go build -o server ./cmd/server
 
-# Create minimal production image
 FROM alpine:latest
 
-# Install dependencies
 RUN apk --no-cache add tzdata ca-certificates wget
 
-# Set working directory
 WORKDIR /app
 
-# Copy binary from builder stage
 COPY --from=builder /app/server /app/server
 
-# Copy schema.sql
 COPY --from=builder /app/internal/db/schema.sql /app/internal/db/schema.sql
 
-# Create data directory
 RUN mkdir -p /app/data
 
-# Expose port
 EXPOSE 8080
 
-# Set environment variables
 ENV PORT=8080
 ENV DATA_DIR=/app/data
 
-# Run the server application
 CMD ["/app/server"] 
