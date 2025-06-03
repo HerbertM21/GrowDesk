@@ -104,33 +104,26 @@ services:
   sync-server:
     build:
       context: ./GrowDesk/backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.sync
     container_name: growdesk-sync-server
-    command: ["/bin/sh", "-c", "cd /app && go build -o /tmp/sync-server ./cmd/sync-server && /tmp/sync-server"]
     ports:
       - "8001:8000"  
     volumes:
       - backend_data:/app/data
       - ./GrowDesk/backend/data:/backend/data
-      - ./GrowDesk/backend/.env:/app/.env
     environment:
       - PORT=8000
       - DATA_DIR=/app/data
-      - LOCAL_DATA_DIR=/backend/data
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=growdesk
-      - USE_POSTGRES=true
-    networks:
-      - grow-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 40s
     depends_on:
-      postgres:
-        condition: service_healthy
-      backend:
-        condition: service_started
+      - postgres
+      - redis
 
   frontend:
     build:

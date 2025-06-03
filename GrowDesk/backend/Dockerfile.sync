@@ -4,13 +4,15 @@ WORKDIR /app
 
 RUN apk add --no-cache git
 
-COPY go.mod go.sum ./
+# Copiar archivos del sync-server específicamente
+COPY cmd/sync-server/go.mod ./
+RUN go mod download || true
 
-RUN go mod download
+# Copiar el código fuente del sync-server
+COPY cmd/sync-server/main.go ./
 
-COPY . .
-
-RUN CGO_ENABLED=0 GOOS=linux go build -o sync-server ./cmd/sync-server
+# Compilar la aplicación
+RUN CGO_ENABLED=0 GOOS=linux go build -o sync-server .
 
 FROM alpine:latest
 

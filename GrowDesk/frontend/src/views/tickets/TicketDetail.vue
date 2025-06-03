@@ -3,7 +3,7 @@
   <div class="ticket-detail">
     <div v-if="isLoading" class="loading">Cargando...</div>
     <div v-else-if="errorMessage" class="error">{{ errorMessage }}</div>
-    <div v-else class="ticket-content">
+    <div v-else class="ticket-detail-layout">
       <!-- Notificación tipo toast -->
       <transition name="toast-fade">
         <div v-if="notification.show" :class="['notification-toast', notification.type]">
@@ -12,45 +12,46 @@
         </div>
       </transition>
       
+      <!-- Encabezado principal del ticket -->
       <div v-if="currentTicket" class="ticket-header">
-        <h1>{{ currentTicket.title }}</h1>
-        <div class="ticket-meta">
-          <div class="ticket-id">
-            <strong>ID:</strong> {{ currentTicket.id }}
-          </div>
-          <div class="ticket-status">
-            <strong>Estado:</strong> <span :class="['status-badge', currentTicket.status.toLowerCase()]">{{ translateStatus(currentTicket.status) }}</span>
-          </div>
-          <div class="ticket-priority">
-            <strong>Prioridad:</strong> <span :class="['priority-badge', currentTicket.priority.toLowerCase()]">{{ translatePriority(currentTicket.priority) }}</span>
-          </div>
-          <div class="ticket-category">
-            <strong>Categoría:</strong> {{ translateCategory(currentTicket.category) }}
-          </div>
-          <div class="ticket-date">
-            <strong>Creado:</strong> {{ formatDate(currentTicket.createdAt) }}
-          </div>
-        </div>
-      </div>
-      <div v-else class="ticket-header">
-        <h1>Ticket #{{ route.params.id }}</h1>
-      </div>
+        <div class="ticket-header-main">
+          <h1>{{ currentTicket.title }}</h1>
+          <div class="ticket-quick-meta">
+            <div class="ticket-id">
+              <strong>ID:</strong> {{ currentTicket.id }}
+            </div>
+            <div class="ticket-status">
+              <span :class="['status-badge', currentTicket.status.toLowerCase()]">{{ translateStatus(currentTicket.status) }}</span>
+            </div>
+            <div class="ticket-priority">
+              <span :class="['priority-badge', normalizePriority(currentTicket.priority)]">{{ translatePriority(currentTicket.priority) }}</span>
+            </div>
+            <!-- Botones de acción -->
+            <div v-if="hasAdminAccess || hasAssistantAccess" class="header-actions">
+              <!-- Botón para asignar usuario -->
+              <div class="admin-button header-button">
+                <button class="filter-btn assign-btn" @click="toggleAssignMenu($event)"
+                  :class="{ 'active': showAssignMenu }">
+                  <i class="pi pi-user"></i>
+                  <span>Asignar</span>
+                </button>
+                <div class="dropdown-content assign-dropdown" :class="{ 'show': showAssignMenu }">
+                  <div v-for="user in supportUsers" :key="user.id" class="dropdown-item" @click.stop="assignToUserQuick(user.id)">
+                    <i class="pi pi-user"></i> {{ user.firstName }} {{ user.lastName }}
+                  </div>
+                  <div class="dropdown-divider"></div>
+                  <div class="dropdown-item" @click.stop="removeAssignment(currentTicket.id)">
+                    <i class="pi pi-times"></i> Quitar asignación
+                  </div>
+                </div>
+              </div>
 
-      <div class="ticket-info" v-if="currentTicket">
-        <p class="description">{{ currentTicket.description }}</p>
-        <div class="meta-info">
-          <p>Categoría: {{ translateCategory(currentTicket.category) }}</p>
-          <p>Creado: {{ formatDate(currentTicket.createdAt) }}</p>
-          
-          <!-- NUEVA IMPLEMENTACIÓN DE LOS BOTONES DE ACCIÓN -->
-          <div class="ticket-admin-actions" v-if="hasAdminAccess || hasAssistantAccess">
-            <div class="admin-buttons">
               <!-- Botón para cambiar prioridad -->
-              <div class="admin-button">
+              <div class="admin-button header-button">
                 <button class="filter-btn priority-btn" @click="togglePriorityMenu($event)" 
                   :class="{ 'active': showPriorityMenu }">
                   <i class="pi pi-flag"></i>
-                  <span>Cambiar prioridad</span>
+                  <span>Prioridad</span>
                 </button>
                 <div class="dropdown-content priority-dropdown" :class="{ 'show': showPriorityMenu }">
                   <div class="dropdown-item" @click.stop="updatePriorityTo('LOW')">
@@ -68,12 +69,12 @@
                 </div>
               </div>
               
-              <!-- Nuevo botón para cambiar categoría -->
-              <div class="admin-button">
+              <!-- Botón para cambiar categoría -->
+              <div class="admin-button header-button">
                 <button class="filter-btn category-btn" @click="toggleCategoryMenu($event)" 
                   :class="{ 'active': showCategoryMenu }">
                   <i class="pi pi-tag"></i>
-                  <span>Cambiar categoría</span>
+                  <span>Categoría</span>
                 </button>
                 <div class="dropdown-content category-dropdown" :class="{ 'show': showCategoryMenu }">
                   <div v-for="category in availableCategories" :key="category.id" 
@@ -83,85 +84,168 @@
                 </div>
               </div>
               
-              <!-- Botón para asignar usuario -->
-              <div class="admin-button">
-                <button class="filter-btn assign-btn" @click="toggleAssignMenu($event)"
-                  :class="{ 'active': showAssignMenu }">
-                  <i class="pi pi-user"></i>
-                  <span>Asignar usuario</span>
-                </button>
-                <div class="dropdown-content assign-dropdown" :class="{ 'show': showAssignMenu }">
-                  <div v-for="user in supportUsers" :key="user.id" class="dropdown-item" @click.stop="assignToUserQuick(user.id)">
-                    <i class="pi pi-user"></i> {{ user.firstName }} {{ user.lastName }}
-                  </div>
-                  <div class="dropdown-divider"></div>
-                  <div class="dropdown-item" @click.stop="removeAssignment(currentTicket.id)">
-                    <i class="pi pi-times"></i> Quitar asignación
-                  </div>
-                </div>
-              </div>
-              
               <!-- Botón para cerrar ticket -->
-              <div class="admin-button" v-if="!isTicketClosed">
+              <div class="admin-button header-button" v-if="!isTicketClosed">
                 <button class="filter-btn close-btn" @click="showCloseTicketModal = true">
                   <i class="pi pi-check-circle"></i>
-                  <span>Cerrar ticket</span>
+                  <span>Cerrar</span>
                 </button>
               </div>
             </div>
           </div>
-          
-          <div class="assignment-info">
-            <!-- Información de asignación actual -->
-            <p v-if="currentTicket.assignedTo">
-              <strong>Asignado a:</strong> 
-              <span class="assigned-user">{{ getAssignedUserName(currentTicket.assignedTo) }}</span>
-            </p>
-            <p v-else><strong>Asignado a:</strong> <span class="not-assigned">No asignado</span></p>
-          </div>
         </div>
+        <button @click="toggleSidebar" class="toggle-sidebar-btn">
+          <i :class="['pi', showSidebar ? 'pi-chevron-right' : 'pi-chevron-left']"></i>
+        </button>
+      </div>
+      <div v-else class="ticket-header">
+        <h1>Ticket #{{ route.params.id }}</h1>
       </div>
 
-      <div class="chat-section">
-        <h2>
-          Conversación 
-          <span v-if="connectionStatus" class="connected-tag">
-            <i class="pi pi-check-circle"></i> En tiempo real
-          </span>
-          <span v-if="isTicketClosed" class="ticket-closed-badge">
-            <i class="pi pi-lock"></i> Ticket cerrado
-          </span>
-        </h2>
-        
-        <div class="messages" ref="messagesContainer">
-          <template v-if="currentMessages && currentMessages.length > 0">
-            <div v-for="message in currentMessages" :key="message.id" 
-                :class="['message', message.isClient ? 'client-message' : 'agent-message']">
-              <div class="message-header">
-                <span class="sender">{{ message.isClient ? (currentTicket?.customer?.name || 'Cliente') : 'Agente' }}</span>
-                <span class="timestamp">{{ formatTimestamp(message.timestamp || message.createdAt) }}</span>
+      <!-- Contenido principal (estructura de dos columnas) -->
+      <div class="ticket-content-wrapper">
+        <!-- Columna principal: Chat -->
+        <div class="main-column">
+          <div class="chat-section">
+            <h2>
+              Conversación 
+              <span v-if="connectionStatus" class="connected-tag">
+                <i class="pi pi-check-circle"></i> En tiempo real
+              </span>
+              <span v-if="isTicketClosed" class="ticket-closed-badge">
+                <i class="pi pi-lock"></i> Ticket cerrado
+              </span>
+            </h2>
+            
+            <div class="messages" ref="messagesContainer">
+              <template v-if="currentMessages && currentMessages.length > 0">
+                <div v-for="message in currentMessages" :key="message.id" 
+                    :class="['message', message.isClient ? 'client-message' : 'agent-message']">
+                  <div class="message-avatar">
+                    <div class="avatar-circle" :class="{ 'client-avatar': message.isClient, 'agent-avatar': !message.isClient }">
+                      <template v-if="message.isClient">
+                        <i class="pi pi-user"></i>
+                      </template>
+                      <template v-else>
+                        <img v-if="getAgentAvatar(message.userId || currentTicket?.assignedTo)" :src="getAgentAvatar(message.userId || currentTicket?.assignedTo)" alt="Foto de perfil" />
+                        <i v-else class="pi pi-user-edit"></i>
+                      </template>
+                    </div>
+                  </div>
+                  <div class="message-content">
+                    <div class="message-header">
+                      <span class="sender">{{ message.isClient ? (currentTicket?.customer?.name || 'Cliente') : getMessageSenderName(message) }}</span>
+                      <span class="timestamp">{{ formatTimestamp(message.timestamp || message.createdAt) }}</span>
+                    </div>
+                    <p class="content">{{ message.content }}</p>
+                  </div>
+                </div>
+              </template>
+              <div v-else class="no-messages">
+                No hay mensajes en este ticket
               </div>
-              <p class="content">{{ message.content }}</p>
             </div>
-          </template>
-          <div v-else class="no-messages">
-            No hay mensajes en este ticket
+            <form @submit.prevent="handleSendMessage" class="message-form" v-if="!isTicketClosed">
+              <textarea 
+                v-model="newMessage" 
+                placeholder="Escribe tu respuesta..." 
+                required
+                @keydown.enter.prevent="handleEnterKey"
+              ></textarea>
+              <button type="submit" class="btn btn-primary">
+                <i class="pi pi-send"></i> Enviar
+              </button>
+            </form>
+            <div v-else class="chat-closed-message">
+              <i class="pi pi-lock"></i>
+              <p>Este ticket está cerrado. No se pueden agregar más mensajes.</p>
+            </div>
           </div>
         </div>
-        <form @submit.prevent="handleSendMessage" class="message-form" v-if="!isTicketClosed">
-          <textarea 
-            v-model="newMessage" 
-            placeholder="Escribe tu respuesta..." 
-            required
-            @keydown.enter.prevent="handleEnterKey"
-          ></textarea>
-          <button type="submit" class="btn btn-primary">
-            <i class="pi pi-send"></i> Enviar
-          </button>
-        </form>
-        <div v-else class="chat-closed-message">
-          <i class="pi pi-lock"></i>
-          <p>Este ticket está cerrado. No se pueden agregar más mensajes.</p>
+        
+        <!-- Sidebar: Información del ticket -->
+        <div class="sidebar" :class="{ 'sidebar-open': showSidebar }">
+          <div class="sidebar-header">
+            <h3>Detalles del Ticket</h3>
+            <button @click="toggleSidebar" class="close-sidebar-btn">
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
+          
+          <div class="sidebar-content">
+            <!-- Sección de datos del ticket -->
+            <div class="sidebar-section">
+              <h4 class="section-title">
+                <i class="pi pi-info-circle"></i>
+                Información General
+              </h4>
+              <div class="ticket-info">
+                <div class="info-item">
+                  <span class="info-label">Categoría:</span>
+                  <span class="info-value">{{ translateCategory(currentTicket.category) }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Creado:</span>
+                  <span class="info-value">{{ formatDate(currentTicket.createdAt) }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Última actualización:</span>
+                  <span class="info-value">{{ formatDate(currentTicket.updatedAt) }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Estado:</span>
+                  <span class="info-value">
+                    <span :class="['status-badge', currentTicket.status]">{{ translateStatus(currentTicket.status) }}</span>
+                  </span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Prioridad:</span>
+                  <span class="info-value">
+                    <span :class="['priority-badge', normalizePriority(currentTicket.priority)]">
+                      {{ translatePriority(currentTicket.priority) }}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Sección de descripción -->
+            <div class="sidebar-section">
+              <h4 class="section-title">
+                <i class="pi pi-align-left"></i>
+                Descripción
+              </h4>
+              <p class="ticket-description">{{ currentTicket.description }}</p>
+            </div>
+            
+            <!-- Sección de asignación (solo información, sin botón) -->
+            <div class="sidebar-section">
+              <h4 class="section-title">
+                <i class="pi pi-user"></i>
+                Asignación
+              </h4>
+              <div class="assignment-info">
+                <div class="info-item">
+                  <span class="info-label">Asignado a:</span>
+                  <span v-if="currentTicket.assignedTo" class="assigned-user">
+                    {{ getAssignedUserName(currentTicket.assignedTo) }}
+                  </span>
+                  <span v-else class="not-assigned">No asignado</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Acciones de administración (en la barra lateral ya no se incluyen botones) -->
+            <div class="sidebar-section" v-if="hasAdminAccess || hasAssistantAccess">
+              <h4 class="section-title">
+                <i class="pi pi-cog"></i>
+                Acciones
+              </h4>
+              <div class="sidebar-info">
+                <p class="sidebar-note">Las acciones para este ticket están disponibles en el encabezado principal.</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -228,6 +312,14 @@ const newMessage = ref('');
 const messagesContainer = ref(null);
 let connectionCheckInterval = null;
 let monitorInterval = null;
+
+// Variable para controlar la visibilidad de la sidebar
+const showSidebar = ref(true);
+
+// Función para alternar la visibilidad de la sidebar
+const toggleSidebar = () => {
+  showSidebar.value = !showSidebar.value;
+};
 
 // Variables para la asignación
 const selectedUserId = ref('');
@@ -413,6 +505,23 @@ const showNotification = (message, type = 'success', duration = 5000) => {
       notification.value.show = false;
     }, duration)
   };
+};
+
+// Función para normalizar el valor de prioridad
+const normalizePriority = (priority) => {
+  if (!priority) return 'medium';
+  
+  // Convertir a minúsculas
+  const lowerPriority = priority.toLowerCase();
+  
+  // Mapear diferentes formatos posibles al formato estándar
+  if (lowerPriority === 'baja' || lowerPriority === 'low') return 'low';
+  if (lowerPriority === 'media' || lowerPriority === 'medium') return 'medium';
+  if (lowerPriority === 'alta' || lowerPriority === 'high') return 'high';
+  if (lowerPriority === 'urgente' || lowerPriority === 'urgent') return 'urgent';
+  
+  // Si no coincide con ninguno, devolver medio por defecto
+  return 'medium';
 };
 
 // Funciones para manejo de asignaciones
@@ -1213,11 +1322,38 @@ const updateCategoryTo = async (newCategory) => {
     isLoading.value = false;
   }
 };
+
+// Función para obtener el avatar del agente basado en su ID
+const getAgentAvatar = (userId) => {
+  if (!userId) return null;
+  
+  const user = usersStore.users.find(u => u.id === userId);
+  if (user && user.avatarUrl) {
+    return user.avatarUrl;
+  }
+  
+  // Si no tiene avatar, retornar null para que se muestre el icono por defecto
+  return null;
+};
+
+// Función para obtener el nombre del remitente del mensaje
+const getMessageSenderName = (message) => {
+  if (!message.userId) {
+    return 'Agente';
+  }
+  
+  const user = usersStore.users.find(u => u.id === message.userId);
+  if (user) {
+    return `${user.firstName} ${user.lastName}`;
+  }
+  
+  return 'Agente';
+};
 </script>
 
 <style lang="scss" scoped>
 .ticket-detail {
-  max-width: 1000px;
+  max-width: 1300px;
   margin: 0 auto;
   background: linear-gradient(to bottom, #f8faff, #eef2ff);
   border-radius: 10px;
@@ -1233,320 +1369,468 @@ const updateCategoryTo = async (newCategory) => {
     color: #7e22ce;
   }
 
-  .ticket-content {
-    .ticket-header {
-      display: flex;
-      flex-direction: column;
-      margin-bottom: 2rem;
+  .ticket-detail-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 200px);
+  }
 
-      h1 {
-        margin: 0 0 1rem 0;
-        color: #1e293b;
-        font-weight: 600;
-        border-bottom: 2px solid #c7d2fe;
-        padding-bottom: 0.5rem;
-      }
+  .ticket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #c7d2fe;
+  }
 
-      .ticket-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        margin-bottom: 1.5rem;
-        
-        .ticket-id, .ticket-status, .ticket-priority, .ticket-category, .ticket-date {
-          padding: 0.5rem 0.75rem;
-          border-radius: 6px;
-          background-color: #eef2ff;
-          font-size: 0.9rem;
-          display: flex;
-          align-items: center;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-          
-          strong {
-            margin-right: 0.5rem;
-            font-weight: 600;
-            color: #444;
-          }
-        }
+  .ticket-header .ticket-header-main {
+    flex: 1;
+  }
+
+  .ticket-header .ticket-header-main h1 {
+    margin: 0 0 0.5rem 0;
+    color: #1e293b;
+    font-weight: 600;
+    font-size: 1.75rem;
+  }
+
+  .ticket-header .ticket-quick-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .ticket-header .ticket-id, 
+  .ticket-header .ticket-status, 
+  .ticket-header .ticket-priority {
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    background-color: #eef2ff;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  .ticket-header .ticket-id strong, 
+  .ticket-header .ticket-status strong, 
+  .ticket-header .ticket-priority strong {
+    margin-right: 0.5rem;
+    font-weight: 600;
+    color: #444;
+  }
+
+  /* Estilos mejorados para los botones en el encabezado */
+  .ticket-header .header-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-left: auto;
+    flex-wrap: wrap;
+    padding-right: 2rem; /* Añadir espacio a la derecha para separar del botón de sidebar */
+  }
+
+  .ticket-header .header-button {
+    position: relative;
+  }
+
+  .ticket-header .header-button .filter-btn {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+    background-color: #eef2ff;
+    color: #4f46e5;
+    border: 1px solid #ddd6fe;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 32px;
+    transition: all 0.2s ease;
+  }
+
+  .ticket-header .header-button .filter-btn:hover {
+    background-color: #ddd6fe;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .ticket-header .header-button .filter-btn i {
+    color: #4f46e5;
+    font-size: 0.85rem;
+  }
+
+  .ticket-header .header-button .filter-btn span {
+    font-weight: 500;
+  }
+
+  .ticket-header .header-button .filter-btn.active {
+    background-color: #4f46e5;
+    color: white;
+    border-color: #4f46e5;
+  }
+
+  .ticket-header .header-button .filter-btn.active i {
+    color: white;
+  }
+
+  .ticket-header .header-button .filter-btn.close-btn {
+    background-color: #f1f5f9;
+    color: #7e22ce;
+    border-color: #e2e8f0;
+  }
+
+  .ticket-header .header-button .filter-btn.close-btn:hover {
+    background-color: #e2e8f0;
+  }
+
+  .ticket-header .header-button .filter-btn.close-btn i {
+    color: #7e22ce;
+  }
+
+  .ticket-header .header-button .dropdown-content {
+    right: 0;
+    left: auto;
+    min-width: 220px;
+    z-index: 1000;
+  }
+
+  .ticket-header .toggle-sidebar-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e0e7ff;
+    color: #4f46e5;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .ticket-header .toggle-sidebar-btn:hover {
+    background: #c7d2fe;
+  }
+
+  .ticket-header .toggle-sidebar-btn i {
+    font-size: 1rem;
+  }
+
+  .ticket-content-wrapper {
+    display: flex;
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+
+    .main-column {
+      flex: 1;
+      margin-right: 1rem;
+      transition: margin-right 0.3s ease;
+      
+      &.full-width {
+        margin-right: 0;
       }
     }
 
-    .ticket-info {
-      background: #f8fafc;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      margin-bottom: 2rem;
+    .sidebar {
+      width: 350px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      position: absolute;
+      right: -350px;
+      top: 0;
+      bottom: 0;
+      transition: right 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
       border: 1px solid #e2e8f0;
-
-      .description {
-        margin-bottom: 1.5rem;
-        line-height: 1.6;
+      
+      &.sidebar-open {
+        right: 0;
       }
-
-      .meta-info {
-        color: #666;
-        font-size: 0.9rem;
-
-        p {
-          margin: 0.5rem 0;
+      
+      .sidebar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #e2e8f0;
+        
+        h3 {
+          margin: 0;
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #1e293b;
         }
         
-        .ticket-admin-actions {
-          margin-top: 1.75rem;
-          padding: 1.5rem;
-          background-color: var(--bg-tertiary);
-          border-radius: 12px;
-          box-shadow: var(--card-shadow);
-          border: 1px solid var(--border-color);
+        .close-sidebar-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #f1f5f9;
+          border: none;
+          color: #64748b;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          
+          &:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+          }
+          
+          i {
+            font-size: 0.9rem;
+          }
+        }
+      }
+      
+      .sidebar-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.25rem;
+        
+        .sidebar-section {
+          margin-bottom: 1.5rem;
+          
+          &:last-child {
+            margin-bottom: 0;
+          }
+          
+          .section-title {
+            display: flex;
+            align-items: center;
+            margin: 0 0 0.75rem 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #475569;
+            
+            i {
+              margin-right: 0.5rem;
+              color: #4f46e5;
+              font-size: 1rem;
+            }
+          }
+          
+          .ticket-info {
+            .info-item {
+              display: flex;
+              padding: 0.5rem 0;
+              border-bottom: 1px solid #f1f5f9;
+              
+              &:last-child {
+                border-bottom: none;
+              }
+              
+              .info-label {
+                width: 40%;
+                color: #64748b;
+                font-size: 0.9rem;
+              }
+              
+              .info-value {
+                flex: 1;
+                font-weight: 500;
+                color: #1e293b;
+                font-size: 0.9rem;
+              }
+            }
+          }
+          
+          .ticket-description {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #334155;
+            white-space: pre-wrap;
+            margin: 0;
+          }
+          
+          .assignment-info {
+            .assigned-user {
+              font-weight: 500;
+              color: #4F46E5;
+              background-color: #EEF2FF;
+              padding: 0.35rem 0.75rem;
+              border-radius: 4px;
+              display: inline-block;
+              font-size: 0.9rem;
+            }
+            
+            .not-assigned {
+              font-style: italic;
+              color: #6B7280;
+              background-color: #F3F4F6;
+              padding: 0.35rem 0.75rem;
+              border-radius: 4px;
+              display: inline-block;
+              font-size: 0.9rem;
+            }
+          }
           
           .admin-buttons {
             display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
+            flex-direction: column;
+            gap: 0.75rem;
             
             .admin-button {
               position: relative;
-              margin-right: 10px;
-              z-index: 100;
-              display: inline-block;
-              
-              .filter-btn {
-                background-color: var(--bg-tertiary);
-                border: 1px solid var(--border-color);
-                color: var(--text-primary);
-                font-size: 0.9rem;
-                font-weight: 500;
-                padding: 0.65rem 1.2rem;
-                border-radius: 8px;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                
-                &:hover {
-                  background-color: var(--hover-bg);
-                  transform: translateY(-2px);
-                }
-                
-                &.active {
-                  background-color: var(--primary-color);
-                  color: white;
-                  border-color: transparent;
-                  font-weight: 600;
-                  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-                }
-                
-                &.priority-btn {
-                  i {
-                    color: #3b82f6;
-                  }
-                  
-                  &.active, &:hover {
-                    i {
-                      color: white;
-                    }
-                  }
-                }
-                
-                &.assign-btn {
-                  i {
-                    color: #10b981;
-                  }
-                  
-                  &.active, &:hover {
-                    i {
-                      color: white;
-                    }
-                  }
-                }
-                
-                &.close-btn {
-                  i {
-                    color: #f43f5e;
-                  }
-                  
-                  &:hover {
-                    i {
-                      color: white;
-                    }
-                  }
-                }
-                
-                i {
-                  font-size: 1rem;
-                }
-              }
-              
-              .dropdown-content {
-                position: absolute;
-                z-index: 9999;
-                background-color: var(--card-bg);
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-                box-shadow: var(--card-shadow);
-                min-width: 200px;
-                display: none;
-                margin-top: 5px;
-                animation: fadeInDown 0.3s ease both;
-                
-                &.show {
-                  display: block;
-                  visibility: visible;
-                  opacity: 1;
-                }
-                
-                .dropdown-item {
-                  padding: 0.75rem 1rem;
-                  cursor: pointer;
-                  display: flex;
-                  align-items: center;
-                  color: var(--text-primary);
-                  font-weight: 500;
-                  transition: all 0.2s ease;
-                  
-                  &:hover {
-                    background-color: var(--bg-hover);
-                  }
-                }
-                
-                .dropdown-divider {
-                  height: 1px;
-                  background-color: var(--border-color);
-                  margin: 8px 0;
-                }
-                
-                .dropdown-item i {
-                  margin-right: 10px;
-                  color: var(--primary-color);
-                }
-              }
             }
-          }
-        }
-        
-        .assignment-info {
-          margin-top: 1.75rem;
-          padding-top: 1.75rem;
-          border-top: 1px solid #E5E7EB;
-          
-          p {
-            font-size: 0.95rem;
-            margin-bottom: 0.5rem;
-            color: #4B5563;
             
-            strong {
-              font-weight: 600;
-              color: #374151;
+            .filter-btn {
+              width: 100%;
+              text-align: left;
+              justify-content: flex-start;
+              font-size: 0.9rem;
             }
-          }
-          
-          .assigned-user {
-            font-weight: 500;
-            color: #4F46E5;
-            background-color: #EEF2FF;
-            padding: 0.35rem 0.75rem;
-            border-radius: 4px;
-            display: inline-block;
-          }
-          
-          .not-assigned {
-            font-style: italic;
-            color: #6B7280;
-            background-color: #F3F4F6;
-            padding: 0.35rem 0.75rem;
-            border-radius: 4px;
-            display: inline-block;
           }
         }
       }
     }
+  }
 
-    .chat-section {
-      background: #f8fafc;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      border: 1px solid #e2e8f0;
+  .chat-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 
-      h2 {
-        margin: 0 0 1.5rem;
+    h2 {
+      margin: 0 0 1.25rem;
+      display: flex;
+      align-items: center;
+      font-size: 1.25rem;
+      
+      .connected-tag {
+        margin-left: 1rem;
+        font-size: 0.8rem;
+        color: #4caf50;
         display: flex;
         align-items: center;
+        background: #e8f5e9;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
         
-        .connected-tag {
-          margin-left: 1rem;
-          font-size: 0.8rem;
-          color: #4caf50;
-          display: flex;
-          align-items: center;
-          background: #e8f5e9;
-          padding: 0.25rem 0.5rem;
-          border-radius: 4px;
-          
-          i {
-            margin-right: 0.25rem;
-          }
+        i {
+          margin-right: 0.25rem;
         }
       }
-
-      .messages {
-        min-height: 200px;
-        max-height: 400px;
-        overflow-y: auto;
-        margin-bottom: 1.5rem;
-        padding: 1rem;
-        background: #f9f9f9;
+      
+      .ticket-closed-badge {
+        background-color: #ef4444;
+        color: white;
+        padding: 0.25rem 0.5rem;
         border-radius: 4px;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-
-        .no-messages {
-          text-align: center;
-          color: #666;
-          padding: 2rem;
-          font-style: italic;
+        font-size: 0.8rem;
+        margin-left: 0.5rem;
+        display: inline-flex;
+        align-items: center;
+        
+        i {
+          margin-right: 0.25rem;
         }
+      }
+    }
 
-        .message {
-          padding: 1rem;
-          border-radius: 8px;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-          width: 80%;
-          position: relative;
+    .messages {
+      flex: 1;
+      min-height: 300px;
+      max-height: 500px;
+      overflow-y: auto;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: #f9f9f9;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+
+      .no-messages {
+        text-align: center;
+        color: #666;
+        padding: 2rem;
+        font-style: italic;
+      }
+
+      .message {
+        display: flex;
+        padding: 0;
+        width: 90%;
+        position: relative;
+        
+        &.client-message {
+          align-self: flex-start;
           
-          &.client-message {
+          .message-content {
             background-color: #e0e7ff;
-            align-self: flex-start;
-            
-            &:before {
-              content: '';
-              position: absolute;
-              left: -8px;
-              top: 10px;
-              border-style: solid;
-              border-width: 8px 8px 8px 0;
-              border-color: transparent #e0e7ff transparent transparent;
-            }
+            border-radius: 0 12px 12px 12px;
+          }
+        }
+        
+        &.agent-message {
+          align-self: flex-end;
+          flex-direction: row-reverse;
+          
+          .message-content {
+            background-color: #ddd6fe;
+            border-radius: 12px 0 12px 12px;
           }
           
-          &.agent-message {
-            background-color: #ddd6fe;
-            align-self: flex-end;
+          .message-avatar {
+            margin-left: 12px;
+            margin-right: 0;
+          }
+        }
+        
+        .message-avatar {
+          margin-right: 12px;
+          
+          .avatar-circle {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f1f5f9;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
             
-            &:before {
-              content: '';
-              position: absolute;
-              right: -8px;
-              top: 10px;
-              border-style: solid;
-              border-width: 8px 0 8px 8px;
-              border-color: transparent transparent transparent #ddd6fe;
+            &.client-avatar {
+              background-color: #e0e7ff;
+              color: #4f46e5;
+            }
+            
+            &.agent-avatar {
+              background-color: #ddd6fe;
+              color: #7e22ce;
+            }
+            
+            i {
+              font-size: 1.1rem;
+            }
+            
+            img {
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
             }
           }
+        }
+        
+        .message-content {
+          padding: 1rem;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+          flex: 1;
 
           .message-header {
             display: flex;
@@ -1555,7 +1839,8 @@ const updateCategoryTo = async (newCategory) => {
             margin-bottom: 0.5rem;
 
             .sender {
-              font-weight: bold;
+              font-weight: 600;
+              color: #4f46e5;
             }
 
             .timestamp {
@@ -1571,38 +1856,75 @@ const updateCategoryTo = async (newCategory) => {
           }
         }
       }
+    }
 
-      .message-form {
+    .message-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+
+      textarea {
+        resize: vertical;
+        min-height: 100px;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 1rem;
+        
+        &:focus {
+          outline: none;
+          border-color: #4f46e5;
+          box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+        }
+      }
+
+      button {
+        align-self: flex-end;
+        padding: 0.6rem 1.25rem;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(to right, #4f46e5, #6366f1);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
         display: flex;
-        flex-direction: column;
-        gap: 1rem;
+        align-items: center;
+        gap: 0.5rem;
 
-        textarea {
-          resize: vertical;
-          min-height: 100px;
-          padding: 0.75rem;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-family: inherit;
+        &:hover {
+          background: linear-gradient(to right, #4338ca, #4f46e5);
+          box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+        }
+        
+        i {
           font-size: 1rem;
         }
-
-        button {
-          align-self: flex-end;
-          padding: 0.5rem 1rem;
-          border: none;
-          border-radius: 4px;
-          background: linear-gradient(to right, #4f46e5, #6366f1);
-          color: white;
-          font-weight: bold;
-          cursor: pointer;
-          transition: all 0.2s;
-
-          &:hover {
-            background: linear-gradient(to right, #4338ca, #4f46e5);
-            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
-          }
-        }
+      }
+    }
+    
+    .chat-closed-message {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      background-color: #f9fafb;
+      border: 1px dashed #d1d5db;
+      border-radius: 0.5rem;
+      margin-top: 1rem;
+      color: #6b7280;
+      
+      i {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: #ef4444;
+      }
+      
+      p {
+        margin: 0;
+        font-style: italic;
       }
     }
   }
@@ -1617,7 +1939,7 @@ const updateCategoryTo = async (newCategory) => {
   min-width: 300px;
   max-width: 450px;
   padding: 15px 20px;
-  border-radius: 6px;
+  border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   display: flex;
   align-items: center;
@@ -1684,229 +2006,182 @@ const updateCategoryTo = async (newCategory) => {
   opacity: 1;
 }
 
-/* Estilos mejorados para la sección de asignación */
-.assignment-section {
-  margin-top: 20px;
-  padding: 15px;
-  border-radius: 6px;
-  background-color: #f9f9f9;
-  border: 1px solid #e5e5e5;
-}
-
-.assignment-section h3 {
-  margin-top: 0;
-  margin-bottom: 15px;
-  font-size: 16px;
-  color: #333;
-}
-
-.assignment-controls {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.user-select {
-  flex-grow: 1;
-  min-width: 200px;
-}
-
-.assignment-buttons {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.assignment-buttons button {
-  padding: 8px 15px;
+/* Estilos para las badges y elementos compartidos */
+.status-badge {
+  padding: 0.25rem 0.5rem;
   border-radius: 4px;
+  text-transform: capitalize;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.85rem;
   font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  
+  &::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+  }
+  
+  &.open { 
+    background: rgba(30, 64, 175, 0.1); 
+    color: #1e40af; 
+    &::before { background-color: #1e40af; }
+  }
+  &.assigned { 
+    background: rgba(91, 33, 182, 0.1); 
+    color: #5b21b6; 
+    &::before { background-color: #5b21b6; }
+  }
+  &.in_progress { 
+    background: rgba(3, 105, 161, 0.1); 
+    color: #0369a1; 
+    &::before { background-color: #0369a1; }
+  }
+  &.resolved { 
+    background: rgba(67, 56, 202, 0.1); 
+    color: #4338ca; 
+    &::before { background-color: #4338ca; }
+  }
+  &.closed { 
+    background: rgba(55, 65, 81, 0.1); 
+    color: #374151; 
+    &::before { background-color: #374151; }
+  }
 }
 
-.assign-btn {
-  background-color: #3490dc;
-  color: white;
-  border: none;
-}
-
-.assign-btn:hover {
-  background-color: #2779bd;
-}
-
-.self-assign-btn {
-  background-color: #38c172;
-  color: white;
-  border: none;
-}
-
-.self-assign-btn:hover {
-  background-color: #2d9958;
-}
-
-.request-btn {
-  background-color: #f6993f;
-  color: white;
-  border: none;
-}
-
-.request-btn:hover {
-  background-color: #de751f;
-}
-
-.remove-btn {
-  background-color: #e3342f;
-  color: white;
-  border: none;
-}
-
-.remove-btn:hover {
-  background-color: #cc1f1a;
-}
-
-.disabled-btn {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Estilos para las etiquetas de prioridad */
 .priority-badge {
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   text-transform: capitalize;
-  
-  &.low { background: #bae6fd; color: #0369a1; }
-  &.medium { background: #c7d2fe; color: #4338ca; }
-  &.high { background: #e0e7ff; color: #3730a3; }
-  &.urgent { background: #ddd6fe; color: #5b21b6; }
-}
-
-/* Estilos para la sección de prioridad */
-.priority-management {
-  margin: 1rem 0;
-  padding: 1rem;
-  background-color: #f9f9f9;
-  border-radius: 6px;
-  border: 1px solid #e5e5e5;
-  
-  .priority-section {
-    h3 {
-      margin-top: 0;
-      font-size: 1rem;
-      margin-bottom: 0.5rem;
-    }
-    
-    .priority-controls {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      margin-top: 0.5rem;
-      
-      .priority-select {
-        flex-grow: 1;
-        padding: 8px 12px;
-        border-radius: 4px;
-        border: 1px solid #ced4da;
-        background-color: white;
-        font-size: 0.9rem;
-      }
-      
-      button {
-        padding: 8px 15px;
-        border-radius: 4px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        background-color: #3490dc;
-        color: white;
-        border: none;
-        
-        &:hover:not(:disabled) {
-          background-color: #2779bd;
-        }
-        
-        &:disabled {
-          background-color: #ccc;
-          cursor: not-allowed;
-        }
-      }
-    }
-  }
-}
-
-.priority-indicator {
-  width: 16px;
-  height: 16px;
-  
-  &.low {
-    background-color: #3b82f6;
-  }
-  
-  &.medium {
-    background-color: #8b5cf6;
-  }
-  
-  &.high {
-    background-color: #ec4899;
-  }
-  
-  &.urgent {
-    background-color: #ef4444;
-  }
-}
-
-.priority-text {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.85rem;
   font-weight: 500;
   
-  &.priority-low {
-    color: #0369a1;
-  }
-  
-  &.priority-medium {
-    color: #4338ca;
-  }
-  
-  &.priority-high {
-    color: #3730a3;
-  }
-  
-  &.priority-urgent {
-    color: #5b21b6;
-    font-weight: 700;
-  }
-}
-
-.assignment-btn {
-  .priority-indicator {
-    display: none !important;
-  }
-  
-  .priority-text {
-    display: none !important;
-  }
-}
-
-.ticket-status {
-  strong {
+  &::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
     margin-right: 0.5rem;
   }
   
-  .status-badge {
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    text-transform: capitalize;
-    
-    &.open { background: #cfe7fe; color: #1e40af; }
-    &.assigned { background: #dbd2fd; color: #5b21b6; }
-    &.in_progress { background: #bae6fd; color: #0369a1; }
-    &.resolved { background: #c7d2fe; color: #4338ca; }
-    &.closed { background: #d1d5db; color: #374151; }
+  &.low { 
+    background: rgba(3, 105, 161, 0.1); 
+    color: #0369a1; 
+    &::before { background-color: #0369a1; }
+  }
+  &.medium { 
+    background: rgba(67, 56, 202, 0.1); 
+    color: #4338ca; 
+    &::before { background-color: #4338ca; }
+  }
+  &.high { 
+    background: rgba(55, 48, 163, 0.1); 
+    color: #3730a3; 
+    &::before { background-color: #3730a3; }
+  }
+  &.urgent { 
+    background: rgba(91, 33, 182, 0.1); 
+    color: #5b21b6; 
+    &::before { background-color: #5b21b6; }
   }
 }
 
-/* Animación para el menú desplegable */
+/* Estilos para botones de acciones admin */
+.filter-btn {
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.65rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  &:hover {
+    background-color: #e2e8f0;
+    transform: translateY(-2px);
+  }
+  
+  &.active {
+    background-color: #4f46e5;
+    color: white;
+    border-color: transparent;
+    font-weight: 600;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  &.priority-btn i {
+    color: #3b82f6;
+  }
+  
+  &.category-btn i {
+    color: #8b5cf6;
+  }
+  
+  &.assign-btn i {
+    color: #10b981;
+  }
+  
+  &.close-btn i {
+    color: #f43f5e;
+  }
+  
+  &.active i {
+    color: white;
+  }
+}
+
+/* Estilos para menús desplegables */
+.dropdown-content {
+  position: absolute;
+  z-index: 1000;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 200px;
+  display: none;
+  margin-top: 5px;
+  animation: fadeInDown 0.3s ease both;
+  right: 0;
+  
+  &.show {
+    display: block;
+  }
+  
+  .dropdown-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    color: #475569;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background-color: #f8fafc;
+    }
+  }
+  
+  .dropdown-divider {
+    height: 1px;
+    background-color: #e2e8f0;
+    margin: 8px 0;
+  }
+}
+
+/* Animación para menús desplegables */
 @keyframes fadeInDown {
   from {
     opacity: 0;
@@ -1918,186 +2193,38 @@ const updateCategoryTo = async (newCategory) => {
   }
 }
 
-.dropdown-menu {
-  position: relative;
-  margin-right: 1rem;
-              
-  .action-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1.25rem;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #364FC7, #4263EB);
-    border: none;
-    color: white;
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(66, 99, 235, 0.2);
-    
-    &:hover {
-      background: linear-gradient(135deg, #3B5BDB, #4C6EF5);
-      box-shadow: 0 4px 12px rgba(66, 99, 235, 0.3);
-      transform: translateY(-1px);
-    }
-    
-    &:active {
-      transform: translateY(0);
-      box-shadow: 0 2px 4px rgba(66, 99, 235, 0.3);
-    }
-    
-    .btn-text {
-      margin: 0 0.25rem;
-      font-family: 'Inter', system-ui, sans-serif;
-    }
-
-    i {
-      font-size: 1rem;
-    }
-    
-    &.assignment-btn {
-      background: linear-gradient(135deg, #5E60CE, #6366F1);
-      box-shadow: 0 2px 8px rgba(94, 96, 206, 0.2);
-      
-      &:hover {
-        background: linear-gradient(135deg, #6D6AE8, #7B79F7);
-        box-shadow: 0 4px 12px rgba(94, 96, 206, 0.3);
-      }
-    }
-  }
-  
-  .dropdown-content {
-    position: absolute;
-    top: calc(100% + 0.5rem);
-    left: 0;
-    z-index: 100;
-    min-width: 260px;
-    display: none;
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    overflow: hidden;
-    border: 1px solid #E5E7EB;
-    
-    &.show {
-      display: block;
-    }
-    
-    .dropdown-header {
-      padding: 1rem 1.25rem;
-      background: linear-gradient(to right, #F3F4FF, #EFF6FF);
-      font-weight: 600;
-      color: #4F46E5;
-      border-bottom: 1px solid #E5E7EB;
-      font-size: 0.95rem;
-    }
-    
-    .dropdown-items {
-      max-height: 300px;
-      overflow-y: auto;
-      
-      .dropdown-item {
-        padding: 0.9rem 1.25rem;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        cursor: pointer;
-        transition: all 0.2s;
-        font-size: 0.95rem;
-        color: #1F2937;
-        
-        &:hover {
-          background-color: #F3F4FF;
-        }
-        
-        &.active {
-          background-color: #EFF6FF;
-          color: #4F46E5;
-          font-weight: 500;
-          
-          &:hover {
-            background-color: #E0E7FF;
-          }
-        }
-
-        i {
-          color: #4F46E5;
-          font-size: 1rem;
-        }
-      }
-      
-      .dropdown-divider {
-        height: 1px;
-        background-color: #E5E7EB;
-        margin: 0.5rem 1rem;
-      }
-    }
-  }
+/* Indicadores de prioridad y categoría */
+.priority-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 10px;
 }
 
-.close-ticket-btn {
-  background: linear-gradient(135deg, #059669, #10b981);
-  margin-left: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  
-  i {
-    color: white;
-  }
-  
-  &:hover {
-    background: linear-gradient(135deg, #047857, #059669);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
-  }
-  
-  &:active {
-    transform: translateY(0);
-  }
+.priority-indicator.low {
+  background-color: #0369a1;
 }
 
-.close-btn-container {
-  margin-left: 0.5rem;
+.priority-indicator.medium {
+  background-color: #4338ca;
 }
 
-.ticket-closed-badge {
-  background-color: #ef4444;
-  color: white;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  margin-left: 0.5rem;
-  display: inline-flex;
-  align-items: center;
-  i {
-    margin-right: 0.25rem;
-  }
+.priority-indicator.high {
+  background-color: #3730a3;
 }
 
-.chat-closed-message {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  background-color: #f9fafb;
-  border: 1px dashed #d1d5db;
-  border-radius: 0.5rem;
-  margin-top: 1rem;
-  color: #6b7280;
-  
-  i {
-    font-size: 1.5rem;
-    margin-bottom: 0.5rem;
-    color: #ef4444;
-  }
-  
-  p {
-    margin: 0;
-    font-style: italic;
-  }
+.priority-indicator.urgent {
+  background-color: #5b21b6;
+}
+
+.category-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 10px;
+  background-color: #8b5cf6;
 }
 
 /* Estilos para el modal */
@@ -2116,10 +2243,10 @@ const updateCategoryTo = async (newCategory) => {
 
 .modal-content {
   background-color: white;
-  border-radius: 8px;
+  border-radius: 12px;
   width: 100%;
   max-width: 500px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   overflow: hidden;
 }
 
@@ -2127,12 +2254,14 @@ const updateCategoryTo = async (newCategory) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
   
   h3 {
     margin: 0;
     color: #111827;
+    font-size: 1.25rem;
+    font-weight: 600;
   }
   
   .modal-close {
@@ -2159,7 +2288,7 @@ const updateCategoryTo = async (newCategory) => {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border-radius: 8px;
   margin-bottom: 1rem;
   font-size: 1rem;
   color: #1f2937;
@@ -2170,7 +2299,7 @@ const updateCategoryTo = async (newCategory) => {
   height: 100px;
   padding: 0.75rem;
   border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border-radius: 8px;
   margin-bottom: 1rem;
   font-size: 1rem;
   color: #1f2937;
@@ -2184,10 +2313,11 @@ const updateCategoryTo = async (newCategory) => {
   margin-top: 1rem;
   
   .btn {
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
+    padding: 0.6rem 1.25rem;
+    border-radius: 8px;
     font-weight: 500;
     cursor: pointer;
+    font-size: 0.95rem;
     
     &.btn-secondary {
       background-color: #f3f4f6;
@@ -2216,415 +2346,81 @@ const updateCategoryTo = async (newCategory) => {
   }
 }
 
-/* ESTILOS CRÍTICOS PARA LA VISIBILIDAD DE LOS BOTONES */
-.ticket-actions {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  margin-top: 1.75rem;
-  padding-top: 1.75rem;
-  border-top: 1px solid #E5E7EB;
-  
-  .action-buttons {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    gap: 1.25rem;
-    flex-wrap: wrap;
+/* Estilos responsivos */
+@media (max-width: 768px) {
+  .ticket-detail {
+    padding: 1rem;
   }
   
-  .dropdown-menu {
-    display: inline-block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+  .ticket-detail-layout {
+    min-height: calc(100vh - 150px);
   }
   
-  .action-btn {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-  }
-}
-
-
-/* Estilos para los menús desplegables */
-.dropdown-content.show {
-  display: block !important;
-}
-
-.admin-button {
-  position: relative;
-  margin-right: 10px;
-  margin-bottom: 10px;
-}
-
-.action-btn {
-  margin-bottom: 5px;
-}
-
-/* Ensure dropdown menus are visible */
-.dropdown-content {
-  position: absolute;
-  z-index: 1000;
-  background-color: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  min-width: 200px;
-}
-
-.dropdown-item {
-  padding: 10px 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.dropdown-item:hover {
-  background-color: #f3f4f6;
-}
-
-.priority-dropdown {
-  display: none;
-}
-
-.assign-dropdown {
-  display: none;
-}
-
-.dropdown-content {
-  position: absolute !important;
-  z-index: 9999 !important;
-  background-color: white !important;
-  border: 1px solid #ccc !important;
-  border-radius: 4px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-}
-
-.dropdown-content.show {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-
-/* Agregamos más margen al contenedor del botón para que haya espacio para el menú */
-.admin-button {
-  position: relative !important;
-  margin-bottom: 15px !important;
-  z-index: 100 !important; /* Para que aparezca sobre otros elementos */
-  display: inline-block !important;
-}
-
-/* Estilos críticos para mantener menús visibles */
-.priority-dropdown.show, 
-.assign-dropdown.show {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-
-/* Aseguramos que nada más pueda ocultar los menús */
-body .dropdown-content.show {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-
-.dropdown-content {
-  position: absolute !important;
-  z-index: 9999 !important;
-  background-color: var(--card-bg) !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: 8px !important;
-  box-shadow: var(--card-shadow) !important;
-  animation: fadeInDown 0.3s ease both;
-}
-
-.dropdown-content.show {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-
-.dropdown-item {
-  padding: 0.75rem 1rem !important;
-  cursor: pointer !important;
-  display: flex !important;
-  align-items: center !important;
-  color: var(--text-primary) !important;
-  font-weight: 500 !important;
-  transition: all 0.2s ease !important;
-}
-
-.dropdown-item:hover {
-  background-color: var(--bg-hover) !important;
-}
-
-/* Estilo para los botones de acción */
-.action-btn {
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.5rem !important;
-  color: white !important;
-  font-weight: 600 !important;
-  padding: 0.75rem 1.5rem !important;
-  border-radius: 8px !important;
-  cursor: pointer !important;
-  border: none !important;
-  position: relative !important;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
-  transition: all 0.3s ease !important;
-}
-
-.action-btn:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15) !important;
-}
-
-.action-btn.priority-btn {
-  background-color: var(--primary-color) !important;
-}
-
-.action-btn.priority-btn:hover {
-  background-color: var(--primary-hover) !important;
-}
-
-.action-btn.assign-btn {
-  background-color: var(--success-color) !important;
-}
-
-.action-btn.assign-btn:hover {
-  background-color: var(--success-hover) !important;
-}
-
-.action-btn.close-btn {
-  background-color: var(--danger-color) !important;
-}
-
-.action-btn.close-btn:hover {
-  background-color: var(--danger-hover) !important;
-}
-
-/* Agregamos más margen al contenedor del botón para que haya espacio para el menú */
-.admin-button {
-  position: relative !important;
-  margin-bottom: 15px !important;
-  margin-right: 10px !important;
-  z-index: 100 !important;
-  display: inline-block !important;
-}
-
-/* Animación para los menús desplegables */
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Estilos para botones y acciones */
-.ticket-admin-actions {
-  margin-top: 1.75rem;
-  padding: 1.5rem;
-  background-color: var(--bg-tertiary);
-  border-radius: 12px;
-  box-shadow: var(--card-shadow);
-  border: 1px solid var(--border-color);
-  
-  .admin-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-  }
-}
-
-.admin-button {
-  position: relative;
-  margin-right: 10px;
-  z-index: 100;
-  display: inline-block;
-}
-
-/* Estilo para los botones tipo filter-btn */
-.filter-btn {
-  background-color: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  font-size: 0.9rem;
-  font-weight: 500;
-  padding: 0.65rem 1.2rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.filter-btn:hover {
-  background-color: var(--hover-bg);
-  transform: translateY(-2px);
-}
-
-.filter-btn.active {
-  background-color: var(--primary-color);
-  color: white;
-  border-color: transparent;
-  font-weight: 600;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Estilos para el menú desplegable */
-.dropdown-content {
-  position: absolute;
-  z-index: 9999;
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: var(--card-shadow);
-  min-width: 200px;
-  display: none;
-  margin-top: 5px;
-  animation: fadeInDown 0.3s ease both;
-}
-
-.dropdown-content.show {
-  display: block;
-  visibility: visible;
-  opacity: 1;
-}
-
-.dropdown-item {
-  padding: 0.75rem 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  color: var(--text-primary);
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.dropdown-item:hover {
-  background-color: var(--bg-hover);
-}
-
-.dropdown-divider {
-  height: 1px;
-  background-color: var(--border-color);
-  margin: 8px 0;
-}
-
-.dropdown-item i {
-  margin-right: 10px;
-  color: var(--primary-color);
-}
-
-/* Indicadores de prioridad */
-.priority-indicator {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-right: 10px;
-}
-
-.priority-indicator.low {
-  background-color: #0369a1;
-}
-
-.priority-indicator.medium {
-  background-color: #4338ca;
-}
-
-.priority-indicator.high {
-  background-color: #3730a3;
-}
-
-.priority-indicator.urgent {
-  background-color: #5b21b6;
-}
-
-/* Animación para los menús desplegables */
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.category-dropdown {
-  display: none;
-}
-
-.category-indicator {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-right: 10px;
-}
-
-.category-indicator.technical {
-  background-color: #3b82f6;
-}
-
-.category-indicator.billing {
-  background-color: #c7d2fe;
-}
-
-.category-indicator.general {
-  background-color: #bae6fd;
-}
-
-.category-indicator.feature {
-  background-color: #ddd6fe;
-}
-
-.category-indicator.soporte {
-  background-color: #38c172;
-}
-
-.section-title {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  margin-bottom: 1.5rem;
-  color: var(--text-primary);
-  font-size: 1.5rem;
-  font-weight: 600;
-  text-align: left;
-  background-color: var(--bg-tertiary);
-  border-radius: 12px;
-  padding: 0.75rem 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border-left: 4px solid var(--primary-color);
-  
-  .title-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    background-color: var(--primary-color);
-    border-radius: 10px;
-    margin-right: 1rem;
-    color: white;
-    box-shadow: 0 4px 10px rgba(var(--primary-rgb), 0.25);
+  .ticket-content-wrapper {
+    flex-direction: column;
     
-    i {
-      font-size: 1.2rem;
+    .main-column {
+      margin-right: 0;
+      margin-bottom: 1rem;
+    }
+    
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      max-width: 100%;
+      z-index: 1000;
+      transform: translateX(100%);
+      
+      &.sidebar-open {
+        transform: translateX(0);
+      }
     }
   }
+  
+  .ticket-header {
+    flex-direction: column;
+    align-items: flex-start;
+    
+    .ticket-header-main {
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+    
+    .toggle-sidebar-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+    }
+  }
+  
+  .chat-section {
+    .messages {
+      max-height: 400px;
+    }
+    
+    .message {
+      width: 90%;
+    }
+  }
+}
+
+/* Estilo para el mensaje en la sección de acciones de la barra lateral */
+.sidebar-info {
+  padding: 1rem;
+  background-color: #f1f5f9;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+}
+
+.sidebar-note {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #64748b;
+  font-style: italic;
+  text-align: center;
 }
 </style>
